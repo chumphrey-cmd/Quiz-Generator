@@ -1,0 +1,362 @@
+The correct answer is marked with an asterisk (*).
+
+1. What is the primary purpose of the SANS FOR508 course?
+
+a) To provide a comprehensive overview of cybersecurity principles.
+b) To train participants in ethical hacking and penetration testing techniques.
+*c) To equip participants with advanced skills in incident response, threat hunting, and digital forensics. [1]
+d) To introduce participants to the basics of network security and administration.
+2. Which of the following trademarks is NOT listed as belonging to Apple Inc. in the "Book1.txt" source?
+
+a) iCloud
+b) Safari
+*c) SOF-ELK [2]
+d) Xcode
+3. What is the name of the fictional company used as a case study in the FOR508 course?
+
+a) SANS Institute
+*b) Stark Research Labs [3]
+c) World Security Council
+d) The Escal Institute of Advanced Technologies
+4. According to the "Book1.txt" source, what is the recommended operating system for the SIFT Workstation?
+
+*a) Ubuntu Linux [4]
+b) Windows 10
+c) macOS
+d) Any modern operating system
+5. According to the "Book1.txt" source, what is a key benefit of the Windows Subsystem for Linux (WSL)?
+
+a) It improves the performance of Windows virtual machines.
+*b) It allows both Windows and Linux tools to natively coexist. [5]
+c) It provides enhanced security features for Windows systems.
+d) It simplifies the process of managing Windows updates.
+6. What is the primary focus of the "Threat Hunting & Assessment" stage in the FOR508 intrusion methodology roadmap?
+
+a) Performing deep-dive forensics on individual systems.
+b) Analyzing malware samples to develop indicators of compromise.
+*c) Collection and analysis at scale across the enterprise to identify and scope the intrusion. [6]
+d) Developing a comprehensive incident response plan.
+7. Which of the following is NOT mentioned as a triage collection and analysis technique in the "Book1.txt" source?
+
+a) Data stacking
+b) Frequency of least occurrence
+c) Behavioral anomaly detection
+*d) Reverse engineering malware
+8. According to the "Book1.txt" source, what is the purpose of the "IRSpreadsheet.xlsx" template?
+
+a) To store a list of compromised systems.
+b) To track the progress of malware analysis.
+*c) To document findings and indicators uncovered during the investigation. [7]
+d) To create a timeline of attacker activity.
+9. What is the "Malware Paradox" as described in the source?
+
+a) Malware can be difficult to detect because it is constantly evolving.
+b) Malware can spread rapidly across networks, making it hard to contain.
+*c) Malware can hide, but it must eventually run to achieve its objectives. [8]
+d) Malware can be designed to evade traditional security measures.
+10. Which of the following is NOT mentioned as a common malware persistence mechanism in the source?
+
+a) AutoStart locations
+b) Scheduled tasks
+*c) Rootkit installation [9]
+d) WMI event consumers
+11. According to the source, what percentage of malware persistence mechanisms involve the techniques covered in the FOR508 course?
+
+a) 50%
+*b) 80% [9]
+c) 90%
+d) 100%
+12. What is an "AutoStart Extension Point" (ASEP) in Windows?
+
+a) A security feature that prevents unauthorized programs from running at startup.
+*b) A location in the operating system where a malicious file can place itself to run automatically. [10]
+c) A tool used by system administrators to manage startup programs.
+d) A type of malware that specifically targets the Windows startup process.
+13. Which of the following Windows utilities is mentioned as a method for identifying WMI event consumers?
+
+*a) Autoruns [11]
+b) Task Manager
+c) Regedit
+d) Event Viewer
+14. What are the two supported scripting languages for ActiveScriptEventConsumers?
+
+a) Python and JavaScript
+*b) Visual Basic and JScript [12]
+c) PowerShell and Python
+d) C# and Java
+15. What is the primary function of the Kansa PowerShell framework?
+
+*a) To scale PowerShell IR data collections across an enterprise. [13]
+b) To perform deep-dive forensic analysis of individual systems.
+c) To reverse engineer malware samples and develop signatures.
+d) To automate the process of patching security vulnerabilities.
+16. What is the purpose of the "Modules.conf" file in Kansa?
+
+*a) To specify which modules to run and the order in which they should be executed. [14]
+b) To store a list of compromised systems to target for collection.
+c) To configure the output path for collected data.
+d) To define the credentials used for remote access.
+17. Which command-line argument in Kansa is used to push third-party binaries to target systems?
+
+a) -TargetList
+b) -TargetCount
+*c) -Pushbin [15]
+d) -Verbose
+18. What is a key feature of Distributed Kansa?
+
+a) It limits data collection to a small number of systems.
+*b) It can scale collection to over 150,000 systems. [16]
+c) It focuses exclusively on collecting data from Windows event logs.
+d) It requires the use of expensive commercial software.
+19. What is the primary purpose of the KAPE tool?
+
+a) To perform real-time analysis of network traffic.
+b) To automate the process of patching security vulnerabilities.
+*c) To collect forensic data from a system and perform post-processing. [17]
+d) To create and manage indicators of compromise.
+20. What does the "target" parameter in KAPE specify?
+
+a) The drive letter or directory to search for data.
+*b) The target configuration file that identifies artifacts to collect. [18]
+c) The destination path for the collected data.
+d) The number of Volume Shadow Copies to search.
+21. Which of the following is NOT a primary characteristic of Velociraptor as described in the source?
+
+a) Scalable
+b) Query-based
+c) Flexible
+*d) Proprietary [19]
+22. What is the purpose of "VQL" in Velociraptor?
+
+*a) To provide a query language for analysts to create and execute queries against hosts. [20]
+b) To store and manage collected forensic artifacts.
+c) To configure the communication settings between the server and clients.
+d) To automate the process of deploying the Velociraptor agent.
+23. What is a key advantage of Velociraptor's "triage-mode"?
+
+a) It allows for the collection of data from offline systems.
+b) It requires the use of a centralized server for data collection.
+*c) It enables the use of Velociraptor as a standalone triage tool. [21]
+d) It provides real-time monitoring capabilities for network traffic.
+24. What is the purpose of "artifacts" in Velociraptor?
+
+a) To store a list of compromised systems.
+b) To define rules for detecting malicious activity.
+*c) To store preconfigured VQL queries for common analysis jobs. [22]
+d) To manage the deployment of the Velociraptor agent.
+25. What is the name of the platform where analysts can share custom Velociraptor artifacts?
+
+a) The Velociraptor Marketplace
+*b) The Artifact Exchange [23]
+c) The Velociraptor Community Forum
+d) The SANS DFIR Resources website
+26. Which of the following is NOT mentioned as a method for analyzing data collected by Velociraptor?
+
+a) Built-in notebooks
+b) Export to CSV or JSON
+c) Export to Elastic or Splunk
+*d) Integration with commercial forensic suites [24]
+27. What VQL operator is used to filter for a specific keyword in Velociraptor?
+
+a) SELECT
+b) FROM
+*c) =~ [25]
+d) ORDER BY
+28. What VQL statement is used to group like values in Velociraptor?
+
+*a) GROUP BY [25]
+b) WHERE
+c) SELECT
+d) ORDER BY
+29. What is the primary goal of credential theft attacks?
+
+a) To disrupt the availability of critical systems.
+b) To destroy sensitive data stored on target systems.
+*c) To gain unauthorized access to systems and data. [26]
+d) To spread propaganda and misinformation.
+30. Which of the following is NOT mentioned as a technique for gaining initial access to a network in the context of credential theft attacks?
+
+a) Phishing
+b) Social engineering
+c) Exploiting vulnerabilities
+*d) Distributed denial-of-service (DDoS) attacks [26]
+31. What is the purpose of "Remote Desktop Services" (RDS) in Windows?
+
+*a) To allow users to connect to and control remote Windows systems. [26]
+b) To manage and distribute software updates across the network.
+c) To provide centralized storage for user files and data.
+d) To monitor and analyze network traffic for security threats.
+32. What is the primary risk associated with "Windows Admin Shares"?
+
+a) They allow for the execution of arbitrary code on remote systems.
+*b) They can be used by attackers to gain unauthorized access to sensitive files and folders. [26]
+c) They provide a backdoor for attackers to bypass authentication mechanisms.
+d) They can be used to launch denial-of-service attacks against critical systems.
+33. What is "PsExec"?
+
+*a) A tool that allows for the remote execution of commands on Windows systems. [26]
+b) A security feature that prevents unauthorized access to sensitive files.
+c) A protocol used for secure communication between Windows systems.
+d) A scripting language used for automating system administration tasks.
+34. What is a "pass-the-hash" attack?
+
+*a) An attack that exploits the way Windows stores and uses password hashes. [27]
+b) An attack that attempts to guess user passwords by trying common combinations.
+c) An attack that intercepts network traffic to steal user credentials.
+d) An attack that uses social engineering techniques to trick users into revealing their passwords.
+35. What is the purpose of "Credential Guard" in Windows 10 and later?
+
+a) To encrypt all network traffic to prevent eavesdropping.
+b) To enforce strong password complexity rules.
+*c) To protect sensitive credential information from being accessed by attackers. [28, 29]
+d) To monitor system activity for suspicious behavior.
+36. What is the function of the "Protected Users Security Group" in Windows?
+
+a) To grant administrative privileges to specific users.
+b) To restrict access to sensitive files and folders.
+*c) To provide enhanced protection for domain accounts against certain attacks. [30]
+d) To manage the distribution of software updates across the network.
+37. What is a "Golden Ticket" attack?
+
+a) An attack that exploits a vulnerability in the Kerberos authentication protocol.
+*b) An attack that creates a forged Kerberos ticket granting ticket (TGT), providing long-term administrative access. [31]
+c) An attack that intercepts network traffic to steal user credentials.
+d) An attack that uses social engineering techniques to trick users into revealing their passwords.
+38. What is the purpose of the "Bloodhound" tool?
+
+a) To perform automated penetration testing of Active Directory environments.
+b) To monitor network traffic for suspicious activity.
+*c) To visualize relationships and attack paths within Active Directory. [32]
+d) To collect and analyze forensic artifacts from compromised systems.
+39. What is the name of the global organization mentioned in the source that is dedicated to the safe development and deployment of advanced technologies?
+
+a) Global Cyber Alliance
+*b) World Security Council [33]
+c) International Telecommunication Union
+d) Internet Governance Forum
+40. Which of the following is NOT a method for extracting NTDS.dit data from a domain controller, as described in the source?
+
+a) Using the Volume Shadow Copy service.
+b) Leveraging the ntdsutil.exe command-line tool.
+c) Exploiting vulnerabilities in the domain controller's operating system.
+*d) Using a hardware-based memory acquisition device. [34]
+41. What is one of the key challenges of defending against Golden Ticket attacks?
+
+a) They are easy to detect with traditional security tools.
+b) They require physical access to the domain controller.
+*c) They can persist even after the compromised account's password is changed. [35]
+d) They are only effective against older versions of Windows.
+42. What is a key benefit of using Group Managed Service Accounts (gMSA) for service accounts?
+
+a) They allow administrators to manually manage passwords.
+*b) They provide automatic password management, eliminating the need for manual intervention. [36]
+c) They store passwords in plain text, making them easily accessible.
+d) They are only supported on older versions of Windows.
+43. According to the source, what type of file extension is commonly used to hide malicious scripts or executables in WMI event consumers?
+
+a) .txt
+*b) .mof [11]
+c) .log
+d) .dll
+44. What is the recommended approach for handling signed code during incident response, according to the source?
+
+a) Ignore signed code, as it is always trusted.
+b) Block all signed code, as it is a common vector for malware.
+*c) Don't ignore signed code, but consider focusing first on unsigned programs. [37]
+d) Only trust signed code from well-known companies like Microsoft and Apple.
+45. What is a key benefit of pushing processing and filtering to the host when using PowerShell remoting for large-scale IR collection?
+
+*a) It reduces the amount of data that needs to be transferred over the network. [38]
+b) It increases the overall speed of data collection.
+c) It allows for more sophisticated analysis techniques to be used.
+d) It eliminates the need for a centralized data repository.
+46. What is the recommended method for scoping an intrusion during the initial stages of incident response?
+
+a) Perform deep-dive forensic analysis on all potentially affected systems.
+*b) Use tools and techniques that can scale collection and analysis across the enterprise. [6]
+c) Focus on identifying and analyzing individual malware samples.
+d) Rely solely on automated security alerts and notifications.
+47. What is a "computed indicator" in the context of threat intelligence?
+
+a) An indicator that is manually created by security analysts.
+b) An indicator that is derived from network traffic analysis.
+*c) An indicator that is calculated or derived from other data, such as file hashes. [39]
+d) An indicator that is based on the behavior of malicious software.
+48. What is the primary function of the MITRE ATT&CK framework?
+
+a) To provide a standardized format for sharing indicators of compromise.
+*b) To map attacker techniques, tactics, and procedures (TTPs) to the attack lifecycle. [40]
+c) To automate the process of detecting and responding to security threats.
+d) To provide a comprehensive overview of cybersecurity best practices.
+49. Which of the following is NOT mentioned as a key phase in the attack lifecycle, according to the source?
+
+a) Reconnaissance
+b) Weaponization
+*c) Remediation [40]
+d) Installation
+50. What is a "behavioral indicator" in the context of threat intelligence?
+
+a) An indicator that is based on the file size or hash of a malicious file.
+b) An indicator that is derived from network traffic analysis.
+*c) An indicator that combines other indicators, including other behaviors, to form a profile. [41]
+d) An indicator that is based on the specific code or instructions within malware.
+51. What is the primary benefit of using a formal language for describing indicators of compromise?
+
+*a) It facilitates information sharing and enables organizations to search for potential breaches more effectively. [42]
+b) It simplifies the process of creating and managing intrusion detection rules.
+c) It allows security analysts to automate the process of incident response.
+d) It provides a standardized method for classifying malware families.
+52. Which of the following is NOT mentioned as a common IOC format in the source?
+
+a) YARA
+b) OpenIOC
+c) STIX
+*d) Snort rules [43]
+53. Why is YARA currently the most widely used IOC format?
+
+a) It is a proprietary format developed by a leading security vendor.
+*b) It strikes a balance between simplicity and power, making it accessible for both analysts and machines. [44]
+c) It is specifically designed for detecting advanced persistent threats (APTs).
+d) It is integrated with all major security information and event management (SIEM) platforms.
+54. What is the goal of an IOC, as described in the source?
+
+a) To prevent malware infections from occurring in the first place.
+b) To provide a complete history of attacker activity on a compromised system.
+*c) To create a signature that is specific enough to limit false positives while being broad enough to match different variants. [44]
+d) To automate the process of incident response and remediation.
+55. What is a key advantage of using PowerShell for incident response in Windows environments?
+
+a) It is a proprietary language developed by a third-party vendor.
+*b) It provides direct access to Windows components and management interfaces, like WMI, .NET, and COM. [45]
+c) It is only available on newer versions of Windows.
+d) It requires specialized hardware to run effectively.
+56. What is the purpose of "aliases" in PowerShell?
+
+a) To create shortcuts for commonly used commands.
+b) To store sensitive information like passwords and encryption keys.
+*c) To provide alternative names for cmdlets, making it easier for users familiar with other command-line interfaces to adapt. [46]
+d) To define variables used in PowerShell scripts.
+57. Why is it important to understand that PowerShell command output is encapsulated in objects?
+
+a) It improves the security of PowerShell scripts by preventing data leaks.
+b) It makes PowerShell scripts more difficult to read and understand.
+*c) It allows for easy manipulation and processing of data using other cmdlets. [46]
+d) It simplifies the process of writing PowerShell scripts.
+58. What is a key benefit of using the "Invoke-Command" cmdlet for PowerShell remoting?
+
+a) It creates an interactive shell on the remote system.
+*b) It allows for the concurrent execution of commands on multiple systems. [47]
+c) It restricts the execution of scripts on remote systems.
+d) It requires the use of a third-party tool for remote access.
+59. What is one of the primary limitations of live response collection techniques, as mentioned in the source?
+
+a) They cannot collect data from systems that are offline.
+*b) They can be susceptible to being fooled by malicious rootkits. [48]
+c) They require the use of expensive commercial software.
+d) They are only effective against known malware families.
+
+60. What type of data does the "Windows.System.Pslist" artifact in Velociraptor collect by default?
+a) A list of all files stored on the system.
+*b) A list of running processes. [49]
+c) A history of user logon events.
+d) A list of installed programs and applications.
