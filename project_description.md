@@ -60,21 +60,52 @@ Please provide responses that are:
 
 ---
 
-### **Stage 1: Core Functionality (Essential Basics)**  
+### Stage 1: Core Functionality - IP
 
-1. **Display Quiz Interface**  
-   - Build a simple HTML page to display one question and its multiple-choice answers at a time.  
-   - Style minimally with CSS for readability.  
+1.1 **HTML Interface**
 
-2. **Parse Questions and Answers**  
-   - Write a JavaScript script to:  
-     - Read and parse the text file into an array of objects.  
-     - Extract questions, answers, and the correct answer for each entry.  
+- Clean, centered container design
+- Responsive layout (90% width, max 600px)
+- Modern styling with shadows and rounded corners
+- Mobile-friendly viewport settings
 
-3. **Basic Interactivity**  
-   - Dynamically load questions into the interface.  
-   - Allow users to select answers.  
-   - Highlight the correct answer after a selection.  
+1.2 **Question Parser**
+
+- Regular expression pattern matching
+- Structured data conversion
+- JSON output format
+- Error handling for malformed questions
+
+1.3 **Interactive Features**
+
+- Dynamic question loading
+- Answer selection handling
+- Score tracking
+- Quiz completion notification
+
+1.4 **Core Components**
+
+- Question display container
+- Answer buttons with hover effects
+- Progress tracking
+- Feedback system
+
+1.5 **Data Structure**
+
+```javascript
+{
+    number: Integer,
+    question: String,
+    answers: [
+        { 
+            text: String,
+            correct: Boolean 
+        }
+    ]
+}
+```
+
+Would you like to start implementing any specific component, or shall we proceed with integrating these elements together?
 
 ---
 

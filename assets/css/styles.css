@@ -1,0 +1,86 @@
+/* Reset default styles and set up root variables for consistent theming */
+:root {
+    --primary-color: #2563eb;
+    --secondary-color: #1e40af;
+    --background-color: #f8fafc;
+    --text-color: #1e293b;
+    --error-color: #dc2626;
+    --success-color: #16a34a;
+}
+
+/* Modern CSS reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Basic body styling */
+body {
+    font-family: system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Main container styling */
+.quiz-container {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    padding: 2rem;
+    width: 90%;
+    max-width: 600px;
+    margin: 1rem;
+}
+
+/* Question styling */
+.question {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+/* Answer buttons container */
+.answers {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* Individual answer button styling */
+.answer-btn {
+    background: none;
+    border: 2px solid var(--primary-color);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    text-align: left;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+}
+
+/* Hover and focus states for buttons */
+.answer-btn:hover,
+.answer-btn:focus {
+    background-color: var(--primary-color);
+    color: white;
+    outline: none;
+}
+
+/* Correct and incorrect answer states */
+.correct {
+    background-color: var(--success-color);
+    color: white;
+    border-color: var(--success-color);
+}
+
+.incorrect {
+    background-color: var(--error-color);
+    color: white;
+    border-color: var(--error-color);
+}
