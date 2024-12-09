@@ -22,7 +22,7 @@ Please provide responses that are:
 
 ---
 
-### **Stage 0: Question Generation and Formatting**  
+### **Stage 0: Question Generation and Formatting** - DONE
 
 #### **Text Document Formatting Guidelines**  
 
