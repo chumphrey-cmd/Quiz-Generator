@@ -1,38 +1,56 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
-    <!-- Basic meta tags for proper rendering and responsive design -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QA Generator</title>
-
-    <!-- Link to external CSS file -->
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 
-<!-- SAMPLE DATA FOR TESTING HERE-->
 <body>
+    <!-- Fixed header with controls -->
+    <div class="header-controls">
+        <div class="left-controls">
+            <div class="file-input-container">
+                <input type="file" id="questionFile" accept=".txt" class="file-input">
+                <label for="questionFile" class="file-label">Import Questions</label>
+            </div>
+        </div>
+        
+        <div class="center-controls">
+            <div id="score-display">Score: 0/0</div>
+            <div id="timer-display">Time: 00:00</div>
+        </div>
+
+        <div class="right-controls">
+            <button id="theme-button" class="theme-btn">
+                🌙 Dark Mode
+            </button>
+        </div>
+    </div>
+
     <!-- Main quiz container -->
     <div class="quiz-container">
-        <!-- Question display area -->
-        <div class="question" id="question">
-            <!-- Question text will be inserted here dynamically -->
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div id="progress-fill"></div>
+            </div>
+            <div id="progress-text">0/0</div>
         </div>
 
-        <!-- Answer buttons container -->
-        <div class="answers" id="answers">
-            <!-- Answer buttons will be inserted here dynamically -->
-        </div>
-
-        <!-- Progress indicator -->
-        <div class="progress" id="progress">
-            <!-- Progress information will be inserted here dynamically -->
+        <!-- Quiz content container -->
+        <div id="quiz-content">
+            <!-- Questions will be inserted here by parser.js -->
         </div>
     </div>
 
     <!-- Script tags for JavaScript modules -->
+    <script src="assets/js/theme.js"></script>
     <script src="assets/js/parser.js"></script>
     <script src="assets/js/ui.js"></script>
     <script src="assets/js/quiz.js"></script>
 </body>
+
 </html>

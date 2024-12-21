@@ -62,14 +62,14 @@ Please provide responses that are:
 
 ### Stage 1: Core Functionality - IP
 
-1.1 **HTML Interface**
+1.1 **HTML Interface** - DONE
 
 - Clean, centered container design
 - Responsive layout (90% width, max 600px)
 - Modern styling with shadows and rounded corners
 - Mobile-friendly viewport settings
 
-1.2 **Question Parser**
+1.2 **Question Parser** - DONE
 
 - Regular expression pattern matching
 - Structured data conversion
@@ -104,8 +104,6 @@ Please provide responses that are:
     ]
 }
 ```
-
-Would you like to start implementing any specific component, or shall we proceed with integrating these elements together?
 
 ---
 
@@ -162,7 +160,7 @@ Would you like to start implementing any specific component, or shall we proceed
 
 ---
 
-### Parsing Strategy in JavaScript  
+### Parsing Strategy in JavaScript  - DONE
 
 1. **Read the File Line by Line**  
    - Use `.split("\n")` to break the text file into an array of lines.  
