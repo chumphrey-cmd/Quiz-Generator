@@ -48,13 +48,11 @@ function displayQuestions(questions) {
 }
 
 function updateScoreDisplay(currentScore, totalAnswered, totalQuestions) {
-    console.log('Updating score with:', {currentScore, totalAnswered, totalQuestions});
-    
     const scoreElement = document.getElementById('score-display');
     const incorrectAnswers = totalAnswered - currentScore;
     const percentage = totalQuestions > 0 ? Math.round((currentScore / totalQuestions) * 100) : 0;
     
-    scoreElement.textContent = `Score: ${currentScore}/${totalQuestions} | Correct: ${currentScore} | Incorrect: ${incorrectAnswers} (${percentage}%)`;
+    scoreElement.textContent = `Correct: ${currentScore} | Incorrect: ${incorrectAnswers} (${percentage}%)`;
 }
 
 function showFinalScore(currentScore, totalQuestions) {
@@ -113,7 +111,7 @@ function addAnswerButtonListeners() {
  * Updates the progress bar and question counter
  * Shows progress as percentage and fraction
  */
-function updateProgressBar() {
+function updateProgressBar(answeredQuestions, totalQuestions) {
     const progressFill = document.getElementById('progress-fill');
     const progressText = document.getElementById('progress-text');
     const progressPercentage = (answeredQuestions / totalQuestions) * 100;

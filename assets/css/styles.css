@@ -123,6 +123,14 @@ Layout Components
     margin-bottom: var(--spacing-lg);
 }
 
+.stats-row {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-lg);
+    font-size: var(--spacing-lg);
+    font-weight: 500;
+}
+
 /* 
 ==========================================================================
 Interactive Elements
@@ -253,7 +261,7 @@ Progress and Feedback
 #progress-text {
     text-align: center;
     margin-top: var(--spacing-xs);
-    font-size: 0.9rem;
+    font-size: var(--spacing-lg);
     color: var(--text-color);
 }
 
