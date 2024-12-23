@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Save the user's theme preference to browser's localStorage
-        // If isDark is true, save 'light', otherwise save 'dark'
         localStorage.setItem('theme', isDark ? 'light' : 'dark');
     });
 
