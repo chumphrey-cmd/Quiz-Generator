@@ -115,9 +115,10 @@ function processQuestions(questionText) {
     if (validationErrors.length === 0) {
         const htmlContent = displayQuestions(parsedQuestions);
         document.getElementById('quiz-content').innerHTML = htmlContent;
-        addAnswerButtonListeners();
+        return true; // Indicate success
     } else {
         console.error('Validation errors:', validationErrors);
         alert('Error in question format. Please check the file format.');
+        return false;
     }
 }

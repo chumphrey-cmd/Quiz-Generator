@@ -33,38 +33,27 @@ class ExamManager {
         try {
             const text = await this.readFileContent(file);
             
-            // Parse questions first and log the result
+            // Parse questions first
             const questions = parseQuestions(text);
-            console.log('Parsed questions:', questions);
             console.log('Number of questions:', questions.length);
             
-            // Initialize quiz state and log the values
+            // Initialize quiz state
             this.totalQuestions = questions.length;
             this.answeredQuestions = 0;
             this.currentScore = 0;
             
-            console.log('Quiz state after initialization:', {
-                totalQuestions: this.totalQuestions,
-                answeredQuestions: this.answeredQuestions,
-                currentScore: this.currentScore
-            });
-            
-            updateScoreDisplay(this.currentScore, this.answeredQuestions, this.totalQuestions);
-
-            // Process questions
-            processQuestions(text);
-            
-            // Log values before updating score display
-            console.log('Values being passed to updateScoreDisplay:', {
-                currentScore: this.currentScore,
-                answeredQuestions: this.answeredQuestions,
-                totalQuestions: this.totalQuestions
-            });
+            // Process questions and update display
+            if (processQuestions(text)) {
+                // Update score display
+                updateScoreDisplay(this.currentScore, this.answeredQuestions, this.totalQuestions);
+                // Initialize our own answer listeners
+                this.initializeAnswerListeners();
+            }
             
         } catch (error) {
             console.error('Error processing file:', error);
         }
-    }           
+    }                   
 
     // Read file as text
     readFileContent(file) {
@@ -155,7 +144,23 @@ class ExamManager {
         if (this.answeredQuestions === this.totalQuestions) {
             this.handleQuizCompletion();
         }
-    }    
+    }
+
+    /**
+    * Handle quiz completion and display final score
+    */
+    handleQuizCompletion() {
+    const percentage = Math.round((this.currentScore / this.totalQuestions) * 100);
+    const incorrectAnswers = this.totalQuestions - this.currentScore;
+    
+    alert(`Quiz Complete!
+    ─────────────────────
+    Total Questions: ${this.totalQuestions}
+    Correct Answers: ${this.currentScore}
+    Incorrect Answers: ${incorrectAnswers}
+    Final Score: ${percentage}%
+    ─────────────────────`);
+    }
         
 }
 
