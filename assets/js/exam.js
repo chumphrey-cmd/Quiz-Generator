@@ -113,17 +113,31 @@ class ExamManager {
     }
 
     /**
-     * Show feedback for answered question
-     * button - Clicked button
-     * container - Question container
-     * isCorrect - Whether answer was correct
-     */
+    * Show feedback for answered question
+    * button - Clicked button
+    * container - Question container
+    * isCorrect - Whether answer was correct
+    */
     showFeedback(button, container, isCorrect) {
-        button.classList.add(isCorrect ? 'correct' : 'incorrect');
-        const feedback = container.querySelector('.feedback');
-        feedback.textContent = isCorrect ? 'Correct!' : 'Incorrect!';
-        feedback.classList.add(isCorrect ? 'correct' : 'incorrect');
+        if (isCorrect) {
+            button.classList.add('correct');
+            const feedback = container.querySelector('.feedback');
+            feedback.textContent = 'Correct!';
+            feedback.classList.add('correct');
+        } else {
+            // Add incorrect class to clicked button
+            button.classList.add('incorrect');
+            // Find and highlight the correct answer
+            const correctButton = Array.from(container.querySelectorAll('.answer-btn'))
+                .find(btn => btn.getAttribute('data-correct') === 'true');
+            correctButton.classList.add('correct');
+        
+            const feedback = container.querySelector('.feedback');
+            feedback.textContent = 'Incorrect!';
+            feedback.classList.add('incorrect');
+        }
     }
+
 
     /**
      * Update progress and score displays

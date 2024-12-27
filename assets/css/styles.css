@@ -266,11 +266,12 @@ Progress and Feedback
 }
 
 .feedback {
-    margin-top: var(--spacing-md);
+    margin-top: var(--spacing-sm);
     font-weight: bold;
     text-align: center;
     color: white;
     min-height: 20px;
+    padding: var(--spacing-sm);
     border: var(--border-width) solid transparent;
     border-radius: var(--border-radius-sm);
 }
