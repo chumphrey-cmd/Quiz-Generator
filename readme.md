@@ -6,7 +6,7 @@ Personally I just wanted a way to quickly take exams on the content that I was r
 
 ## Generate Questions to be Ingested
 
-1. If using PDFs, use my [Password-Protected-PDF-Extractor](https://github.com/chumphrey-cmd/Password-Protected-PDF-Extractor) tool get the text from courses that you're working on.
+1. If using PDFs, use my [PDF-Extractor](https://github.com/chumphrey-cmd/Password-Protected-PDF-Extractor) tool get the text from courses that you're working on.
 
 2. Use something like Google's [NotebookLM](https://notebooklm.google/) as a RAG layers to query and generate multiple choice questions matching the **Question File Format** below.
 
