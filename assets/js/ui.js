@@ -124,16 +124,35 @@ function updateProgressBar(answeredQuestions, totalQuestions) {
 /**
  * Resets all displays to initial state
  * Called when starting a new quiz
+ * @param {number} totalQuestions - The total number of questions for the new quiz.
  */
-function resetDisplays() {
-    // Reset state variables
-    currentScore = 0;
-    answeredQuestions = 0;
-    
+function resetDisplays(totalQuestions) {
     // Reset UI elements
-    document.getElementById('score-display').textContent = `Score: 0/${totalQuestions} (0%)`;
-    document.getElementById('progress-fill').style.width = '0%';
-    document.getElementById('progress-text').textContent = `0/${totalQuestions} Questions`;
+    const scoreElement = document.getElementById('score-display');
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+
+    if (scoreElement) {
+         // Call updateScoreDisplay
+         // Pass 0 for currentScore, 0 for answeredQuestions, and the actual total
+         // Ensure updateScoreDisplay function exists and is accessible
+         if (typeof updateScoreDisplay === 'function') {
+            updateScoreDisplay(0, 0, totalQuestions);
+         } else {
+            // Fallback if updateScoreDisplay isn't available
+             scoreElement.textContent = `Correct: 0 | Incorrect: 0 (0%)`;
+             console.warn("updateScoreDisplay function not found, using fallback text.");
+         }
+    }
+     if (progressFill) {
+        progressFill.style.width = '0%';
+    }
+    if (progressText) {
+        // Ensure the total is updated correctly even when starting
+        progressText.textContent = `0/${totalQuestions} Questions`;
+    }
+    // NOTE: The lines resetting global currentScore and answeredQuestions
+    // have been removed as state should be managed by ExamManager.
 }
 
 /**
