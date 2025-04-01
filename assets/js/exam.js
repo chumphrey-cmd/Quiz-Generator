@@ -11,8 +11,78 @@ class ExamManager {
         this.currentScore = 0;
         this.questions = []; // Used to initialize questions property
 
+        this.timerInterval = null; // To store the interval ID for stopping
+        this.timeRemaining = 0; // Time remaining in seconds
+        this.timerDuration = 0.5 * 60; // <<< Default/Hardcoded: 10 minutes (in seconds)
+
         // Initialize file upload listener
         this.initializeEventListeners();
+    }
+
+    /**
+     * Starts the quiz timer.
+     */
+    startTimer() {
+        // Clear any existing timer
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+        }
+
+        this.timeRemaining = this.timerDuration; // Set initial time
+        this.updateTimerDisplay(); // Show initial time immediately
+
+        // Start countdown interval
+        this.timerInterval = setInterval(() => {
+            this.timeRemaining--; // Decrement time
+            this.updateTimerDisplay(); // Update UI
+
+            // Check if time has run out
+            if (this.timeRemaining <= 0) {
+                this.stopTimer();
+                alert('Time is up!'); // Placeholder for time's up logic
+                this.handleQuizCompletion(true); // Pass flag indicating time ran out
+            }
+        }, 1000); // Update every second
+        console.log("Timer started with duration:", this.timerDuration);
+    }
+
+    /**
+     * Stops the quiz timer.
+     */
+    stopTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null; // Clear the interval ID
+            console.log("Timer stopped.");
+        }
+    }
+
+    /**
+     * Updates the timer display element in the UI.
+     */
+    updateTimerDisplay() {
+        const timerElement = document.getElementById('timer-display');
+        if (!timerElement) return;
+
+        const minutes = Math.floor(this.timeRemaining / 60);
+        const seconds = this.timeRemaining % 60;
+
+        // Format seconds to always have two digits (e.g., 05 instead of 5)
+        const formattedSeconds = seconds < 10 ? `0${seconds}` : seconds;
+        const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+
+
+        timerElement.textContent = `Time: ${formattedMinutes}:${formattedSeconds}`;
+    }
+
+    /**
+     * Resets the timer display and state.
+     */
+    resetTimer() {
+        this.stopTimer(); // Stop any active timer
+        this.timeRemaining = 0; // Or set to default duration if you prefer
+        this.updateTimerDisplay(); // Update UI to show reset time
+        console.log("Timer reset.");
     }
 
     /**
@@ -31,6 +101,7 @@ class ExamManager {
         const files = event.target.files; // Get the FileList object
         if (!files || files.length === 0) {
             console.log("No files selected.");
+            this.startTimer(); // Starts timer after files are uploaded
             return; // Exit if no files selected
         }
 
