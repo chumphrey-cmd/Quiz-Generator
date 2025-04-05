@@ -20,7 +20,7 @@ class ExamManager {
     }
 
     /**
-     * Starts the quiz timer.
+     * Starts the quiz timer using duration from input field.
      */
     startTimer() {
         // Clear any existing timer
@@ -28,11 +28,25 @@ class ExamManager {
             clearInterval(this.timerInterval);
         }
 
-        this.timeRemaining = this.timerDuration; // Set initial time
+        // Get duration from input
+        const durationInput = document.getElementById('timerDurationInput');
+        let durationMinutes = parseInt(durationInput.value, 10);
+
+        // Validate input, set default if invalid
+        if (isNaN(durationMinutes) || durationMinutes <= 0) {
+            console.warn("Invalid timer duration input, using default (10 minutes).");
+            durationMinutes = 10; // Default duration in minutes
+            durationInput.value = 10; // Update input field to show default
+        }
+
+        this.timerDuration = durationMinutes * 60; // Convert minutes to seconds
+
+        this.timeRemaining = this.timerDuration; // Set initial time based on input/default
         this.updateTimerDisplay(); // Show initial time immediately
 
         // Start countdown interval
         this.timerInterval = setInterval(() => {
+            console.log(">>> Timer interval running, time remaining:", this.timeRemaining);
             this.timeRemaining--; // Decrement time
             this.updateTimerDisplay(); // Update UI
 
@@ -43,7 +57,7 @@ class ExamManager {
                 this.handleQuizCompletion(true); // Pass flag indicating time ran out
             }
         }, 1000); // Update every second
-        console.log("Timer started with duration:", this.timerDuration);
+        console.log("Timer started with duration (seconds):", this.timerDuration);
     }
 
     /**
@@ -58,21 +72,30 @@ class ExamManager {
     }
 
     /**
-     * Updates the timer display element in the UI.
+     * Updates the timer display element in the UI to show HH:MM:SS format.
      */
     updateTimerDisplay() {
         const timerElement = document.getElementById('timer-display');
         if (!timerElement) return;
 
-        const minutes = Math.floor(this.timeRemaining / 60);
-        const seconds = this.timeRemaining % 60;
+        // Ensure timeRemaining doesn't go below zero for display purposes
+        const displayTime = Math.max(0, this.timeRemaining);
 
-        // Format seconds to always have two digits (e.g., 05 instead of 5)
-        const formattedSeconds = seconds < 10 ? `0${seconds}` : seconds;
-        const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+        // Calculate hours, minutes, and seconds
+        const hours = Math.floor(displayTime / 3600);
+        const minutes = Math.floor((displayTime % 3600) / 60);
+        const seconds = displayTime % 60;
 
+        // Format each part to always have two digits using padStart
+        const formattedHours = String(hours).padStart(2, '0');
+        const formattedMinutes = String(minutes).padStart(2, '0');
+        const formattedSeconds = String(seconds).padStart(2, '0');
 
-        timerElement.textContent = `Time: ${formattedMinutes}:${formattedSeconds}`;
+        // Update the text content with the new HH:MM:SS format
+        timerElement.textContent = `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+
+        // Keep the console log for debugging if needed
+        // console.log(">>> Updating timer display to:", timerElement.textContent);
     }
 
     /**
@@ -86,11 +109,47 @@ class ExamManager {
     }
 
     /**
-     * Set up event listeners for file upload
+     * Set up event listeners for file upload AND timer input validation.
      */
     initializeEventListeners() {
+        // Listener for file input
         document.getElementById('questionFile')
             .addEventListener('change', (e) => this.handleFileUpload(e));
+            
+        const timerInput = document.getElementById('timerDurationInput');
+        if (timerInput) {
+            timerInput.addEventListener('input', function() {
+                // Remove any character that is NOT a digit
+                // Allows digits 0-9, removes everything else
+                this.value = this.value.replace(/[^0-9]/g, '');
+
+                // Optional: Prevent leading zeros if number > 0, though parseInt handles this later
+                 if (this.value.length > 1 && this.value.startsWith('0')) {
+                     this.value = this.value.substring(1);
+                 }
+                 // Ensure value isn't empty, reset to '1' if user deletes everything
+                 // Note: 'min="1"' attribute handles this on blur/submit, but this gives immediate feedback
+                  if (this.value === '') {
+                      this.value = '1';
+                  }
+
+
+            });
+             // Optional: Add listener for 'blur' event to enforce min/max if needed
+              timerInput.addEventListener('blur', function() {
+                  const min = parseInt(this.min, 10) || 1; // Default min 1
+                  const max = parseInt(this.max, 10) || 180; // Default max 180
+                  let currentValue = parseInt(this.value, 10);
+             
+                  if (isNaN(currentValue) || currentValue < min) {
+                      this.value = min;
+                  } else if (currentValue > max) {
+                      this.value = max;
+                  }
+              });
+        } else {
+            console.error("Timer duration input element not found!");
+        }
     }
 
     /**
@@ -101,7 +160,6 @@ class ExamManager {
         const files = event.target.files; // Get the FileList object
         if (!files || files.length === 0) {
             console.log("No files selected.");
-            this.startTimer(); // Starts timer after files are uploaded
             return; // Exit if no files selected
         }
 
@@ -133,10 +191,7 @@ class ExamManager {
                       return; // Skip this file
                  }
                  try {
-                    // Assuming files[index] corresponds correctly might be fragile if non-txt files were skipped.
-                    // A safer way would be to track filenames alongside content.
-                    // Let's refine this slightly by processing successfully read files.
-                    // We'll parse content directly here.
+
                     console.log(`Parsing content from file ${index + 1}...`); // Use index for logging
                     const parsedQuestions = parseQuestions(content); // Use parseQuestions from parser.js
                     if (parsedQuestions && parsedQuestions.length > 0) {
@@ -176,6 +231,7 @@ class ExamManager {
                 console.log('Combined questions validated and displayed.');
                 this.initializeAnswerListeners();
                 console.log('Answer listeners initialized.');
+                this.startTimer(); // Initiates timer
             } else {
                 console.log('Validation or display failed for combined questions.');
             }
@@ -240,8 +296,7 @@ class ExamManager {
             const htmlContent = displayQuestions(questions);
             document.getElementById('quiz-content').innerHTML = htmlContent; // Render questions
 
-            // Assuming resetDisplays is globally available from ui.js or defined elsewhere
-            // Make sure it's called *after* setting this.totalQuestions and rendering
+            this.resetTimer(); // Reset timer before resetting displays
             resetDisplays(this.totalQuestions);
 
             return true; // Indicate success
@@ -252,6 +307,8 @@ class ExamManager {
             validationErrors.forEach(err => errorMsg += `- ${err}\n`);
             alert(errorMsg);
             document.getElementById('quiz-content').innerHTML = `<p style="color: red;">${errorMsg.replace(/\n/g, '<br>')}</p>`;
+
+            this.resetDisplays(); // Still resetting timer if function fails.
             resetDisplays(0); // Reset displays to zero
             return false; // Indicate failure
         }
@@ -362,21 +419,40 @@ class ExamManager {
     }
 
     /**
-    * Handle quiz completion and display final score
-    */
-    handleQuizCompletion() {
-    const percentage = Math.round((this.currentScore / this.totalQuestions) * 100);
-    const incorrectAnswers = this.totalQuestions - this.currentScore;
-    
-    alert(`Quiz Complete!
-    ─────────────────────
-    Total Questions: ${this.totalQuestions}
-    Correct Answers: ${this.currentScore}
-    Incorrect Answers: ${incorrectAnswers}
-    Final Score: ${percentage}%
-    ─────────────────────`);
+     * Handle quiz completion and display final score
+     * @param {boolean} [timeExpired=false] - Flag indicating if completion was due to time running out.
+     */
+     handleQuizCompletion(timeExpired = false) {
+        this.stopTimer(); // Stop the timer when quiz completes
+
+        // Ensure totalQuestions is not zero to avoid division by zero
+        if (this.totalQuestions === 0) {
+            alert("Quiz finished, but there were no questions.");
+            return;
+        }
+
+        const percentage = Math.round((this.currentScore / this.totalQuestions) * 100);
+        const incorrectAnswers = this.totalQuestions - this.currentScore;
+
+        // Define the message based on whether time expired
+        let completionMessage = timeExpired ? "Time's up!\n" : "Quiz Complete!\n";
+
+        // Use the globally available showFinalScore function if it exists for better formatting, otherwise use alert
+        if (typeof showFinalScore === 'function') {
+             // Prepend the completion message to the score details from showFinalScore
+            const scoreMessage = showFinalScore(this.currentScore, this.totalQuestions);
+             // The scoreMessage from ui.js likely starts with "Quiz Complete!",
+             // so we might just want to use our completionMessage OR modify showFinalScore.
+             // Let's prepend for now, assuming showFinalScore just gives the details.
+            alert(completionMessage + scoreMessage.replace(/^Quiz Complete!\n/, '')); // Attempt to remove duplicate header
+        } else {
+            // Fallback alert using the user's original detailed format
+            alert(`${completionMessage}─────────────────────\nTotal Questions: ${this.totalQuestions}\nCorrect Answers: ${this.currentScore}\nIncorrect Answers: ${incorrectAnswers}\nFinal Score: ${percentage}%\n─────────────────────`);
+        }
+         // Optional: Disable all remaining inputs or provide a restart button? For now, just alert.
     }
-        
+
+
 }
 
 const examManager = new ExamManager();

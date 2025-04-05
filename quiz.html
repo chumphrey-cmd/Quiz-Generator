@@ -11,7 +11,7 @@
 
 <body>
 
-<!-- Fixed header with controls -->
+<!-- Header controls -->
 
 <header class="header-controls">
 
@@ -20,12 +20,15 @@
             <input type="file" id="questionFile" accept=".txt" class="file-input" multiple>
             <label for="questionFile" class="file-label">Import Questions</label>
         </div>
-    </div>
+        <div class="timer-config-container">
+             <label for="timerDurationInput" class="timer-config-label">Time (min):</label>
+             <input type="number" id="timerDurationInput" class="timer-config-input" value="10" min="1" max="180">
+             </div>
+         </div>
     
     <div class="center-controls">
         <div class="stats-row">
             <div id="score-display">Correct: 0 | Incorrect: 0</div>
-            <!-- Time display element to start and stop timer and emulate exam like conditions... -->
             <div id="timer-display">Time: 00:00</div>
         </div>        
 

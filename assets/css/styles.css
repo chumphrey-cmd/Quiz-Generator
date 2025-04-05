@@ -296,3 +296,39 @@ Progress and Feedback
     color: white;
     border-color: var(--error-color);
 }
+
+
+/* 
+==========================================================================
+Controls
+========================================================================== 
+*/
+
+/* Styling for Timer Configuration Input */
+.timer-config-container {
+    display: flex; /* Align label and input horizontally */
+    align-items: center; /* Vertically center items */
+    gap: var(--spacing-sm); /* Add space between label and input */
+    margin-left: var(--spacing-md); /* Add space to the left */
+}
+
+.timer-config-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.timer-config-input {
+    padding: var(--spacing-xs);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--button-border); /* Use existing border color */
+    background-color: var(--background-color); /* Match background */
+    color: var(--text-color); /* Match text color */
+    width: 60px; /* Adjust width as needed */
+    font-size: 0.9rem;
+}
+
+/* Adjust input appearance in dark mode if needed */
+[data-theme="dark"] .timer-config-input {
+    border: 1px solid #555; /* Example darker border */
+}
