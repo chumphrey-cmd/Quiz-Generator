@@ -53,7 +53,9 @@ class ExamManager {
             // Check if time has run out
             if (this.timeRemaining <= 0) {
                 this.stopTimer();
-                alert('Time is up!'); // Placeholder for time's up logic
+                // alert('Time is up!');
+                console.log("Time expired. Disabling inputs.");
+                this.disableAllInputs(); // Used to disable buttons
                 this.handleQuizCompletion(true); // Pass flag indicating time ran out
             }
         }, 1000); // Update every second
@@ -115,7 +117,7 @@ class ExamManager {
         // Listener for file input
         document.getElementById('questionFile')
             .addEventListener('change', (e) => this.handleFileUpload(e));
-            
+
         const timerInput = document.getElementById('timerDurationInput');
         if (timerInput) {
             timerInput.addEventListener('input', function() {
@@ -135,7 +137,7 @@ class ExamManager {
 
 
             });
-             // Optional: Add listener for 'blur' event to enforce min/max if needed
+             // Add listener for 'blur' event to enforce min/max if needed
               timerInput.addEventListener('blur', function() {
                   const min = parseInt(this.min, 10) || 1; // Default min 1
                   const max = parseInt(this.max, 10) || 180; // Default max 180
@@ -371,6 +373,23 @@ class ExamManager {
     }
 
     /**
+     * Disables all answer buttons in the entire quiz.
+     * Typically called when the timer expires.
+     */
+    disableAllInputs() {
+        document.querySelectorAll('.answer-btn').forEach(btn => {
+            // Check if it's not already disabled by answering the specific question
+            if (!btn.disabled) {
+                 btn.disabled = true;
+                 // Optionally add a specific class to indicate disabled by timer
+                 // btn.classList.add('disabled-by-timer');
+            }
+        });
+        console.log("All answer buttons disabled.");
+    }
+
+
+    /**
     * Show feedback for answered question
     * button - Clicked button
     * container - Question container
@@ -441,9 +460,6 @@ class ExamManager {
         if (typeof showFinalScore === 'function') {
              // Prepend the completion message to the score details from showFinalScore
             const scoreMessage = showFinalScore(this.currentScore, this.totalQuestions);
-             // The scoreMessage from ui.js likely starts with "Quiz Complete!",
-             // so we might just want to use our completionMessage OR modify showFinalScore.
-             // Let's prepend for now, assuming showFinalScore just gives the details.
             alert(completionMessage + scoreMessage.replace(/^Quiz Complete!\n/, '')); // Attempt to remove duplicate header
         } else {
             // Fallback alert using the user's original detailed format

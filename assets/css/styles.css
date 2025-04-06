@@ -27,6 +27,7 @@ Theme Variables
     --border-radius-md: 0.5rem;   /* 8px */
     --border-radius-lg: 1rem;     /* 16px */
     --border-width: 2px;
+    
 }
 
 /* Dark theme */
@@ -318,13 +319,14 @@ Controls
     color: var(--text-color);
 }
 
+/* Controls "Time (min)" section */
 .timer-config-input {
     padding: var(--spacing-xs);
     border-radius: var(--border-radius-sm);
     border: 1px solid var(--button-border); /* Use existing border color */
     background-color: var(--background-color); /* Match background */
     color: var(--text-color); /* Match text color */
-    width: 60px; /* Adjust width as needed */
+    width: 50px; /* Adjust width as needed */
     font-size: 0.9rem;
 }
 
