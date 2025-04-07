@@ -334,3 +334,118 @@ Controls
 [data-theme="dark"] .timer-config-input {
     border: 1px solid #555; /* Example darker border */
 }
+
+/*
+==========================================================================
+ LLM Integration Styles
+==========================================================================
+*/
+
+/* Container for LLM config in header */
+.llm-config-container {
+    display: flex; /* Align items horizontally */
+    align-items: center; /* Vertically center items */
+    gap: var(--spacing-sm); /* Space between items */
+    margin-left: var(--spacing-md); /* Space from file input/timer config */
+}
+
+.llm-config-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.llm-config-input,
+.llm-config-select {
+    padding: var(--spacing-xs);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--button-border);
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-size: 0.9rem;
+}
+
+.llm-config-input {
+     width: 120px; /* Adjust as needed */
+     /* Specific styles for password type if needed */
+}
+
+.llm-config-select {
+     min-width: 100px; /* Adjust as needed */
+     cursor: pointer;
+}
+
+
+/* Header above question text, holding question and explain button */
+/* Ensure this container uses flexbox if not already implied by parent */
+.question-header {
+    display: flex;
+    justify-content: space-between; /* Pushes question text and button apart */
+    align-items: center; /* Aligns them vertically */
+    gap: var(--spacing-md); /* Adds space between them */
+    /* Removed margin-bottom here as it's handled by question-container */
+}
+
+/* Overwrite question margin if needed, since question-header now handles spacing */
+.question-header .question {
+    margin-bottom: 0; /* Remove default margin if question-header manages it */
+    flex-grow: 1; /* Allow question text to take available space */
+}
+
+
+/* Explain button next to each question */
+.explain-btn {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    background-color: var(--background-color);
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    border-radius: var(--border-radius-sm);
+    transition: background-color 0.2s ease, color 0.2s ease;
+    flex-shrink: 0; /* Prevent button from shrinking */
+    white-space: nowrap; /* Prevent button text wrapping */
+}
+
+.explain-btn:hover {
+    background-color: var(--primary-color);
+    color: var(--container-bg)
+}
+
+/* Container for LLM response below each question */
+.llm-response {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px dashed #ccc; /* Subtle border */
+    border-radius: var(--border-radius-sm);
+    display: none; /* Initially hidden */
+    background-color: rgba(128, 128, 128, 0.05); /* Slight background tint */
+    font-size: 0.9rem;
+    color: var(--text-color);
+    white-space: pre-wrap; /* Preserve line breaks from LLM response */
+    word-wrap: break-word; /* Ensure long words break */
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .llm-config-input,
+[data-theme="dark"] .llm-config-select {
+    border: 1px solid #555;
+}
+
+[data-theme="dark"] .explain-btn {
+     background-color: var(--background-color);
+     color: var(--primary-color); /* Adjust color if needed for dark mode */
+     border: 1px solid var(--primary-color);
+}
+
+[data-theme="dark"] .explain-btn:hover {
+     background-color: var(--primary-color);
+     color: var(--container-bg);
+}
+
+
+[data-theme="dark"] .llm-response {
+    border: 1px dashed #555;
+    background-color: rgba(200, 200, 200, 0.05);
+    color: var(--text-color);
+}

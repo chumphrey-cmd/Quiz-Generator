@@ -4,46 +4,61 @@ let answeredQuestions = 0;   // Number of questions answered so far
 let currentScore = 0;        // Current number of correct answers
 
 /**
- * Generates HTML content for displaying questions
+ * Generates HTML content for displaying questions, including LLM elements.
  * @param {Array} questions - Array of question objects
  * @returns {string} HTML string containing all questions and answer buttons
  */
 function displayQuestions(questions) {
     console.log("Starting to display questions:", questions);
     let htmlContent = "";
-    
+
     questions.forEach(question => {
         // Create container for each question with unique ID
         htmlContent += `
             <div class="question-container" id="container-${question.number}">
-                <div class="question" id="question-${question.number}">
-                    ${question.number}. ${question.text}
+                {/* <<< START: Added question-header div >>> */}
+                <div class="question-header">
+                    <div class="question" id="question-${question.number}">
+                        ${question.number}. ${question.text}
+                    </div>
+                    {/* <<< START: Explain Button Added Here >>> */}
+                    <button class="explain-btn" data-question-number="${question.number}">Explain</button>
+                    {/* <<< END: Explain Button Added Here >>> */}
                 </div>
+                 {/* <<< END: Added question-header div >>> */}
         `;
-        
+
         // Create container for answer buttons
         htmlContent += '<div class="answers">';
-        
+
         // Generate buttons for each answer option
         question.answers.forEach(answer => {
+            const isCorrect = answer.letter === question.correct; // Assumes single correct answer
             htmlContent += `
-                <button 
-                    class="answer-btn" 
+                <button
+                    class="answer-btn"
                     data-question="${question.number}"
                     data-letter="${answer.letter}"
-                    data-correct="${answer.letter === question.correct}">
+                    data-correct="${isCorrect}">
                     ${answer.letter}. ${answer.text}
                 </button>
             `;
         });
-        
+
         // Close answer container and add feedback div
         htmlContent += '</div>';
         htmlContent += `<div class="feedback" id="feedback-${question.number}"></div>`;
-        htmlContent += '</div>';
+
+         // <<< LLM Response Area Added Here >>>
+         htmlContent += `<div class="llm-response" id="llm-response-${question.number}">`; 
+         htmlContent += `LLM Explanation will appear here...`;
+         htmlContent += `</div>`;
+         // <<< LLM Response Area Added Here >>>
+
+        htmlContent += '</div>'; // Close question-container
     });
 
-    console.log("Final HTML content:", htmlContent);
+    console.log("Final HTML content with LLM elements generated.");
     return htmlContent;
 }
 
