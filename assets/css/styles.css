@@ -103,6 +103,23 @@ Layout Components
     z-index: 1000;
 }
 
+.right-controls {
+    display: flex;
+    flex-direction: column; /* Stack children vertically */
+    align-items: center; /* Center items horizontally */
+    gap: var(--spacing-sm); /* Add space between button and LLM config */
+}
+
+
+/* You might need to adjust widths or other styles slightly */
+.llm-config-input {
+     width: 100px; /* Example width adjustment */
+}
+
+.llm-config-select {
+     min-width: 90px; /* Example width adjustment */
+}
+
 .exam-header {
     display: flex;
     justify-content: space-between;
@@ -114,7 +131,7 @@ Layout Components
 
 /* Question container spacing */
 .question-container {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-xs);
 }
 
 /* Question styling */
@@ -346,7 +363,6 @@ Controls
     display: flex; /* Align items horizontally */
     align-items: center; /* Vertically center items */
     gap: var(--spacing-sm); /* Space between items */
-    margin-left: var(--spacing-md); /* Space from file input/timer config */
 }
 
 .llm-config-label {
