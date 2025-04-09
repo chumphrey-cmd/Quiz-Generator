@@ -231,8 +231,6 @@ class ExamManager {
             // Validate and display the combined & shuffled questions
             if (this.validateAndDisplayQuestions(this.questions)) {
                 console.log('Combined questions validated and displayed.');
-                this.initializeAnswerListeners();
-                console.log('Answer listeners initialized.');
                 this.startTimer(); // Initiates timer
             } else {
                 console.log('Validation or display failed for combined questions.');
@@ -301,7 +299,13 @@ class ExamManager {
             this.resetTimer(); // Reset timer before resetting displays
             resetDisplays(this.totalQuestions);
 
+            this.initializeAnswerListeners(); // Initialize answer buttons
+            this.initializeExplainListeners(); // Initialize explain buttons
+
+            console.log("Answer and Explain initialized.")
+
             return true; // Indicate success
+
         } else {
             console.error('Validation errors:', validationErrors);
             // Construct a user-friendly error message
@@ -315,6 +319,178 @@ class ExamManager {
             return false; // Indicate failure
         }
     }
+
+    /**
+     * Adds click event listeners to all "Explain" buttons.
+     */
+    initializeExplainListeners() {
+        const explainButtons = document.querySelectorAll('.explain-btn');
+        console.log(`Found ${explainButtons.length} explain buttons.`); // Debug log
+
+        explainButtons.forEach(button => {
+            // Remove potential existing listener to prevent duplicates on re-load
+            if (this.handleExplainClickBound) {
+                 button.removeEventListener('click', this.handleExplainClickBound);
+            }
+            // Bind the handler function to the current ExamManager instance
+            this.handleExplainClickBound = this.handleExplainClick.bind(this);
+            button.addEventListener('click', this.handleExplainClickBound);
+        });
+        console.log("Explain button listeners initialized.");
+    }
+
+/**
+     * Handles clicks on the "Explain" button for a question.
+     * Retrieves config, question, and answers, calls LLM, and displays response.
+     * @param {Event} event - The click event.
+     */
+    async handleExplainClick(event) { // <<< Make this method async
+        event.preventDefault(); // Prevent any default button action
+        const button = event.currentTarget;
+        const questionNumber = parseInt(button.getAttribute('data-question-number'), 10);
+        const responseArea = document.getElementById(`llm-response-${questionNumber}`);
+
+        // Prevent multiple requests while one is processing
+        if (button.disabled) return;
+        button.disabled = true;
+        button.textContent = 'Thinking...'; // Indicate loading
+
+        // Ensure response area exists and show loading message
+        if (responseArea) {
+            responseArea.textContent = 'Requesting explanation from LLM...';
+            responseArea.style.display = 'block'; // Show the area
+        } else {
+            console.error(`Response area llm-response-${questionNumber} not found!`);
+            button.disabled = false; // Re-enable button if response area missing
+            button.textContent = 'Explain';
+            return;
+        }
+
+        console.log(`Explain button clicked for question number: ${questionNumber}`);
+
+        // --- Read LLM Configuration from UI ---
+        const apiKeyInput = document.getElementById('llmApiKeyInput');
+        const modelSelect = document.getElementById('llmModelSelect');
+        const apiKey = apiKeyInput ? apiKeyInput.value : ''; // Get API key value
+        const selectedModel = modelSelect ? modelSelect.value : 'none'; // Get selected model value
+
+        // --- Find the Question Text AND Answers ---
+        // Ensure this.questions is populated and question numbers align
+        const questionData = this.questions.find(q => q.number === questionNumber);
+        if (!questionData) {
+            console.error(`Could not find question data for number ${questionNumber}`);
+            if (responseArea) responseArea.textContent = 'Error: Could not find question data.';
+            button.disabled = false; // Re-enable button
+            button.textContent = 'Explain';
+            return;
+        }
+        const questionText = questionData.text;
+        const questionAnswers = questionData.answers; // Get the answers array
+
+        console.log("--- LLM Config Read ---");
+        console.log("Selected Model:", selectedModel);
+        console.log("API Key Entered:", apiKey ? "[Key Entered]" : "[No Key Entered]"); // Avoid logging key directly
+        // console.log("Question Text:", questionText); // Optional: Keep for debugging if needed
+        // console.log("Question Answers:", questionAnswers.map(a => `${a.letter}. ${a.text}`).join(', ')); // Optional
+
+        // --- Call LLM and Display Response ---
+        const llmConfig = {
+            model: selectedModel,
+            apiKey: apiKey
+        };
+
+        // Call the async explanation function and wait for the result
+        const explanation = await this.getLlmExplanation(questionText, questionAnswers, llmConfig);
+
+        // Display the actual explanation or error message
+        if (responseArea) {
+            responseArea.textContent = explanation;
+        }
+
+        // Re-enable the button and reset text
+        button.disabled = false;
+        button.textContent = 'Explain';
+        console.log("LLM interaction complete.");
+    }
+
+
+    /**
+     * Asynchronously gets an explanation for given text from an LLM.
+     * Includes answer options in the prompt. Routes based on selected model.
+     * @param {string} questionText - The text of the question to explain.
+     * @param {Array} questionAnswers - The array of answer objects [{letter: 'A', text: '...'}].
+     * @param {object} config - Configuration object { model: string, apiKey: string }.
+     * @returns {Promise<string>} A promise that resolves with the explanation string or an error message.
+     */
+
+    async getLlmExplanation(questionText, questionAnswers, config) {
+        console.log("Requesting LLM explanation for:", questionText);
+        console.log("Using config:", config);
+
+        // Format answers for the prompt (used by most models)
+        const formattedAnswers = questionAnswers.map(ans => `${ans.letter}. ${ans.text}`).join('\n');
+        // Base prompt - can be customized per model if needed
+        const basePrompt = `Explain the core concepts related to the following question and its potential answers. Identify the correct answer if possible and explain why it is correct and why the others might be incorrect:\n\nQuestion: "${questionText}"\n\nOptions:\n${formattedAnswers}`;
+
+        // --- Route based on selected model ---
+        switch (config.model) {
+            case 'ollama': {
+                // --- Ollama Specific Logic ---
+                const ollamaEndpoint = 'http://localhost:11434/api/generate'; // Default Ollama endpoint
+                // Specify a model available in your Ollama instance
+                const modelName = "mistral:latest"; // Or "mistral", etc. Adjust if needed.
+
+                try {
+                    console.log(`Sending request to Ollama (${modelName})...`);
+                    const response = await fetch(ollamaEndpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            model: modelName,
+                            prompt: basePrompt,
+                            stream: false // Request a single response object
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        console.error(`Ollama API request failed with status: ${response.status}`);
+                        let errorBody = '';
+                        try { errorBody = await response.text(); const errorJson = JSON.parse(errorBody); if (errorJson && errorJson.error) { errorBody = errorJson.error; } } catch (e) { /* Ignore */ }
+                        return `Error: Could not connect to Ollama or model not found (Status: ${response.status}). ${errorBody}. Make sure Ollama is running and the model '${modelName}' is available.`;
+                    }
+                    const data = await response.json();
+                    console.log("Ollama response data received.");
+                    // Extract the explanation (adjust data.response if Ollama's structure differs)
+                    return data.response ? data.response.trim() : 'Error: Received an empty explanation from Ollama.';
+                } catch (error) {
+                    console.error('Error fetching explanation from Ollama:', error);
+                    if (error instanceof TypeError && error.message.includes('fetch')) {
+                        return 'Error: Could not fetch from Ollama endpoint. Is the service running at http://localhost:11434?';
+                    }
+                    return `Error: An unexpected error occurred while contacting the LLM. (${error.message})`;
+                }
+                // --- End Ollama Specific Logic ---
+            } // End case 'ollama'
+
+            case 'openai': { // Example Placeholder
+                console.log("Attempting to call OpenAI (Not Implemented)");
+                if (!config.apiKey) {
+                    return Promise.resolve("Error: API Key required for OpenAI model.");
+                }
+                // --- OpenAI Specific Logic Would Go Here ---
+                 return Promise.resolve("Explanation logic for OpenAI not yet implemented.");
+            } // End case 'openai'
+
+             // Add more cases here for other models like 'google-ai', etc.
+
+            default: { // Handle 'none' or unsupported selections
+                console.warn(`Unsupported LLM model selected: ${config.model}`);
+                return Promise.resolve(`Please select a valid LLM model.`);
+            } // End default case
+
+        } // End switch
+    }
+
 
     // Initialize quiz with parsed questions
      

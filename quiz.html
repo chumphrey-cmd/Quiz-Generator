@@ -24,6 +24,7 @@
              <label for="timerDurationInput" class="timer-config-label">Time (min)</label>
              <input type="number" id="timerDurationInput" class="timer-config-input" value="10" min="1" max="180">
              </div>
+    </div>
     
     <div class="center-controls">
         <div class="stats-row">
@@ -44,6 +45,15 @@
         <button id="theme-button" class="theme-btn">
             🌙 Dark Mode
         </button>
+
+        <div class="llm-config-container">
+            <label for="llmApiKeyInput" class="llm-config-label">LLM Key:</label>
+            <input type="password" id="llmApiKeyInput" class="llm-config-input" placeholder="Optional API Key">
+            <select id="llmModelSelect" class="llm-config-select">
+               <option value="none">Select Model</option>
+               <option value="ollama">Ollama (Local)</option>
+               </select>
+            </div>
     </div>
 
 </header>

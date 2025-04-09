@@ -13,19 +13,17 @@ function displayQuestions(questions) {
     let htmlContent = "";
 
     questions.forEach(question => {
-        // Create container for each question with unique ID
+        // Create container for each question with unique ID, creation of an "Explain" button
         htmlContent += `
             <div class="question-container" id="container-${question.number}">
-                {/* <<< START: Added question-header div >>> */}
+
                 <div class="question-header">
                     <div class="question" id="question-${question.number}">
                         ${question.number}. ${question.text}
                     </div>
-                    {/* <<< START: Explain Button Added Here >>> */}
+
                     <button class="explain-btn" data-question-number="${question.number}">Explain</button>
-                    {/* <<< END: Explain Button Added Here >>> */}
                 </div>
-                 {/* <<< END: Added question-header div >>> */}
         `;
 
         // Create container for answer buttons
@@ -49,11 +47,10 @@ function displayQuestions(questions) {
         htmlContent += '</div>';
         htmlContent += `<div class="feedback" id="feedback-${question.number}"></div>`;
 
-         // <<< LLM Response Area Added Here >>>
-         htmlContent += `<div class="llm-response" id="llm-response-${question.number}">`; 
+         {/* --- LLM Response Area --- */}
+         htmlContent += `<div class="llm-response" id="llm-response-${question.number}">`;
          htmlContent += `LLM Explanation will appear here...`;
          htmlContent += `</div>`;
-         // <<< LLM Response Area Added Here >>>
 
         htmlContent += '</div>'; // Close question-container
     });
