@@ -429,6 +429,7 @@ class ExamManager {
 
         // Format answers for the prompt (used by most models)
         const formattedAnswers = questionAnswers.map(ans => `${ans.letter}. ${ans.text}`).join('\n');
+        
         // Base prompt - can be customized per model if needed
         const basePrompt = `Explain the core concepts related to the following question and its potential answers. Identify the correct answer if possible and explain why it is correct and why the others might be incorrect:\n\nQuestion: "${questionText}"\n\nOptions:\n${formattedAnswers}`;
 
@@ -438,7 +439,7 @@ class ExamManager {
                 // --- Ollama Specific Logic ---
                 const ollamaEndpoint = 'http://localhost:11434/api/generate'; // Default Ollama endpoint
                 // Specify a model available in your Ollama instance
-                const modelName = "mistral:latest"; // Or "mistral", etc. Adjust if needed.
+                const modelName = "mistral:latest"; // Customize as needed
 
                 try {
                     console.log(`Sending request to Ollama (${modelName})...`);
