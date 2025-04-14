@@ -430,8 +430,39 @@ class ExamManager {
         // Format answers for the prompt (used by most models)
         const formattedAnswers = questionAnswers.map(ans => `${ans.letter}. ${ans.text}`).join('\n');
         
-        // Base prompt - can be customized per model if needed
-        const basePrompt = `Explain the core concepts related to the following question and its potential answers. Identify the correct answer if possible and explain why it is correct and why the others might be incorrect:\n\nQuestion: "${questionText}"\n\nOptions:\n${formattedAnswers}`;
+        // Enhanced prompt focused on concise, direct explanations for test-takers
+        const basePrompt = `**Persona:**
+
+        Act as an expert Tutor and Subject Matter Expert. Your primary goal is to provide **concise, direct, and informative explanations** for multiple-choice questions to help a test taker quickly understand *why* the correct answer is right and *why* the incorrect answers are wrong. Prioritize clarity and brevity for efficient learning.
+
+        **Task:**
+
+        Analyze the provided multiple-choice question and its options. Deliver a focused explanation structured as follows:
+
+        1.  **Essential Concept (Optional, 1 Sentence Max):** If a single core principle is essential to differentiate the answers, state it very briefly. Otherwise, omit this section.
+        2.  **Answer Analysis:**
+            * **Correct Answer (Identify Letter, e.g., C):** Succinctly explain *why* this option is the correct answer. Directly reference the key fact, calculation, or concept that validates it.
+            * **Incorrect Answers (Identify Letters, e.g., A, B, D):** For *each* incorrect option, provide a brief and direct explanation of *why* it is wrong. State the specific flaw (e.g., "Incorrect because...", "Irrelevant factor...", "Misinterprets term X...").
+        3.  **Key Term Definition(s) (Optional):** If a crucial technical term *within the question or answers* is likely unfamiliar and essential for understanding the explanation, define it very briefly (list format if multiple). Otherwise, omit this section.
+
+        **Output Requirements & Constraints:**
+
+        * **Concise & Direct:** Get straight to the point. Use clear, economical language. Avoid introductory fluff, verbose descriptions, or excessive background detail.
+        * **Accuracy:** Ensure explanations are factually correct.
+        * **Targeted Informativeness:** Focus squarely on the information *needed* to understand the reasoning for *this specific question's* answers.
+        * **Structure:** Follow the requested structure (Concept -> Answers -> Terms). Use Markdown for clarity (e.g., bolding answer letters **A**, **B**, **C**, **D**).
+        * **DO NOT** restate the provided question.
+        * **DO NOT** use conversational filler (e.g., "Let's break this down," "Okay, I'm ready," "This question asks about...").
+        * **Directly provide the analysis** immediately following these instructions.
+
+        ---
+
+        **QUESTION TO ANALYZE:**
+
+        Question: "${questionText}"
+
+        Options:
+        ${formattedAnswers}`;
 
         // --- Route based on selected model ---
         switch (config.model) {
@@ -470,26 +501,80 @@ class ExamManager {
                     }
                     return `Error: An unexpected error occurred while contacting the LLM. (${error.message})`;
                 }
-                // --- End Ollama Specific Logic ---
-            } // End case 'ollama'
+            }
 
-            case 'openai': { // Example Placeholder
-                console.log("Attempting to call OpenAI (Not Implemented)");
+            // Gemini API Use
+            case 'gemini': {
+                console.log("Attempting to call Google Gemini");
                 if (!config.apiKey) {
-                    return Promise.resolve("Error: API Key required for OpenAI model.");
+                    return Promise.resolve("Error: API Key required for Google Gemini model.");
                 }
-                // --- OpenAI Specific Logic Would Go Here ---
-                 return Promise.resolve("Explanation logic for OpenAI not yet implemented.");
-            } // End case 'openai'
+                 const geminiModel = "gemini-2.0-flash"; 
+                 const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${config.apiKey}`;
 
-             // Add more cases here for other models like 'google-ai', etc.
+                try {
+                    console.log(`Sending request to Gemini (${geminiModel})...`);
+                    const response = await fetch(geminiEndpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        // Body structure specific to Gemini API
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [{
+                                    text: basePrompt // Send the combined prompt
+                                }]
+                            }],
+                             // Optional: Add generationConfig or safetySettings here if needed
+                             // "generationConfig": { "temperature": 0.7 },
+                             // "safetySettings": [ ... ]
+                        }),
+                    });
+
+                    if (!response.ok) {
+                         // Try to parse error message from Gemini
+                        let errorMsg = `Google Gemini API request failed (Status: ${response.status})`;
+                        try {
+                            const errorData = await response.json();
+                            if (errorData && errorData.error && errorData.error.message) {
+                                 errorMsg += `: ${errorData.error.message}`;
+                            }
+                        } catch (e) { /* Ignore if response body isn't JSON */ }
+                        console.error(errorMsg);
+                        return `Error: ${errorMsg}`;
+                    }
+
+                    const data = await response.json();
+                    console.log("Gemini response data received.");
+
+                    // Extract the response (structure based on Gemini REST API docs)
+                    // It might be slightly different depending on model/version
+                    if (data.candidates && data.candidates.length > 0 &&
+                        data.candidates[0].content && data.candidates[0].content.parts &&
+                        data.candidates[0].content.parts.length > 0 && data.candidates[0].content.parts[0].text) {
+                        return data.candidates[0].content.parts[0].text.trim();
+                    } else {
+                        console.error("Unexpected Gemini response format:", data);
+                         // Check if blocked by safety settings
+                         if (data.promptFeedback?.blockReason) {
+                              return `Error: Request blocked by safety settings (${data.promptFeedback.blockReason}).`;
+                         }
+                        return 'Error: Received an unexpected response format from Google Gemini.';
+                    }
+                } catch (error) {
+                    console.error('Error fetching explanation from Google Gemini:', error);
+                     return `Error: An unexpected error occurred while contacting Google Gemini. (${error.message})`;
+                }
+            } // End of Gemini Case
 
             default: { // Handle 'none' or unsupported selections
                 console.warn(`Unsupported LLM model selected: ${config.model}`);
+                // Return a promise that resolves, consistent with async function
                 return Promise.resolve(`Please select a valid LLM model.`);
             } // End default case
 
-        } // End switch
+        } 
     }
 
 
