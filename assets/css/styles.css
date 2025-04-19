@@ -1,7 +1,7 @@
-/* 
+/*
 ==========================================================================
 Theme Variables
-========================================================================== 
+==========================================================================
 */
 
 :root {
@@ -15,6 +15,11 @@ Theme Variables
     --container-bg: #ffffff;
     --button-border: #2563eb;
 
+    /* RGB Colors for rgba() */
+    --primary-color-rgb: 37, 99, 235;
+    --success-color-rgb: 22, 163, 74;
+    --error-color-rgb: 220, 38, 38;
+
     /* Spacing */
     --spacing-xs: 0.25rem;    /* 4px */
     --spacing-sm: 0.5rem;     /* 8px */
@@ -27,7 +32,6 @@ Theme Variables
     --border-radius-md: 0.5rem;   /* 8px */
     --border-radius-lg: 1rem;     /* 16px */
     --border-width: 2px;
-    
 }
 
 /* Dark theme */
@@ -36,12 +40,13 @@ Theme Variables
     --text-color: #ffffff;
     --container-bg: #2d2d2d;
     --button-border: #3b82f6;
+    /* Note: Consider adding dark theme specific RGB values if needed */
 }
 
-/* 
+/*
 ==========================================================================
  Base Styles & Reset
-========================================================================== 
+==========================================================================
 */
 
 /* Modern CSS reset */
@@ -49,15 +54,6 @@ Theme Variables
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-}
-
-.main-content {
-    width: 100%;
-    min-height: 100vh;
-    padding-top: 120px; /* Height of header plus some spacing */
-    display: flex;
-    justify-content: center;
-    align-items: flex-start; /* Change from center to flex-start */
 }
 
 /* Basic body styling */
@@ -72,23 +68,13 @@ body {
     align-items: center;
 }
 
-/* 
+/*
 ==========================================================================
 Layout Components
-========================================================================== 
+==========================================================================
 */
 
-/* Main container styling */
-.quiz-container {
-    background: var(--container-bg);
-    border-radius: var(--border-radius-lg);
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-    padding: var(--spacing-xl);
-    width: 90%;
-    max-width: 600px;
-    margin-top: 80px;
-}
-
+/* Header */
 .header-controls {
     position: fixed;
     top: 0;
@@ -105,21 +91,74 @@ Layout Components
 
 .right-controls {
     display: flex;
-    flex-direction: column; /* Stack children vertically */
-    align-items: center; /* Center items horizontally */
-    gap: var(--spacing-sm); /* Add space between button and LLM config */
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
 }
 
-
-/* You might need to adjust widths or other styles slightly */
-.llm-config-input {
-     width: 100px; /* Example width adjustment */
+/* Main Content Area */
+.main-content {
+    width: 100%;
+    min-height: 100vh;
+    padding-top: 120px; /* Height of header plus spacing */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
 }
 
-.llm-config-select {
-     min-width: 90px; /* Example width adjustment */
+/* Overall Quiz Container */
+.quiz-container {
+    background: var(--container-bg);
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); /* Original shadow */
+    padding: var(--spacing-xl);
+    width: 90%;
+    max-width: 800; /* Adjust as needed */
+    margin-top: 80px; /* Spacing below fixed header */
 }
 
+/* Individual Question Block */
+.question-container {
+    background: var(--container-bg); /* Re-apply if needed, or remove if quiz-container bg is enough */
+    border-radius: var(--border-radius-lg); /* Match quiz container or use smaller radius */
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg); /* Increased spacing */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08); /* Softer shadow */
+    /* border: none; */ /* Ensure no accidental border */
+}
+
+/* Header within a Question Block (Question Text + Explain Button) */
+.question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* Align items to the top */
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md); /* Space between header and answers */
+}
+
+/* Question Text Styling */
+.question {
+    font-size: 1.15rem;
+    font-weight: 500;
+    line-height: 1.5;
+    flex-grow: 1; /* Allow question text to take available space */
+    /* margin-bottom: 0; */ /* Removed as question-header handles bottom margin */
+}
+
+/* Hint for multi-select */
+.question-hint {
+    display: block;
+    font-size: 0.85rem;
+    font-style: italic;
+    color: #888;
+    margin-top: var(--spacing-xs);
+    font-weight: 400;
+}
+[data-theme="dark"] .question-hint {
+    color: #aaa;
+}
+
+/* DEPRECATED? Was this for an old layout? Keeping for now */
 .exam-header {
     display: flex;
     justify-content: space-between;
@@ -129,47 +168,42 @@ Layout Components
     border-radius: var(--border-radius-md);
 }
 
-/* Question container spacing */
-.question-container {
-    margin-bottom: var(--spacing-xs);
-}
-
-/* Question styling */
-.question {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: var(--spacing-lg);
-}
-
+/* Header Stats Row (Score, Timer) */
 .stats-row {
     display: flex;
     justify-content: center;
     gap: var(--spacing-lg);
-    font-size: var(--spacing-lg);
+    font-size: 1.25rem; /* Adjusted size */
     font-weight: 500;
+    margin-bottom: var(--spacing-sm); /* Space below stats */
+}
+/* Ensure timer display has consistent width */
+#timer-display {
+    min-width: 70px; /* Example width */
+    text-align: right;
 }
 
-/* 
+
+/*
 ==========================================================================
-Interactive Elements
-========================================================================== 
+Interactive Elements (Buttons, Inputs)
+==========================================================================
 */
 
-/* Theme toggle styling */
-.theme-toggle {
+/* --- Theme Toggle --- */
+.theme-toggle { /* Position this if needed, maybe within header controls? */
     display: flex;
     justify-content: flex-end;
-    margin-bottom: var(--spacing-md);
 }
 
 .theme-btn {
     background: none;
-    border: var(--border-width) solid var(--button-border);
-    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--button-border); /* Thinner border */
+    padding: var(--spacing-xs) var(--spacing-sm); /* Smaller padding */
     border-radius: var(--border-radius-md);
     cursor: pointer;
     color: var(--text-color);
-    font-size: 0.9rem;
+    font-size: 0.85rem; /* Smaller font */
     transition: all 0.2s ease;
 }
 
@@ -178,290 +212,400 @@ Interactive Elements
     color: white;
 }
 
-/* Answer buttons container */
-.answers {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-}
-
-/* Individual answer button styling */
-.answer-btn {
-    background: none;
-    border: var(--border-width) solid var(--button-border);
-    padding: var(--spacing-md);
-    border-radius: var(--border-radius-md);
-    cursor: pointer;
-    text-align: left;
-    font-size: 1rem;
-    transition: all 0.2s ease;
-    color: var(--text-color);
-}
-
-/* Hover and focus states for buttons */
-.answer-btn:hover,
-.answer-btn:focus {
-    background-color: var(--button-border);
-    color: white;
-    outline: none;
-}
-
-/* Disabled button state */
-.answer-btn:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-}
-
-/* File input styling */
+/* --- File Input --- */
 .file-input-container {
-    margin: var(--spacing-md) 0;
+    margin-bottom: var(--spacing-sm);
     text-align: center;
 }
 
 .file-input {
-    display: none;
+    display: none; /* Hidden */
 }
 
-.file-label {
+.file-label { /* Styled as a button */
+    display: inline-block; /* Allow padding */
     background: var(--primary-color);
     color: white;
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: var(--spacing-xs) var(--spacing-sm);
     border-radius: var(--border-radius-md);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease;
+    font-size: 0.9rem;
 }
 
 .file-label:hover {
     background: var(--secondary-color);
 }
 
-/* 
-==========================================================================
-Theme Variations
-========================================================================== 
-*/
-
-/* Dark theme adjustments */
-[data-theme="dark"] .progress-bar {
-    background: rgba(255, 255, 255, 0.1);
+/* --- Answer Options --- */
+/* Container for all answers */
+fieldset.answers { /* Use fieldset for semantic grouping */
+    border: none;
+    padding: 0;
+    margin: 0 0 var(--spacing-md) 0; /* Space below answers, before submit */
 }
 
-/* 
+/* Container for each individual answer option (input + label) */
+.answer-option {
+    display: flex;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+    border: none; /* Explicitly no border */
+    padding: var(--spacing-md); /* Increased padding */
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+/* Subtle hover effect */
+.answer-option:hover {
+    background-color: rgba(var(--primary-color-rgb), 0.1);
+}
+[data-theme="dark"] .answer-option:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+/* Keep text color consistent on hover for subtle background */
+.answer-option:hover .answer-label {
+    color: inherit;
+}
+
+/* Radio / Checkbox input element */
+.answer-input {
+    margin-right: var(--spacing-md);
+    transform: scale(1.2);
+    accent-color: var(--primary-color);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+/* Answer Label Text */
+.answer-label {
+    flex-grow: 1;
+    font-size: 0.95rem;
+    color: var(--text-color);
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s ease;
+    line-height: 1.5;
+}
+
+/* Disabled state after submission */
+.answer-input:disabled {
+    cursor: not-allowed;
+    accent-color: #ccc;
+}
+.answer-input:disabled + .answer-label {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+.answer-option:has(.answer-input:disabled) {
+    cursor: not-allowed;
+    background-color: transparent; /* Remove hover effect */
+    opacity: 0.7;
+}
+.answer-option:has(.answer-input:disabled):hover {
+    background-color: transparent;
+}
+.answer-option:has(.answer-input:disabled) .answer-label {
+    color: var(--text-color);
+    opacity: 0.7;
+}
+/* Dark theme disabled */
+[data-theme="dark"] .answer-input:disabled {
+    accent-color: #555;
+}
+[data-theme="dark"] .answer-option:has(.answer-input:disabled) {
+    opacity: 0.6;
+}
+[data-theme="dark"] .answer-option:has(.answer-input:disabled) .answer-label {
+    color: var(--text-color);
+    opacity: 0.6;
+}
+
+/* --- Submit Button --- */
+.submit-btn {
+    display: block;
+    width: auto; /* Auto width */
+    min-width: 150px;
+    margin: var(--spacing-md) auto 0 auto; /* Center */
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-md);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    text-align: center;
+}
+
+.submit-btn:hover:not(:disabled) {
+    background-color: var(--secondary-color);
+    transform: translateY(-1px);
+}
+.submit-btn:active:not(:disabled) {
+    transform: translateY(0px);
+}
+.submit-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+    transform: none;
+}
+[data-theme="dark"] .submit-btn:disabled {
+    background-color: #555;
+    color: #999;
+    opacity: 0.6;
+}
+
+/* --- Explain Button --- */
+.explain-btn {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    background-color: transparent; /* Outline style */
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    border-radius: var(--border-radius-md);
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.explain-btn:hover:not(:disabled) {
+    background-color: var(--primary-color);
+    color: white;
+    transform: translateY(-1px);
+}
+.explain-btn:active:not(:disabled) {
+    transform: translateY(0px);
+}
+.explain-btn:disabled {
+     opacity: 0.5;
+     cursor: not-allowed;
+     transform: none;
+     background-color: transparent;
+     color: #888;
+     border-color: #888;
+}
+[data-theme="dark"] .explain-btn {
+     color: var(--primary-color); /* Use theme color */
+     border-color: var(--primary-color);
+}
+[data-theme="dark"] .explain-btn:hover:not(:disabled) {
+     background-color: var(--primary-color);
+     color: var(--container-bg); /* Text becomes background color */
+}
+[data-theme="dark"] .explain-btn:disabled {
+    color: #777;
+    border-color: #777;
+    opacity: 0.5;
+}
+
+
+/*
 ==========================================================================
 Progress and Feedback
-========================================================================== 
+==========================================================================
 */
 
+/* --- Progress Bar --- */
 .progress-container {
     width: 100%;
-    max-width: 400px;
-    margin: var(--spacing-sm) auto;
-    padding: var(--spacing-sm);
-    background: var(--container-bg);
-    border-radius: var(--border-radius-md);
+    max-width: 400px; /* Or adjust as needed */
+    margin: 0 auto var(--spacing-sm) auto; /* Center horizontally, space below */
+    padding: var(--spacing-xs); /* Minimal padding */
+    background: transparent; /* No background needed */
+    /* border-radius: var(--border-radius-md); */
 }
 
 .progress-bar {
     width: 100%;
-    height: 20px;
-    background: rgba(0, 0, 0, 0.1);
+    height: 20px; /* Thinner bar */
+    background: rgba(0, 0, 0, 0.08); /* Lighter background */
     border-radius: var(--border-radius-lg);
     overflow: hidden;
+}
+[data-theme="dark"] .progress-bar {
+    background: rgba(255, 255, 255, 0.1);
 }
 
 #progress-fill {
     height: 100%;
     width: 0;
-    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    background: var(--primary-color); /* Simpler background */
+    /* background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); */
     transition: width 0.3s ease;
+    border-radius: var(--border-radius-lg); /* Match parent */
 }
 
 #progress-text {
     text-align: center;
     margin-top: var(--spacing-xs);
-    font-size: var(--spacing-lg);
+    font-size: 1.25rem; /* Smaller text */
     color: var(--text-color);
+    opacity: 0.8; /* Slightly faded */
 }
 
+/* --- General Feedback Text (Below Submit Button) --- */
 .feedback {
-    margin-top: var(--spacing-sm);
-    font-weight: bold;
+    margin-top: var(--spacing-md); /* Space above feedback */
+    font-weight: 500; /* Less bold */
     text-align: center;
-    color: white;
-    min-height: 20px;
-    padding: var(--spacing-sm);
-    border: var(--border-width) solid transparent;
+    color: white; /* Text color on feedback background */
+    min-height: 24px; /* Reserve space */
+    padding: var(--spacing-xs) var(--spacing-sm); /* Adjust padding */
     border-radius: var(--border-radius-sm);
-}
-
-.feedback.incorrect {
-    background-color: var(--error-color);
+    font-size: 0.9rem;
+    /* border: none; */ /* Remove border if previously set */
 }
 
 .feedback.correct {
     background-color: var(--success-color);
 }
 
-/* Correct and incorrect answer states */
-.correct {
-    background-color: var(--success-color);
-    color: white;
-    border-color: var(--success-color);
-}
-
-.incorrect {
+.feedback.incorrect {
     background-color: var(--error-color);
-    color: white;
-    border-color: var(--error-color);
 }
 
-
-/* 
-==========================================================================
-Controls
-========================================================================== 
-*/
-
-/* Styling for Timer Configuration Input */
-.timer-config-container {
-    display: flex; /* Align label and input horizontally */
-    align-items: center; /* Vertically center items */
-    gap: var(--spacing-sm); /* Add space between label and input */
-    margin-left: var(--spacing-md); /* Add space to the left */
+/* --- Answer Label Highlighting (Feedback) --- */
+.answer-label.correct {
+    font-weight: bold;
+    color: var(--success-color) !important;
 }
 
-.timer-config-label {
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--text-color);
+.answer-label.incorrect {
+    font-weight: bold;
+    color: var(--error-color) !important;
+    /* text-decoration: line-through; */ /* Optional */
 }
 
-/* Controls "Time (min)" section */
-.timer-config-input {
-    padding: var(--spacing-xs);
-    border-radius: var(--border-radius-sm);
-    border: 1px solid var(--button-border); /* Use existing border color */
-    background-color: var(--background-color); /* Match background */
-    color: var(--text-color); /* Match text color */
-    width: 50px; /* Adjust width as needed */
-    font-size: 0.9rem;
+.answer-label.missed {
+    font-weight: normal; /* Keep normal weight */
+    color: var(--text-color) !important; /* Keep normal color */
+    background-color: rgba(var(--success-color-rgb), 0.15);
+    border-left: 3px solid var(--success-color);
+    margin-left: -3px; /* Adjust for border */
+    padding-left: calc(var(--spacing-md) - 3px);
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    opacity: 1.0;
 }
 
-/* Adjust input appearance in dark mode if needed */
-[data-theme="dark"] .timer-config-input {
-    border: 1px solid #555; /* Example darker border */
+/* Dark theme feedback label colors */
+[data-theme="dark"] .answer-label.correct {
+    color: #4ade80 !important;
+    /* background-color: rgba(74, 222, 128, 0.15); */ /* Optional subtle bg */
+}
+[data-theme="dark"] .answer-label.incorrect {
+    color: #f87171 !important;
+    /* background-color: rgba(248, 113, 113, 0.15); */ /* Optional subtle bg */
+}
+[data-theme="dark"] .answer-label.missed {
+    color: var(--text-color) !important; /* Keep light text */
+    background-color: rgba(74, 222, 128, 0.15); /* Brighter green bg */
+    border-left-color: #4ade80; /* Brighter green border */
 }
 
 /*
 ==========================================================================
- LLM Integration Styles
+Controls (Header Inputs/Selects)
 ==========================================================================
 */
 
-/* Container for LLM config in header */
+/* --- Timer Configuration --- */
+.timer-config-container {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    /* margin-left: var(--spacing-md); */ /* Positioned by header layout */
+}
+
+.timer-config-label {
+    font-size: 0.85rem; /* Smaller */
+    font-weight: 400; /* Normal */
+    color: var(--text-color);
+    opacity: 0.9;
+}
+
+.timer-config-input {
+    padding: var(--spacing-xs) var(--spacing-sm); /* Adjust padding */
+    border-radius: var(--border-radius-sm);
+    border: 1px solid #ccc; /* Lighter border */
+    background-color: var(--background-color);
+    color: var(--text-color);
+    width: 65px; /* Slightly narrower */
+    font-size: 0.85rem;
+    text-align: center;
+}
+[data-theme="dark"] .timer-config-input {
+    border: 1px solid #555;
+}
+
+/* --- LLM Configuration --- */
 .llm-config-container {
-    display: flex; /* Align items horizontally */
-    align-items: center; /* Vertically center items */
-    gap: var(--spacing-sm); /* Space between items */
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
 }
 
 .llm-config-label {
-    font-size: 0.9rem;
-    font-weight: 500;
+    font-size: 0.85rem;
+    font-weight: 400;
     color: var(--text-color);
+    opacity: 0.9;
 }
 
 .llm-config-input,
 .llm-config-select {
-    padding: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
     border-radius: var(--border-radius-sm);
-    border: 1px solid var(--button-border);
+    border: 1px solid #ccc; /* Lighter border */
     background-color: var(--background-color);
     color: var(--text-color);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
-
-.llm-config-input {
-     width: 120px; /* Adjust as needed */
-     /* Specific styles for password type if needed */
-}
-
-.llm-config-select {
-     min-width: 100px; /* Adjust as needed */
-     cursor: pointer;
-}
-
-
-/* Header above question text, holding question and explain button */
-/* Ensure this container uses flexbox if not already implied by parent */
-.question-header {
-    display: flex;
-    justify-content: space-between; /* Pushes question text and button apart */
-    align-items: center; /* Aligns them vertically */
-    gap: var(--spacing-md); /* Adds space between them */
-    /* Removed margin-bottom here as it's handled by question-container */
-}
-
-/* Overwrite question margin if needed, since question-header now handles spacing */
-.question-header .question {
-    margin-bottom: 0; /* Remove default margin if question-header manages it */
-    flex-grow: 1; /* Allow question text to take available space */
-}
-
-
-/* Explain button next to each question */
-.explain-btn {
-    padding: 4px 8px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    background-color: var(--background-color);
-    color: var(--primary-color);
-    border: 1px solid var(--primary-color);
-    border-radius: var(--border-radius-sm);
-    transition: background-color 0.2s ease, color 0.2s ease;
-    flex-shrink: 0; /* Prevent button from shrinking */
-    white-space: nowrap; /* Prevent button text wrapping */
-}
-
-.explain-btn:hover {
-    background-color: var(--primary-color);
-    color: var(--container-bg)
-}
-
-/* Container for LLM response below each question */
-.llm-response {
-    margin-top: var(--spacing-md);
-    padding: var(--spacing-sm) var(--spacing-md);
-    border: 1px dashed #ccc; /* Subtle border */
-    border-radius: var(--border-radius-sm);
-    display: none; /* Initially hidden */
-    background-color: rgba(128, 128, 128, 0.05); /* Slight background tint */
-    font-size: 0.9rem;
-    color: var(--text-color);
-    white-space: pre-wrap; /* Preserve line breaks from LLM response */
-    word-wrap: break-word; /* Ensure long words break */
-}
-
-/* Dark theme adjustments */
 [data-theme="dark"] .llm-config-input,
 [data-theme="dark"] .llm-config-select {
     border: 1px solid #555;
 }
 
-[data-theme="dark"] .explain-btn {
-     background-color: var(--background-color);
-     color: var(--primary-color); /* Adjust color if needed for dark mode */
-     border: 1px solid var(--primary-color);
+.llm-config-input { /* Specific input for API key */
+     width: 130px; /* Adjust */
 }
 
-[data-theme="dark"] .explain-btn:hover {
-     background-color: var(--primary-color);
-     color: var(--container-bg);
+.llm-config-select { /* Model dropdown */
+     min-width: 90px; /* Adjust */
+     cursor: pointer;
 }
 
+/*
+==========================================================================
+ LLM Integration Specific Styles
+==========================================================================
+*/
+
+/* Container for LLM response below each question */
+.llm-response {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid #eee; /* Lighter border */
+    border-radius: var(--border-radius-sm);
+    display: none; /* Initially hidden */
+    background-color: rgba(128, 128, 128, 0.03); /* Very subtle tint */
+    font-size: 0.9rem;
+    color: var(--text-color);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.5; /* Improve readability */
+    opacity: 0.9; /* Slightly less prominent */
+}
 
 [data-theme="dark"] .llm-response {
-    border: 1px dashed #555;
+    border: 1px solid #444; /* Darker border */
     background-color: rgba(200, 200, 200, 0.05);
     color: var(--text-color);
+    opacity: 0.9;
 }

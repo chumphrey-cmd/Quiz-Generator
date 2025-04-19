@@ -17,7 +17,7 @@ function parseQuestions(text) {
     questionBlocks.forEach((block, index) => {
         // Split each block into lines and clean whitespace
         const lines = block.trim().split('\n').map(line => line.trim());
-        console.log(`Processing block ${index + 1}:`, lines);
+        // console.log(`Processing block ${index + 1}:`, lines); // Keep if debugging needed
 
         // Check if the first line exists before trying to match
         if (!lines[0]) return; // Skip empty blocks
@@ -30,8 +30,8 @@ function parseQuestions(text) {
             const questionNumber = parseInt(questionMatch[1]);
             const questionText = questionMatch[2];
             const answers = [];
-            // Changed variable name for clarity
-            let correctAnswerLetter = null;
+            // << MODIFIED >>: Use an array to store multiple correct letters
+            let correctAnswers = [];
             // Index to track current line being processed for answers
             let lineIndex = 1;
 
@@ -48,12 +48,9 @@ function parseQuestions(text) {
                     // Check for correct answer marking
                     if (text.endsWith('*')) {
                         text = text.slice(0, -1).trim();
-                        // Handle only storing the *first* correct answer found
-                        if (correctAnswerLetter !== null) {
-                            console.warn(`Multiple correct answers marked for question ${questionNumber}. Only the first one ('${correctAnswerLetter}') will be used.`);
-                        } else {
-                            correctAnswerLetter = letter;
-                        }
+                        // << MODIFIED >>: Add letter to the array
+                        correctAnswers.push(letter);
+                        // Removed warning about only taking the first correct answer
                     }
 
                     answers.push({
@@ -68,13 +65,14 @@ function parseQuestions(text) {
                 lineIndex++; // Move to the next line
             }
 
-            // Requires at least 2 answer options (e.g., A, B) and one correct answer marker.
-            if (answers.length >= 2 && correctAnswerLetter) {
+            // << MODIFIED >>: Check if correctAnswers array has at least one entry.
+            if (answers.length >= 2 && correctAnswers.length > 0) {
                 questions.push({
                     number: questionNumber, // Original number, will be renumbered after shuffle
                     text: questionText,
                     answers: answers,
-                    correct: correctAnswerLetter // Store the letter of the correct answer
+                    // << MODIFIED >>: Store the array of correct letters
+                    correct: correctAnswers
                 });
             } else {
                  console.warn(`Skipping question ${questionNumber || (index + 1)} due to insufficient answers (${answers.length}) or no correct answer marked.`);
@@ -85,17 +83,18 @@ function parseQuestions(text) {
     });
 
     console.log('Final parsed questions:', questions);
-    return questions;
+    return questions; // Return the array of question objects
 }
 
 // Validation function to check question format and requirements
 function validateQuestions(questions) {
     const errors = [];
-    console.log('Starting validation of questions (variable answers):', questions);
+    // Changed console log slightly to reflect multi-answer support
+    console.log('Starting validation of questions (multiple answers support):', questions);
 
     if (!Array.isArray(questions)) {
         errors.push("Input is not a valid array of questions.");
-        return errors;
+        return errors; // Return only errors array if input itself is wrong
     }
 
     questions.forEach((question, index) => {
@@ -104,21 +103,32 @@ function validateQuestions(questions) {
             errors.push(`Item at index ${index} is not a valid question object.`);
             return; // Skip further checks for this item
         }
-        if (typeof question.number !== 'number' || typeof question.text !== 'string' || !Array.isArray(question.answers) || typeof question.correct !== 'string') {
-             errors.push(`Question ${question.number || (index + 1)} has missing or invalid properties.`);
-             return;
+        // << MODIFIED >>: Check if 'correct' is a non-empty array of strings
+        if (typeof question.number !== 'number' ||
+            typeof question.text !== 'string' ||
+            !Array.isArray(question.answers) ||
+            !Array.isArray(question.correct) || // Must be an array
+            question.correct.length === 0 || // Must not be empty
+            !question.correct.every(c => typeof c === 'string')) { // All elements must be strings
+             errors.push(`Question ${question.number || (index + 1)} has missing or invalid properties (expecting 'correct' to be a non-empty array of strings).`);
+             // Continue checks if possible
         }
-
 
         // Check for at least two answers
         if (question.answers.length < 2) {
             errors.push(`Question ${question.number}: Must have at least two answer options.`);
         }
 
-        // Check if the stored 'correct' letter exists in the parsed answers
-        const correctLetterExists = question.answers.some(ans => ans.letter === question.correct);
-        if (!correctLetterExists) {
-             errors.push(`Question ${question.number}: The marked correct answer ('${question.correct}') does not correspond to any parsed answer options.`);
+        // << MODIFIED >>: Check if the stored 'correct' letters exist in the parsed answers
+        // Only run this check if question.correct is a valid array (helps avoid errors)
+        if (Array.isArray(question.correct) && question.correct.length > 0) {
+            const answerLetters = question.answers.map(ans => ans.letter);
+            // Find which correct letters provided don't exist in the answer options
+            const invalidCorrectLetters = question.correct.filter(correctLetter => !answerLetters.includes(correctLetter));
+
+            if (invalidCorrectLetters.length > 0) {
+                 errors.push(`Question ${question.number}: The marked correct answer(s) ('${invalidCorrectLetters.join(', ')}') do not correspond to any parsed answer options.`);
+            }
         }
 
         // Check answer letters sequence (A, B, C, ...)
@@ -132,24 +142,39 @@ function validateQuestions(questions) {
 
     });
 
-    console.log('Validation complete (variable answers). Errors:', errors);
-    return errors;
+    // Adjusted console log
+    console.log('Validation complete (multiple answers support). Errors:', errors);
+    return errors; // Return the array of error messages (empty if no errors)
 }
 
 // Function to process questions
 function processQuestions(questionText) {
+    // Calls parseQuestions to get the structured data
     const parsedQuestions = parseQuestions(questionText);
-    console.log('Parsed Questions:', parsedQuestions);
+    console.log('Parsed Questions:', parsedQuestions); // Log the result of parsing
 
+    // Calls validateQuestions to check the structure
     const validationErrors = validateQuestions(parsedQuestions);
-    
+
+    // Checks if the validation returned any errors
     if (validationErrors.length === 0) {
-        const htmlContent = displayQuestions(parsedQuestions);
-        document.getElementById('quiz-content').innerHTML = htmlContent;
-        return true; // Indicate success
+        // Log success if needed (optional)
+        // console.log("processQuestions: Validation successful.");
+        // Ensure it returns the ARRAY of questions:
+        return parsedQuestions; // Return the array (possibly empty) if validation passed
     } else {
+        // Log errors if validation failed
         console.error('Validation errors:', validationErrors);
-        alert('Error in question format. Please check the file format.');
-        return false;
+        // Prepare and show an error message to the user
+        let errorMsg = 'Error in question format. Please check the file.\nDetails:\n';
+        validationErrors.forEach(err => errorMsg += `- ${err}\n`);
+        alert(errorMsg);
+        // Optionally update the UI to show the error state
+        const quizContentElement = document.getElementById('quiz-content');
+         if(quizContentElement){
+             quizContentElement.innerHTML = `<p style="color: red;">${errorMsg.replace(/\n/g, '<br>')}</p>`;
+         }
+        // Return null to indicate failure to the calling function (ExamManager)
+        return null;
     }
 }

@@ -1,22 +1,25 @@
 // Manages quiz state and interactions
-
 class ExamManager {
     /**
      * Initialize exam manager with default state
      */
     constructor() {
-        // Quiz state
+        // Quiz state variables are internal to the manager
         this.totalQuestions = 0;
         this.answeredQuestions = 0;
         this.currentScore = 0;
-        this.questions = []; // Used to initialize questions property
+        this.questions = [];
+        this.timerInterval = null;
+        this.timeRemaining = 0;
+        const initialTimerInput = document.getElementById('timerDurationInput');
+        this.timerDuration = (initialTimerInput ? parseInt(initialTimerInput.value, 10) : 10) * 60;
 
-        this.timerInterval = null; // To store the interval ID for stopping
-        this.timeRemaining = 0; // Time remaining in seconds
-        this.timerDuration = 0.5 * 60; // <<< Default/Hardcoded: 10 minutes (in seconds)
+        // Bound event handlers to maintain 'this' context
+        this.handleFileUploadBound = this.handleFileUpload.bind(this);
+        this.handleSubmitClickBound = this.handleSubmitClick.bind(this);
+        this.handleExplainClickBound = this.handleExplainClick.bind(this);
 
-        // Initialize file upload listener
-        this.initializeEventListeners();
+        this.initializeEventListeners(); // Initial listeners (file, timer)
     }
 
     /**
@@ -111,140 +114,175 @@ class ExamManager {
     }
 
     /**
-     * Set up event listeners for file upload AND timer input validation.
+     * Set up initial event listeners (file upload, timer input validation).
+     * Submit/Explain listeners are added *after* questions are rendered.
      */
     initializeEventListeners() {
-        // Listener for file input
-        document.getElementById('questionFile')
-            .addEventListener('change', (e) => this.handleFileUpload(e));
+        const fileInput = document.getElementById('questionFile');
+        if (fileInput) {
+            fileInput.addEventListener('change', this.handleFileUploadBound);
+        } else { console.error("File input element 'questionFile' not found!"); }
 
         const timerInput = document.getElementById('timerDurationInput');
         if (timerInput) {
+            // Input event listener for numeric only
             timerInput.addEventListener('input', function() {
-                // Remove any character that is NOT a digit
-                // Allows digits 0-9, removes everything else
                 this.value = this.value.replace(/[^0-9]/g, '');
-
-                // Optional: Prevent leading zeros if number > 0, though parseInt handles this later
-                 if (this.value.length > 1 && this.value.startsWith('0')) {
-                     this.value = this.value.substring(1);
-                 }
-                 // Ensure value isn't empty, reset to '1' if user deletes everything
-                 // Note: 'min="1"' attribute handles this on blur/submit, but this gives immediate feedback
-                  if (this.value === '') {
-                      this.value = '1';
-                  }
-
-
+                 if (this.value.length > 1 && this.value.startsWith('0')) this.value = this.value.substring(1);
+                 if (this.value === '') this.value = '1';
             });
-             // Add listener for 'blur' event to enforce min/max if needed
+             // Blur event listener for min/max enforcement
               timerInput.addEventListener('blur', function() {
-                  const min = parseInt(this.min, 10) || 1; // Default min 1
-                  const max = parseInt(this.max, 10) || 180; // Default max 180
-                  let currentValue = parseInt(this.value, 10);
-             
-                  if (isNaN(currentValue) || currentValue < min) {
-                      this.value = min;
-                  } else if (currentValue > max) {
-                      this.value = max;
-                  }
+                   const min = parseInt(this.min, 10) || 1;
+                   const max = parseInt(this.max, 10) || 180;
+                   let currentValue = parseInt(this.value, 10);
+                   if (isNaN(currentValue) || currentValue < min) this.value = min;
+                   else if (currentValue > max) this.value = max;
               });
+        } else { console.error("Timer duration input element not found!"); }
+    }
+
+/**
+     * Handle file upload, parse, validate, display, and set up dynamic listeners.
+     * Includes added console logs for debugging.
+     */
+async handleFileUpload(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) {
+        console.log("handleFileUpload: No files selected."); // Added Log
+        return;
+    }
+    console.log(`handleFileUpload: Processing ${files.length} file(s)...`); // Added Log
+
+    // File reading logic
+    let allParsedQuestions = [];
+    let fileReadPromises = [];
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.name.endsWith('.txt') && file.type === 'text/plain') {
+             // console.log(`handleFileUpload: Reading file: ${file.name}`); // Optional log
+             fileReadPromises.push(this.readFileContent(file).catch(e => ({ error: e, fileName: file.name })));
         } else {
-            console.error("Timer duration input element not found!");
+             console.warn(`handleFileUpload: Skipping non-TXT file: ${file.name}`);
         }
     }
 
-    /**
-     * Handle file upload and process questions from multiple files
-     * @param {Event} event - File input change event
-     */
-    async handleFileUpload(event) {
-        const files = event.target.files; // Get the FileList object
-        if (!files || files.length === 0) {
-            console.log("No files selected.");
-            return; // Exit if no files selected
-        }
+    try {
+        // Wait for all files to be read
+        const fileContents = await Promise.all(fileReadPromises);
+        let combinedRawText = "";
+        fileContents.forEach((content, index) => {
+             if (content.error) {
+                  console.error(`handleFileUpload: Error reading file ${content.fileName}:`, content.error); // Added Log
+                  alert(`Could not read file: ${content.fileName}. Skipping.`);
+                  // Don't append content if there was an error reading it
+             } else {
+                // Append content only if read successfully
+                combinedRawText += content + "\n\n"; // Ensure separation between files
+             }
+        });
+        console.log("handleFileUpload: Combined raw text length:", combinedRawText.length); // Added Log
+        // Trim trailing newlines from combining files before processing
+        combinedRawText = combinedRawText.trim();
 
-        console.log(`Processing ${files.length} file(s)...`);
-        let allQuestions = []; // Array to hold questions from all files
-        let fileReadPromises = []; // Array to hold promises for reading files
-
-        // Create promises for reading each file
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            // Check if the file is a .txt file (optional, but good practice)
-            if (file.name.endsWith('.txt') && file.type === 'text/plain') {
-                 console.log(`Reading file: ${file.name}`);
-                 fileReadPromises.push(this.readFileContent(file).catch(e => ({ error: e, fileName: file.name }))); // Catch errors per file
-            } else {
-                 console.warn(`Skipping non-TXT file: ${file.name}`);
-            }
-        }
-
+        // Inner try-catch specifically for parsing/validation phase
         try {
-            // Wait for all file reading promises to resolve
-            const fileContents = await Promise.all(fileReadPromises);
+            // Call the parser function from parser.js
+            console.log("handleFileUpload: Calling processQuestions..."); // Added Log
+            const parsedFromCombined = processQuestions(combinedRawText); // Assumes processQuestions handles trimming if needed
+            // *** ADDED LOG ***: Check the direct return value
+            console.log("handleFileUpload: processQuestions returned:", parsedFromCombined);
 
-            // Parse questions from each file's content
-            fileContents.forEach((content, index) => {
-                 if (content.error) {
-                      console.error(`Error reading file ${content.fileName}:`, content.error);
-                      alert(`Could not read file: ${content.fileName}. Skipping.`);
-                      return; // Skip this file
-                 }
-                 try {
-
-                    console.log(`Parsing content from file ${index + 1}...`); // Use index for logging
-                    const parsedQuestions = parseQuestions(content); // Use parseQuestions from parser.js
-                    if (parsedQuestions && parsedQuestions.length > 0) {
-                        allQuestions = allQuestions.concat(parsedQuestions);
-                        console.log(`Added ${parsedQuestions.length} questions. Total now: ${allQuestions.length}`);
-                    } else {
-                         console.warn(`No questions parsed from file ${index + 1}.`);
-                    }
-                 } catch(parseError) {
-                      console.error(`Error parsing content from file ${index + 1}:`, parseError);
-                      alert(`Could not parse questions from file ${index + 1}. Skipping.`);
-                 }
-            });
-
-
-            if (allQuestions.length === 0) {
-                alert("No questions were successfully parsed from the selected file(s).");
-                resetDisplays(0);
-                return;
-            }
-
-            console.log(`Total questions from all files: ${allQuestions.length}`);
-
-            // Question Shuffling & Renumbering on COMBINED list
-            this.questions = this.shuffleArray(allQuestions);
-            console.log('Shuffled combined questions.');
-            this.renumberQuestions(); // Renumber the combined list
-            console.log('Combined questions renumbered.');
-
-            // Initialize quiz state based on COMBINED questions
-            this.totalQuestions = this.questions.length;
-            this.answeredQuestions = 0;
-            this.currentScore = 0;
-
-            // Validate and display the combined & shuffled questions
-            if (this.validateAndDisplayQuestions(this.questions)) {
-                console.log('Combined questions validated and displayed.');
-                this.startTimer(); // Initiates timer
+            // Check if the result is truthy (an array, even empty, is truthy; null/undefined is falsy)
+            if (parsedFromCombined !== null && typeof parsedFromCombined !== 'undefined') {
+                 // *** ADDED LOG ***: Confirm assignment path
+                 console.log("handleFileUpload: Assigning parsed questions to allParsedQuestions.");
+                allParsedQuestions = parsedFromCombined; // Assign the array (potentially empty)
             } else {
-                console.log('Validation or display failed for combined questions.');
+                 // *** ADDED LOG ***: Log if parser explicitly returned null/falsy (likely validation error)
+                 console.log("handleFileUpload: processQuestions returned null or undefined value. Resetting.");
+                 // Error message/alert likely happened inside processQuestions
+                 resetDisplays(0);
+                 return; // Exit if parsing/validation failed explicitly
             }
-
         } catch (error) {
-            // This catch might be less likely if individual file errors are handled
-            console.error('General error processing files:', error);
-            alert('An error occurred while processing the files. Please check the console.');
+            // Catch errors specifically occurring *during* the processQuestions call
+            console.error('handleFileUpload: Error during processQuestions call:', error); // Added Log
+            alert('An error occurred while parsing the questions.');
             resetDisplays(0);
+            return;
         }
-         // Clear the file input value to allow re-uploading the same file(s) if needed
-         event.target.value = null;
-    }                 
+
+        // *** ADDED LOG *** Check the array variable *after* the assignment logic
+        console.log("handleFileUpload: Value of allParsedQuestions before length check:", allParsedQuestions);
+
+        // --- Check if questions were actually parsed ---
+        // Ensure allParsedQuestions is an array before checking length
+        if (!Array.isArray(allParsedQuestions)) {
+            console.error("handleFileUpload: Error - allParsedQuestions is not an array! Value:", allParsedQuestions);
+            alert("An internal error occurred after parsing. Check console.");
+            resetDisplays(0);
+            return;
+        }
+
+        // Now safely check the length
+        if (allParsedQuestions.length === 0) {
+             // *** ADDED LOG ***
+             console.log("handleFileUpload: allParsedQuestions array is empty. Alerting user.");
+            alert("No valid questions were successfully parsed from the selected file(s). Check file format and console logs (including parser logs).");
+            resetDisplays(0);
+            return; // Stop if no questions were parsed
+        }
+
+        // --- If we have questions, proceed ---
+        console.log(`handleFileUpload: Total valid questions parsed: ${allParsedQuestions.length}`); // Existing log
+
+        // Shuffle and renumber (unchanged)
+        this.questions = this.shuffleArray(allParsedQuestions);
+        this.renumberQuestions();
+
+        // Reset state and UI (unchanged)
+        this.totalQuestions = this.questions.length;
+        this.answeredQuestions = 0;
+        this.currentScore = 0;
+        this.resetTimer();
+        resetDisplays(this.totalQuestions);
+
+        // Render questions using ui.js function
+        console.log("handleFileUpload: Calling displayQuestions..."); // Added Log
+        const htmlContent = displayQuestions(this.questions); // From ui.js
+        console.log("handleFileUpload: HTML content generated length:", htmlContent.length); // Added Log
+        // Ensure quiz-content element exists before setting innerHTML
+        const quizContentElement = document.getElementById('quiz-content');
+        if (quizContentElement) {
+            quizContentElement.innerHTML = htmlContent;
+            console.log("handleFileUpload: Injected HTML into quiz-content."); // Added Log
+        } else {
+            console.error("handleFileUpload: Could not find quiz-content element to inject HTML!");
+            alert("Error: Could not display questions. UI element missing.");
+            return;
+        }
+
+        // Initialize listeners for the newly added buttons
+        console.log("handleFileUpload: Initializing Submit listeners..."); // Added Log
+        this.initializeSubmitListeners();
+        console.log("handleFileUpload: Initializing Explain listeners..."); // Added Log
+        this.initializeExplainListeners();
+
+        console.log('handleFileUpload: Quiz initialized successfully.'); // Added Log
+        this.startTimer();
+
+    } catch (error) {
+         // Catch errors from await Promise.all or other general issues in the outer try
+         console.error('handleFileUpload: General error in outer try block:', error); // Added Log
+        alert('An unexpected error occurred while processing the files.');
+        resetDisplays(0);
+    }
+     // Clear file input value regardless of success/failure
+     if(event && event.target) {
+        event.target.value = null;
+     }
+}                
 
     // Read file as text
     readFileContent(file) {
@@ -283,63 +321,19 @@ class ExamManager {
     }
 
     /**
-     * Validates and displays questions.
-     * @param {Array} questions - The array of (shuffled) question objects.
-     * @returns {boolean} True if validation passes and display occurs, false otherwise.
-     */
-    validateAndDisplayQuestions(questions) {
-        // Assuming validateQuestions is globally available from parser.js
-        const validationErrors = validateQuestions(questions);
-
-        if (validationErrors.length === 0) {
-            // Assuming displayQuestions is globally available from ui.js
-            const htmlContent = displayQuestions(questions);
-            document.getElementById('quiz-content').innerHTML = htmlContent; // Render questions
-
-            this.resetTimer(); // Reset timer before resetting displays
-            resetDisplays(this.totalQuestions);
-
-            this.initializeAnswerListeners(); // Initialize answer buttons
-            this.initializeExplainListeners(); // Initialize explain buttons
-
-            console.log("Answer and Explain initialized.")
-
-            return true; // Indicate success
-
-        } else {
-            console.error('Validation errors:', validationErrors);
-            // Construct a user-friendly error message
-            let errorMsg = 'Error in question format. Please check the file.\nDetails:\n';
-            validationErrors.forEach(err => errorMsg += `- ${err}\n`);
-            alert(errorMsg);
-            document.getElementById('quiz-content').innerHTML = `<p style="color: red;">${errorMsg.replace(/\n/g, '<br>')}</p>`;
-
-            this.resetDisplays(); // Still resetting timer if function fails.
-            resetDisplays(0); // Reset displays to zero
-            return false; // Indicate failure
-        }
-    }
-
-    /**
      * Adds click event listeners to all "Explain" buttons.
      */
     initializeExplainListeners() {
         const explainButtons = document.querySelectorAll('.explain-btn');
-        console.log(`Found ${explainButtons.length} explain buttons.`); // Debug log
-
+        console.log(`Found ${explainButtons.length} explain buttons.`);
         explainButtons.forEach(button => {
-            // Remove potential existing listener to prevent duplicates on re-load
-            if (this.handleExplainClickBound) {
-                 button.removeEventListener('click', this.handleExplainClickBound);
-            }
-            // Bind the handler function to the current ExamManager instance
-            this.handleExplainClickBound = this.handleExplainClick.bind(this);
-            button.addEventListener('click', this.handleExplainClickBound);
+             button.removeEventListener('click', this.handleExplainClickBound); // Remove old before adding
+             button.addEventListener('click', this.handleExplainClickBound);
         });
-        console.log("Explain button listeners initialized.");
+        console.log("Explain button listeners initialized/refreshed.");
     }
 
-/**
+    /**
      * Handles clicks on the "Explain" button for a question.
      * Retrieves config, question, and answers, calls LLM, and displays response.
      * @param {Event} event - The click event.
@@ -412,7 +406,6 @@ class ExamManager {
         button.textContent = 'Explain';
         console.log("LLM interaction complete.");
     }
-
 
     /**
      * Asynchronously gets an explanation for given text from an LLM.
@@ -577,126 +570,160 @@ class ExamManager {
         } 
     }
 
-
-    // Initialize quiz with parsed questions
-     
-    initializeQuiz(questions) {
-        this.totalQuestions = questions.length;
-        this.answeredQuestions = 0;
-        this.currentScore = 0;
-        
-        resetDisplays(this.totalQuestions);
-        const htmlContent = displayQuestions(questions); 
-        console.log("Generated HTML:", htmlContent);      
-        displayQuestions(questions);
-        this.initializeAnswerListeners();
-    }
-
-    // Initialize answer button click listeners
-    initializeAnswerListeners() {
-        document.querySelectorAll('.answer-btn').forEach(button => {
-             // Remove existing listeners first to prevent duplicates if re-initializing
-            if (this.handleAnswerClickBound) { // Check if bound method exists
-                 button.removeEventListener('click', this.handleAnswerClickBound);
-            }
+    /**
+     * Initialize listeners for all SUBMIT buttons after rendering questions.
+     */
+    initializeSubmitListeners() {
+        document.querySelectorAll('.submit-btn').forEach(button => {
+             // Remove potential old listener first to prevent duplicates on reload
+             button.removeEventListener('click', this.handleSubmitClickBound);
+             // Add the listener using the bound handler
+            button.addEventListener('click', this.handleSubmitClickBound);
         });
-        // Now add the listeners
-        document.querySelectorAll('.answer-btn').forEach(button => {
-            // Bind the handleAnswerClick method to the current instance ('this')
-            // Store the bound function so it can be removed later
-            this.handleAnswerClickBound = this.handleAnswerClick.bind(this);
-            button.addEventListener('click', this.handleAnswerClickBound);
-        });
+        console.log("Submit button listeners initialized/refreshed.");
     }
 
     /**
-     * Handle answer button clicks
-     * @param {Event} event - Click event
+     * Handles submit button clicks for a question.
+     * Now determines input type (radio/checkbox) and processes accordingly.
+     * @param {Event} event - Click event from the submit button.
      */
-    handleAnswerClick(event) {
-        const button = event.currentTarget;
-        const questionNumber = button.getAttribute('data-question');
+    handleSubmitClick(event) {
+        const submitButton = event.currentTarget;
+        const questionNumber = parseInt(submitButton.getAttribute('data-question'), 10);
         const container = document.getElementById(`container-${questionNumber}`);
-        const isCorrect = button.getAttribute('data-correct') === 'true';
-        
-        this.disableQuestionButtons(container);
-        this.showFeedback(button, container, isCorrect);
-        this.updateProgress(isCorrect);
-    }
+        const feedbackElement = document.getElementById(`feedback-${questionNumber}`);
+        const answerFieldset = document.getElementById(`answers-${questionNumber}`);
 
-    /**
-     * Disable all answer buttons for a question
-     * container - Question container
-     */
-    disableQuestionButtons(container) {
-        container.querySelectorAll('.answer-btn').forEach(btn => {
-            btn.disabled = true;
-        });
-    }
-
-    /**
-     * Disables all answer buttons in the entire quiz.
-     * Typically called when the timer expires.
-     */
-    disableAllInputs() {
-        document.querySelectorAll('.answer-btn').forEach(btn => {
-            // Check if it's not already disabled by answering the specific question
-            if (!btn.disabled) {
-                 btn.disabled = true;
-                 // Optionally add a specific class to indicate disabled by timer
-                 // btn.classList.add('disabled-by-timer');
-            }
-        });
-        console.log("All answer buttons disabled.");
-    }
-
-
-    /**
-    * Show feedback for answered question
-    * button - Clicked button
-    * container - Question container
-    * isCorrect - Whether answer was correct
-    */
-    showFeedback(button, container, isCorrect) {
-        if (isCorrect) {
-            button.classList.add('correct');
-            const feedback = container.querySelector('.feedback');
-            feedback.textContent = 'Correct!';
-            feedback.classList.add('correct');
-        } else {
-            // Add incorrect class to clicked button
-            button.classList.add('incorrect');
-            // Find and highlight the correct answer
-            const correctButton = Array.from(container.querySelectorAll('.answer-btn'))
-                .find(btn => btn.getAttribute('data-correct') === 'true');
-            correctButton.classList.add('correct');
-        
-            const feedback = container.querySelector('.feedback');
-            feedback.textContent = 'Incorrect!';
-            feedback.classList.add('incorrect');
+        // << NEW >>: Determine input type from fieldset data attribute
+        const inputType = answerFieldset.getAttribute('data-input-type');
+        if (!inputType) {
+            console.error(`Could not determine input type for question ${questionNumber}`);
+            return;
         }
-    }
 
+        // Find question data (unchanged)
+        const questionData = this.questions.find(q => q.number === questionNumber);
+        if (!questionData) { /* ... error handling ... */ return; }
 
-    /**
-     * Update progress and score displays
-     * isCorrect - Whether answer was correct
-     */
-    updateProgress(isCorrect) {
-        if (isCorrect) this.currentScore++;
+        // << REVISED >>: Get selected values based on input type
+        let selectedLetters = [];
+        if (inputType === 'radio') {
+            const checkedRadio = answerFieldset.querySelector('input[type="radio"]:checked');
+            if (checkedRadio) {
+                selectedLetters.push(checkedRadio.value); // Array with 0 or 1 item
+            }
+        } else { // 'checkbox'
+            const checkedCheckboxes = answerFieldset.querySelectorAll('input[type="checkbox"]:checked');
+            selectedLetters = Array.from(checkedCheckboxes).map(cb => cb.value);
+        }
+
+        console.log(`Question ${questionNumber} (${inputType}) submitted. Selected: ${selectedLetters.join(', ') || 'None'}. Correct: ${questionData.correct.join(', ')}`);
+
+        // --- Evaluation Logic (Unchanged - compares sorted arrays) ---
+        const sortedSelected = [...selectedLetters].sort();
+        const sortedCorrect = [...questionData.correct].sort();
+        const isCorrect = sortedSelected.length === sortedCorrect.length &&
+                          sortedSelected.every((value, index) => value === sortedCorrect[index]);
+
+        // --- Disable Inputs & Show Feedback ---
+        // << MODIFIED >>: Pass inputType to disable correct elements
+        this.disableQuestionInputs(answerFieldset, submitButton, inputType);
+        // << MODIFIED >>: Pass inputType to style correct elements
+        this.showFeedback(container, feedbackElement, isCorrect, questionData.correct, inputType);
+
+        // --- Update Progress (Unchanged logic) ---
         this.answeredQuestions++;
-        
-        // Make sure we're passing all three parameters
-        updateScoreDisplay(
-            this.currentScore,          // current correct answers
-            this.answeredQuestions,     // total answered
-            this.totalQuestions         // total questions
-        );
+        if (isCorrect) {
+            this.currentScore++;
+        }
+        // Call UI update functions
+        updateScoreDisplay(this.currentScore, this.answeredQuestions, this.totalQuestions);
         updateProgressBar(this.answeredQuestions, this.totalQuestions);
-    
+
+        // Check for quiz completion (Unchanged)
         if (this.answeredQuestions === this.totalQuestions) {
             this.handleQuizCompletion();
         }
+    }
+
+
+    /**
+     * Disable inputs (radio/checkbox) and submit button for a specific question.
+     * @param {HTMLElement} answerFieldset - The fieldset containing the inputs.
+     * @param {HTMLElement} submitButton - The submit button for the question.
+     * @param {string} inputType - 'radio' or 'checkbox'.
+     */
+    disableQuestionInputs(answerFieldset, submitButton, inputType) {
+        // Select inputs based on the type determined during submit
+        answerFieldset.querySelectorAll(`input[type="${inputType}"]`).forEach(input => {
+            input.disabled = true;
+        });
+        submitButton.disabled = true;
+        submitButton.textContent = 'Submitted'; // Visually indicate submission
+    }
+
+    /**
+     * Show feedback, highlighting labels associated with the correct input type.
+     * @param {HTMLElement} container - The question's main container div.
+     * @param {HTMLElement} feedbackElement - The element to display "Correct!" or "Incorrect!".
+     * @param {boolean} isCorrect - Whether the overall submission was correct.
+     * @param {Array<string>} correctLetters - Array of the correct answer letters.
+     * @param {string} inputType - 'radio' or 'checkbox'.
+     */
+    showFeedback(container, feedbackElement, isCorrect, correctLetters, inputType) {
+        // Set overall feedback text and class
+        feedbackElement.textContent = isCorrect ? 'Correct!' : 'Incorrect!';
+        feedbackElement.className = `feedback ${isCorrect ? 'correct' : 'incorrect'}`;
+
+        // Iterate through each answer option container within the question
+        container.querySelectorAll('.answer-option').forEach(optionDiv => {
+            // << MODIFIED >>: Select the specific input type
+            const input = optionDiv.querySelector(`input[type="${inputType}"]`);
+            const label = optionDiv.querySelector('.answer-label');
+            if (!input || !label) return; // Safety check
+
+            const letter = input.value;
+
+            // Reset previous classes first
+            label.classList.remove('correct', 'incorrect', 'missed');
+
+            // Apply new classes based on checked state and correctness
+            if (input.checked) { // If this option was selected by the user
+                if (correctLetters.includes(letter)) {
+                    label.classList.add('correct'); // Selected and correct
+                } else {
+                    label.classList.add('incorrect'); // Selected but incorrect
+                }
+            } else { // If this option was NOT selected by the user
+                if (correctLetters.includes(letter)) {
+                    label.classList.add('missed'); // Not selected, but should have been
+                }
+                // No class added if not selected and not correct
+            }
+        });
+    }
+
+
+    /**
+     * Disables all remaining interactive elements (inputs, submit, explain) in the quiz.
+     * Uses the common class '.answer-input' added in ui.js.
+     */
+    disableAllInputs() {
+        // Disable all answer inputs that aren't already disabled
+        document.querySelectorAll('.answer-input:not(:disabled)').forEach(input => {
+            input.disabled = true;
+        });
+        // Disable all submit buttons that aren't already disabled
+        document.querySelectorAll('.submit-btn:not(:disabled)').forEach(button => {
+            button.disabled = true;
+            button.textContent = 'Time Up / Finished'; // Update text
+        });
+         // Optionally disable explain buttons too
+         document.querySelectorAll('.explain-btn:not(:disabled)').forEach(button => {
+              button.disabled = true;
+         });
+        console.log("All remaining quiz inputs disabled.");
     }
 
     /**

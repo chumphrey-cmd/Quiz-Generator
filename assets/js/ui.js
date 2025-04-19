@@ -1,176 +1,138 @@
-// Global state variables for tracking quiz progress
-let totalQuestions = 0;      // Total number of questions in the quiz
-let answeredQuestions = 0;   // Number of questions answered so far
-let currentScore = 0;        // Current number of correct answers
-
 /**
- * Generates HTML content for displaying questions, including LLM elements.
+ * Uses radio buttons for single-answer, checkboxes for multi-answer questions.
+ * Includes a submit button for each question.
  * @param {Array} questions - Array of question objects
- * @returns {string} HTML string containing all questions and answer buttons
+ * @returns {string} HTML string containing all questions and answer inputs
  */
 function displayQuestions(questions) {
-    console.log("Starting to display questions:", questions);
+    console.log("Starting to display questions (conditional radio/checkbox):", questions);
     let htmlContent = "";
 
     questions.forEach(question => {
-        // Create container for each question with unique ID, creation of an "Explain" button
+        // << NEW >>: Determine if the question is single or multiple choice
+        const isMultipleChoice = question.correct.length > 1;
+        const inputType = isMultipleChoice ? 'checkbox' : 'radio';
+
         htmlContent += `
-            <div class="question-container" id="container-${question.number}">
+            <div class="question-container" id="container-${question.number}" data-question-number="${question.number}">
 
                 <div class="question-header">
                     <div class="question" id="question-${question.number}">
                         ${question.number}. ${question.text}
+                        ${isMultipleChoice ? '<span class="question-hint">(Select all that apply)</span>' : ''}
                     </div>
-
                     <button class="explain-btn" data-question-number="${question.number}">Explain</button>
                 </div>
         `;
+        htmlContent += `<fieldset class="answers" id="answers-${question.number}" data-question="${question.number}" data-input-type="${inputType}">`;
 
-        // Create container for answer buttons
-        htmlContent += '<div class="answers">';
-
-        // Generate buttons for each answer option
+        // Generate inputs (radio or checkbox) and labels conditionally
         question.answers.forEach(answer => {
-            const isCorrect = answer.letter === question.correct; // Assumes single correct answer
+            const inputId = `q${question.number}-ans${answer.letter}`;
+            const inputName = `question_${question.number}`; // Same name groups radio buttons
+
             htmlContent += `
-                <button
-                    class="answer-btn"
-                    data-question="${question.number}"
-                    data-letter="${answer.letter}"
-                    data-correct="${isCorrect}">
-                    ${answer.letter}. ${answer.text}
-                </button>
+                <div class="answer-option"> 
+                    <input
+                        type="${inputType}" 
+                        class="answer-input" 
+                        id="${inputId}"
+                        name="${inputName}"
+                        value="${answer.letter}"
+                        data-question="${question.number}"
+                    <label for="${inputId}" class="answer-label"> 
+                        ${answer.letter}. ${answer.text}
+                    </label>
+                </div>
             `;
         });
 
-        // Close answer container and add feedback div
-        htmlContent += '</div>';
-        htmlContent += `<div class="feedback" id="feedback-${question.number}"></div>`;
+        htmlContent += '</fieldset>'; // Close answers fieldset
 
-         {/* --- LLM Response Area --- */}
-         htmlContent += `<div class="llm-response" id="llm-response-${question.number}">`;
-         htmlContent += `LLM Explanation will appear here...`;
-         htmlContent += `</div>`;
+        // << NEW >>: Add Submit button for this question
+        htmlContent += `
+            <button class="submit-btn" data-question="${question.number}">
+                Submit Answer
+            </button>
+        `;
+
+        // Feedback and LLM response areas remain structurally the same
+        htmlContent += `<div class="feedback" id="feedback-${question.number}"></div>`;
+        htmlContent += `<div class="llm-response" id="llm-response-${question.number}">LLM Explanation will appear here...</div>`;
 
         htmlContent += '</div>'; // Close question-container
     });
 
-    console.log("Final HTML content with LLM elements generated.");
+    console.log("Final HTML content with conditional inputs generated.");
     return htmlContent;
 }
 
+/**
+ * Updates the score display in the header.
+ * Assumes ExamManager provides counts of correctly answered questions.
+ */
 function updateScoreDisplay(currentScore, totalAnswered, totalQuestions) {
     const scoreElement = document.getElementById('score-display');
-    const incorrectAnswers = totalAnswered - currentScore;
+    if (!scoreElement) return;
     const percentage = totalQuestions > 0 ? Math.round((currentScore / totalQuestions) * 100) : 0;
-    
-    scoreElement.textContent = `Correct: ${currentScore} | Incorrect: ${incorrectAnswers} (${percentage}%)`;
+    // Display format can be adjusted here if needed
+    scoreElement.textContent = `Correct: ${currentScore} | Answered: ${totalAnswered} / ${totalQuestions} (${percentage}%)`;
 }
 
+/**
+ * Generates the final score message string.
+ */
 function showFinalScore(currentScore, totalQuestions) {
-    const incorrectAnswers = totalQuestions - currentScore;
+    if (totalQuestions === 0) return "No questions were loaded.";
+    const incorrectQuestions = totalQuestions - currentScore; // Assumes score = count of fully correct questions
     const finalPercentage = Math.round((currentScore / totalQuestions) * 100);
-    
+    // Formats the final score message
     return `
 Quiz Complete!
 ─────────────────────
 Total Questions: ${totalQuestions}
-Correct Answers: ${currentScore}
-Incorrect Answers: ${incorrectAnswers}
+Correct Questions: ${currentScore}
+Incorrect Questions: ${incorrectQuestions}
 Final Score: ${finalPercentage}%
 ─────────────────────`;
 }
 
 /**
- * Adds click event listeners to all answer buttons
- * Handles answer selection, feedback, and score updating
- */
-function addAnswerButtonListeners() {
-    let totalQuestions = document.querySelectorAll('.question-container').length;
-
-    document.querySelectorAll('.answer-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            // Get question data from button attributes
-            const questionNumber = this.getAttribute('data-question');
-            const container = document.getElementById(`container-${questionNumber}`);
-            const isCorrect = this.getAttribute('data-correct') === 'true';
-            
-            // Disable all buttons in this question to prevent multiple answers
-            container.querySelectorAll('.answer-btn').forEach(btn => {
-                btn.disabled = true;
-            });
-            
-            // Add visual feedback to clicked button
-            this.classList.add(isCorrect ? 'correct' : 'incorrect');
-            
-            // Show feedback message
-            const feedback = container.querySelector('.feedback');
-            feedback.textContent = isCorrect ? 'Correct!' : 'Incorrect!';
-            feedback.classList.add(isCorrect ? 'correct' : 'incorrect');
-
-            // Update score and progress
-            if (isCorrect) currentScore++;
-            answeredQuestions++;
-            
-            // Update UI displays
-            updateScoreDisplay();
-            updateProgressBar();
-        });
-    });
-}
-
-/**
- * Updates the progress bar and question counter
- * Shows progress as percentage and fraction
+ * Updates the progress bar visuals.
  */
 function updateProgressBar(answeredQuestions, totalQuestions) {
     const progressFill = document.getElementById('progress-fill');
     const progressText = document.getElementById('progress-text');
-    const progressPercentage = (answeredQuestions / totalQuestions) * 100;
-    
-    // Update progress bar width and text
+    if (!progressFill || !progressText) return;
+    const progressPercentage = totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
     progressFill.style.width = `${progressPercentage}%`;
     progressText.textContent = `${answeredQuestions}/${totalQuestions} Questions`;
 }
 
 /**
- * Resets all displays to initial state
- * Called when starting a new quiz
- * @param {number} totalQuestions - The total number of questions for the new quiz.
+ * Resets UI elements (score, progress, timer) to initial state.
+ * Called by ExamManager before displaying new questions.
  */
 function resetDisplays(totalQuestions) {
-    // Reset UI elements
     const scoreElement = document.getElementById('score-display');
     const progressFill = document.getElementById('progress-fill');
     const progressText = document.getElementById('progress-text');
+    const timerElement = document.getElementById('timer-display');
 
-    if (scoreElement) {
-         // Call updateScoreDisplay
-         // Pass 0 for currentScore, 0 for answeredQuestions, and the actual total
-         // Ensure updateScoreDisplay function exists and is accessible
-         if (typeof updateScoreDisplay === 'function') {
-            updateScoreDisplay(0, 0, totalQuestions);
-         } else {
-            // Fallback if updateScoreDisplay isn't available
-             scoreElement.textContent = `Correct: 0 | Incorrect: 0 (0%)`;
-             console.warn("updateScoreDisplay function not found, using fallback text.");
-         }
-    }
-     if (progressFill) {
-        progressFill.style.width = '0%';
-    }
-    if (progressText) {
-        // Ensure the total is updated correctly even when starting
-        progressText.textContent = `0/${totalQuestions} Questions`;
-    }
-    // NOTE: The lines resetting global currentScore and answeredQuestions
-    // have been removed as state should be managed by ExamManager.
+    // Reset visual elements
+    if (scoreElement) updateScoreDisplay(0, 0, totalQuestions); // Start with 0 correct, 0 answered
+    if (progressFill) progressFill.style.width = '0%';
+    if (progressText) progressText.textContent = `0/${totalQuestions} Questions`;
+    if (timerElement) timerElement.textContent = '00:00:00'; // Or display initial duration
+
+    // Note: Clearing quiz content (innerHTML = '') is typically handled by ExamManager
+    // just before calling renderQuestions.
 }
 
 /**
- * Renders questions in the quiz container
- * @param {string} htmlContent - HTML string containing questions
+ * Renders the generated HTML content into the quiz container.
  */
 function renderQuestions(htmlContent) {
+    // Gets the main content area and injects the question HTML
     document.getElementById('quiz-content').innerHTML = htmlContent;
 }
