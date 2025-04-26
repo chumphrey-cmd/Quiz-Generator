@@ -99,7 +99,7 @@ class ExamManager {
         // Update the text content with the new HH:MM:SS format
         timerElement.textContent = `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
 
-        // Keep the console log for debugging if needed
+        // Console log for debugging if needed
         // console.log(">>> Updating timer display to:", timerElement.textContent);
     }
 
@@ -410,6 +410,7 @@ async handleFileUpload(event) {
     /**
      * Asynchronously gets an explanation for given text from an LLM.
      * Includes answer options in the prompt. Routes based on selected model.
+     * Includes cases for Ollama, Gemini, and Perplexity
      * @param {string} questionText - The text of the question to explain.
      * @param {Array} questionAnswers - The array of answer objects [{letter: 'A', text: '...'}].
      * @param {object} config - Configuration object { model: string, apiKey: string }.
@@ -516,12 +517,11 @@ async handleFileUpload(event) {
                         body: JSON.stringify({
                             contents: [{
                                 parts: [{
-                                    text: basePrompt // Send the combined prompt
+                                    text: basePrompt // Combined base prompt
                                 }]
                             }],
                              // Optional: Add generationConfig or safetySettings here if needed
                              // "generationConfig": { "temperature": 0.7 },
-                             // "safetySettings": [ ... ]
                         }),
                     });
 
@@ -541,8 +541,6 @@ async handleFileUpload(event) {
                     const data = await response.json();
                     console.log("Gemini response data received.");
 
-                    // Extract the response (structure based on Gemini REST API docs)
-                    // It might be slightly different depending on model/version
                     if (data.candidates && data.candidates.length > 0 &&
                         data.candidates[0].content && data.candidates[0].content.parts &&
                         data.candidates[0].content.parts.length > 0 && data.candidates[0].content.parts[0].text) {
@@ -560,6 +558,41 @@ async handleFileUpload(event) {
                      return `Error: An unexpected error occurred while contacting Google Gemini. (${error.message})`;
                 }
             } // End of Gemini Case
+
+
+            case 'perplexity': {
+                const perplexityEndpoint = 'https://api.perplexity.ai/chat/completions';
+                const perplexityModel = "sonar";
+                try {
+                   console.log(`Sending request to Perplexity (${perplexityModel})...`);
+                    const response = await fetch(perplexityEndpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${config.apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: perplexityModel,
+                            messages: [ { role: "user", content: basePrompt } ],
+                            // temperature: 0.7, max_tokens: 500, // Optional
+                        }),
+                    });
+                     if (!response.ok) {
+                        let errorMsg = `Perplexity API Error (${response.status})`;
+                        // Try to parse Perplexity's specific error format if available
+                        try { const errorData = await response.json(); errorMsg += `: ${errorData?.detail?.[0]?.msg || errorData?.detail || 'Unknown error'}`; } catch (e) { /* Ignore */ }
+                        console.error(errorMsg); return `Error: ${errorMsg}`;
+                    }
+                    const data = await response.json();
+                    // Extract response text
+                    const text = data.choices?.[0]?.message?.content;
+                    if (text) { return text.trim(); }
+                    else { console.error("Unexpected Perplexity response format:", data); return 'Error: Unexpected response format from Perplexity.'; }
+                } catch (error) {
+                     console.error('Error fetching from Perplexity:', error);
+                     return `Error contacting Perplexity: ${error.message}`;
+                }
+           } // End Perplexity Case
 
             default: { // Handle 'none' or unsupported selections
                 console.warn(`Unsupported LLM model selected: ${config.model}`);
@@ -672,34 +705,48 @@ async handleFileUpload(event) {
      * @param {string} inputType - 'radio' or 'checkbox'.
      */
     showFeedback(container, feedbackElement, isCorrect, correctLetters, inputType) {
+        console.log("showFeedback called. isCorrect:", isCorrect, "Correct Letters:", correctLetters, "Input Type:", inputType); 
         // Set overall feedback text and class
         feedbackElement.textContent = isCorrect ? 'Correct!' : 'Incorrect!';
         feedbackElement.className = `feedback ${isCorrect ? 'correct' : 'incorrect'}`;
 
         // Iterate through each answer option container within the question
         container.querySelectorAll('.answer-option').forEach(optionDiv => {
-            // << MODIFIED >>: Select the specific input type
+            // It tries to find these two elements INSIDE the current optionDiv:
             const input = optionDiv.querySelector(`input[type="${inputType}"]`);
             const label = optionDiv.querySelector('.answer-label');
-            if (!input || !label) return; // Safety check
+        
+            // If EITHER input OR label is not found, this condition becomes true:
+            if (!input || !label) {
+                 console.warn("Loop iteration skipped: Couldn't find input or label."); // <<< YOUR WARNING
+                 return; // Skip this iteration
+            }
 
             const letter = input.value;
+            const isChecked = input.checked;
+            // Explicitly check if the current letter is in the correctLetters array
+            const isCorrectLetter = correctLetters.includes(letter);
 
-            // Reset previous classes first
+            // *** ADD THIS DETAILED LOG ***
+            console.log(`Processing --> Letter: ${letter}, User Checked: ${isChecked}, Is Correct Answer: ${isCorrectLetter}`);
+
+            // Reset classes first
             label.classList.remove('correct', 'incorrect', 'missed');
 
-            // Apply new classes based on checked state and correctness
-            if (input.checked) { // If this option was selected by the user
-                if (correctLetters.includes(letter)) {
+            // Now apply logic based on the logged variables
+            if (isChecked) { // If this option was selected by the user
+                if (isCorrectLetter) {
+                    // console.log(`Adding 'correct' to label for ${letter}`); // Optional log
                     label.classList.add('correct'); // Selected and correct
                 } else {
+                    // console.log(`Adding 'incorrect' to label for ${letter}`); // Optional log
                     label.classList.add('incorrect'); // Selected but incorrect
                 }
             } else { // If this option was NOT selected by the user
-                if (correctLetters.includes(letter)) {
+                if (isCorrectLetter) { // Check if this UNCHECKED answer IS in the correct list
+                    // console.log(`Adding 'missed' to label for letter: ${letter}`); // Optional log
                     label.classList.add('missed'); // Not selected, but should have been
                 }
-                // No class added if not selected and not correct
             }
         });
     }

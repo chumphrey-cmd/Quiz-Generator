@@ -158,7 +158,6 @@ Layout Components
     color: #aaa;
 }
 
-/* DEPRECATED? Was this for an old layout? Keeping for now */
 .exam-header {
     display: flex;
     justify-content: space-between;
@@ -470,38 +469,53 @@ Progress and Feedback
     background-color: var(--error-color);
 }
 
-/* --- Answer Label Highlighting (Feedback) --- */
+/* Style for correctly selected answers (even if overall answer wrong) */
 .answer-label.correct {
     font-weight: bold;
     color: var(--success-color) !important;
+    /* Add a very subtle green background indicator */
+    background-color: rgba(var(--success-color-rgb), 0.08); /* Very light green bg */
+    border-radius: var(--border-radius-sm); /* Optional: round the bg */
+    padding: 2px 4px; /* Add slight padding if using background */
+    margin: -2px -4px; /* Counteract padding to maintain layout */
+    border: 1px solid rgba(var(--success-color-rgb), 0.3); /* Faint border */
 }
 
+/* Ensure incorrect style doesn't use background/border that conflicts */
 .answer-label.incorrect {
-    font-weight: bold;
+    font-weight: normal; /* Maybe don't bold incorrect */
     color: var(--error-color) !important;
-    /* text-decoration: line-through; */ /* Optional */
+    text-decoration: line-through; /* Make incorrect obvious via strikethrough */
+    background-color: transparent !important; /* Remove any conflicting background */
+    border: none !important; /* Remove any conflicting border */
+    padding: 0; /* Reset padding if added */
+    margin: 0; /* Reset margin */
 }
 
+/* Style for correct answers the user missed */
 .answer-label.missed {
     font-weight: normal; /* Keep normal weight */
-    color: var(--text-color) !important; /* Keep normal color */
-    background-color: rgba(var(--success-color-rgb), 0.15);
-    border-left: 3px solid var(--success-color);
-    margin-left: -3px; /* Adjust for border */
-    padding-left: calc(var(--spacing-md) - 3px);
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-    opacity: 1.0;
+    color: var(--text-color) !important; /* Keep standard text color */
+    background-color: rgba(var(--success-color-rgb), 0.12); /* Slightly more visible green bg */
+    border: 1px solid rgba(var(--success-color-rgb), 0.4); /* Faint green border */
+    border-radius: var(--border-radius-sm); /* Apply border-radius */
+    opacity: 0.9; /* Add a slight faded effect */
+    padding: 2px 4px; /* Add slight padding */
+    margin: -2px -4px; /* Counteract padding */
 }
 
-/* Dark theme feedback label colors */
+/* Dark theme adjustments */
 [data-theme="dark"] .answer-label.correct {
-    color: #4ade80 !important;
-    /* background-color: rgba(74, 222, 128, 0.15); */ /* Optional subtle bg */
+    color: var(--text-color) !important; /* Keep light text */
+    font-weight: 500;
+    background-color: rgba(74, 222, 128, 0.1); /* Subtle dark theme green bg */
+    border-color: rgba(74, 222, 128, 0.4);
 }
+
 [data-theme="dark"] .answer-label.incorrect {
     color: #f87171 !important;
     /* background-color: rgba(248, 113, 113, 0.15); */ /* Optional subtle bg */
+    text-decoration: line-through;
 }
 [data-theme="dark"] .answer-label.missed {
     color: var(--text-color) !important; /* Keep light text */

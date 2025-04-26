@@ -9,7 +9,6 @@ function displayQuestions(questions) {
     let htmlContent = "";
 
     questions.forEach(question => {
-        // << NEW >>: Determine if the question is single or multiple choice
         const isMultipleChoice = question.correct.length > 1;
         const inputType = isMultipleChoice ? 'checkbox' : 'radio';
 
