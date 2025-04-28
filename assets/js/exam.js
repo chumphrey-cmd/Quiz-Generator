@@ -338,7 +338,7 @@ async handleFileUpload(event) {
      * Retrieves config, question, and answers, calls LLM, and displays response.
      * @param {Event} event - The click event.
      */
-    async handleExplainClick(event) { // <<< Make this method async
+    async handleExplainClick(event) {
         event.preventDefault(); // Prevent any default button action
         const button = event.currentTarget;
         const questionNumber = parseInt(button.getAttribute('data-question-number'), 10);
@@ -398,13 +398,30 @@ async handleFileUpload(event) {
 
         // Display the actual explanation or error message
         if (responseArea) {
+        // Check if Marked.js library is available
+        if (typeof marked !== 'undefined') {
+
+            // Parse the LLM explanation (which might contain markdown) into HTML
+            // Use parse() here to handle potential block elements like paragraphs, lists, code blocks from the LLM
+            const formattedExplanation = marked.parse(explanation);
+
+            // Use innerHTML to render the generated HTML
+            responseArea.innerHTML = formattedExplanation;
+            console.log("Parsed LLM response markdown and set as innerHTML.");
+        } else {
+            // Fallback if Marked.js isn't loaded - display as plain text
             responseArea.textContent = explanation;
+            console.warn("Marked.js library not found. Displaying LLM response as plain text.");
         }
+        // Ensure the response area is visible (it might have been hidden initially)
+        responseArea.style.display = 'block';
 
         // Re-enable the button and reset text
         button.disabled = false;
         button.textContent = 'Explain';
         console.log("LLM interaction complete.");
+        }
+
     }
 
     /**
@@ -498,7 +515,7 @@ async handleFileUpload(event) {
             }
 
             // Gemini API Use
-            case 'gemini': {
+            case 'gemini-2.0-flash': {
                 console.log("Attempting to call Google Gemini");
                 if (!config.apiKey) {
                     return Promise.resolve("Error: API Key required for Google Gemini model.");
@@ -712,13 +729,10 @@ async handleFileUpload(event) {
 
         // Iterate through each answer option container within the question
         container.querySelectorAll('.answer-option').forEach(optionDiv => {
-            // It tries to find these two elements INSIDE the current optionDiv:
-            const input = optionDiv.querySelector(`input[type="${inputType}"]`);
-            const label = optionDiv.querySelector('.answer-label');
         
             // If EITHER input OR label is not found, this condition becomes true:
             if (!input || !label) {
-                 console.warn("Loop iteration skipped: Couldn't find input or label."); // <<< YOUR WARNING
+                 console.warn("Loop iteration skipped: Couldn't find input or label.");
                  return; // Skip this iteration
             }
 

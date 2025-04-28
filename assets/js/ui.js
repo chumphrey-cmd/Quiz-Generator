@@ -5,6 +5,10 @@
  * @returns {string} HTML string containing all questions and answer inputs
  */
 function displayQuestions(questions) {
+
+    // Debug for MD parsing
+    console.log('Is marked defined?', typeof marked);
+
     console.log("Starting to display questions (conditional radio/checkbox):", questions);
     let htmlContent = "";
 
@@ -12,12 +16,16 @@ function displayQuestions(questions) {
         const isMultipleChoice = question.correct.length > 1;
         const inputType = isMultipleChoice ? 'checkbox' : 'radio';
 
+        // Use marked.parse() to convert markdown in question text to HTML.
+        // Ensure marked library is loaded before this script runs.
+        const formattedQuestionText = typeof marked !== 'undefined' ? marked.parseInline(question.text) : question.text; 
+
         htmlContent += `
             <div class="question-container" id="container-${question.number}" data-question-number="${question.number}">
 
                 <div class="question-header">
                     <div class="question" id="question-${question.number}">
-                        ${question.number}. ${question.text}
+                        ${question.number}. ${formattedQuestionText}
                         ${isMultipleChoice ? '<span class="question-hint">(Select all that apply)</span>' : ''}
                     </div>
                     <button class="explain-btn" data-question-number="${question.number}">Explain</button>
@@ -30,6 +38,9 @@ function displayQuestions(questions) {
             const inputId = `q${question.number}-ans${answer.letter}`;
             const inputName = `question_${question.number}`; // Same name groups radio buttons
 
+             // Also parse markdown in answer text
+             const formattedAnswerText = typeof marked !== 'undefined' ? marked.parseInline(answer.text) : answer.text;
+
             htmlContent += `
                 <div class="answer-option"> 
                     <input
@@ -39,8 +50,9 @@ function displayQuestions(questions) {
                         name="${inputName}"
                         value="${answer.letter}"
                         data-question="${question.number}"
+                    />
                     <label for="${inputId}" class="answer-label"> 
-                        ${answer.letter}. ${answer.text}
+                        ${answer.letter}. ${formattedAnswerText}
                     </label>
                 </div>
             `;
@@ -48,7 +60,6 @@ function displayQuestions(questions) {
 
         htmlContent += '</fieldset>'; // Close answers fieldset
 
-        // << NEW >>: Add Submit button for this question
         htmlContent += `
             <button class="submit-btn" data-question="${question.number}">
                 Submit Answer
