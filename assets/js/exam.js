@@ -677,12 +677,10 @@ async handleFileUpload(event) {
                           sortedSelected.every((value, index) => value === sortedCorrect[index]);
 
         // --- Disable Inputs & Show Feedback ---
-        // << MODIFIED >>: Pass inputType to disable correct elements
         this.disableQuestionInputs(answerFieldset, submitButton, inputType);
-        // << MODIFIED >>: Pass inputType to style correct elements
         this.showFeedback(container, feedbackElement, isCorrect, questionData.correct, inputType);
 
-        // --- Update Progress (Unchanged logic) ---
+        // --- Update Progress  ---
         this.answeredQuestions++;
         if (isCorrect) {
             this.currentScore++;
@@ -722,48 +720,59 @@ async handleFileUpload(event) {
      * @param {string} inputType - 'radio' or 'checkbox'.
      */
     showFeedback(container, feedbackElement, isCorrect, correctLetters, inputType) {
-        console.log("showFeedback called. isCorrect:", isCorrect, "Correct Letters:", correctLetters, "Input Type:", inputType); 
+        console.log("showFeedback called. isCorrect:", isCorrect, "Correct Letters:", correctLetters, "Input Type:", inputType);
         // Set overall feedback text and class
         feedbackElement.textContent = isCorrect ? 'Correct!' : 'Incorrect!';
         feedbackElement.className = `feedback ${isCorrect ? 'correct' : 'incorrect'}`;
 
         // Iterate through each answer option container within the question
         container.querySelectorAll('.answer-option').forEach(optionDiv => {
-        
-            // If EITHER input OR label is not found, this condition becomes true:
+
+            // Add console logs for debugging 
+            console.log("Processing optionDiv HTML:", optionDiv.innerHTML);
+            // Find the input element within this specific answer option div
+            const input = optionDiv.querySelector(`input[type="${inputType}"]`);
+            // Find the label element within this specific answer option div
+            const label = optionDiv.querySelector('.answer-label');
+            // Log whether the elements were found
+            console.log("Found input element:", input);
+            console.log("Found label element:", label);
+
+            // Check if either input or label element was NOT found
             if (!input || !label) {
                  console.warn("Loop iteration skipped: Couldn't find input or label.");
-                 return; // Skip this iteration
+                 return; // Skip this iteration if elements aren't found
             }
 
+            // Get the value (answer letter) and checked state from the input
             const letter = input.value;
             const isChecked = input.checked;
-            // Explicitly check if the current letter is in the correctLetters array
+            // Check if this answer's letter is one of the correct answers
             const isCorrectLetter = correctLetters.includes(letter);
 
-            // *** ADD THIS DETAILED LOG ***
+            // Log details for debugging the logic
             console.log(`Processing --> Letter: ${letter}, User Checked: ${isChecked}, Is Correct Answer: ${isCorrectLetter}`);
 
-            // Reset classes first
+            // Reset any previous feedback classes from the label
             label.classList.remove('correct', 'incorrect', 'missed');
 
-            // Now apply logic based on the logged variables
+            // Apply the appropriate feedback class based on whether the user checked it
+            // and whether it was actually a correct answer.
             if (isChecked) { // If this option was selected by the user
                 if (isCorrectLetter) {
-                    // console.log(`Adding 'correct' to label for ${letter}`); // Optional log
-                    label.classList.add('correct'); // Selected and correct
+                    // User selected it AND it was correct
+                    label.classList.add('correct');
                 } else {
-                    // console.log(`Adding 'incorrect' to label for ${letter}`); // Optional log
-                    label.classList.add('incorrect'); // Selected but incorrect
+                    // User selected it BUT it was incorrect
+                    label.classList.add('incorrect');
                 }
-            } else { // If this option was NOT selected by the user
-                if (isCorrectLetter) { // Check if this UNCHECKED answer IS in the correct list
-                    // console.log(`Adding 'missed' to label for letter: ${letter}`); // Optional log
-                    label.classList.add('missed'); // Not selected, but should have been
+            } else { 
+                if (isCorrectLetter) {
+                    label.classList.add('missed');
                 }
             }
         });
-    }
+    } 
 
 
     /**
