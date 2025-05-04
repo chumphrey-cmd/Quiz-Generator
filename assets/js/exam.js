@@ -14,11 +14,14 @@ class ExamManager {
         const initialTimerInput = document.getElementById('timerDurationInput');
         this.timerDuration = (initialTimerInput ? parseInt(initialTimerInput.value, 10) : 10) * 60;
 
+        this.isTimerEnabled = true; // Timer is ON by default
+
         // Bound event handlers to maintain 'this' context
         this.handleFileUploadBound = this.handleFileUpload.bind(this);
         this.handleSubmitClickBound = this.handleSubmitClick.bind(this);
         this.handleExplainClickBound = this.handleExplainClick.bind(this);
-
+        this.handleTimerToggleClickBound = this.handleTimerToggleClick.bind(this);
+        
         this.initializeEventListeners(); // Initial listeners (file, timer)
     }
 
@@ -26,9 +29,12 @@ class ExamManager {
      * Starts the quiz timer using duration from input field.
      */
     startTimer() {
-        // Clear any existing timer
-        if (this.timerInterval) {
-            clearInterval(this.timerInterval);
+        console.log("Attempting to start timer. Enabled:", this.isTimerEnabled);
+        // --- Check if timer is enabled ---
+        if (!this.isTimerEnabled) {
+            console.log("Timer is disabled. Not starting.");
+            this.updateTimerDisplay(); // Update display to show 'Disabled' or similar
+            return; // Exit function, do not start the timer
         }
 
         // Get duration from input
@@ -83,6 +89,12 @@ class ExamManager {
         const timerElement = document.getElementById('timer-display');
         if (!timerElement) return;
 
+        // --- Handle disabled state ---
+        if (!this.isTimerEnabled) {
+            timerElement.textContent = 'Timer OFF';
+            return;
+        }
+
         // Ensure timeRemaining doesn't go below zero for display purposes
         const displayTime = Math.max(0, this.timeRemaining);
 
@@ -108,8 +120,8 @@ class ExamManager {
      */
     resetTimer() {
         this.stopTimer(); // Stop any active timer
-        this.timeRemaining = 0; // Or set to default duration if you prefer
-        this.updateTimerDisplay(); // Update UI to show reset time
+        this.timeRemaining = 0; // Reset time
+        this.updateTimerDisplay(); // Update UI (will show 'Timer OFF' if disabled)
         console.log("Timer reset.");
     }
 
@@ -140,9 +152,55 @@ class ExamManager {
                    else if (currentValue > max) this.value = max;
               });
         } else { console.error("Timer duration input element not found!"); }
+
+        const timerToggleButton = document.getElementById('timerToggleButton');
+        if (timerToggleButton) {
+            timerToggleButton.addEventListener('click', this.handleTimerToggleClickBound);
+
+            // Optional: Update button appearance on initial load based on state
+            this.updateTimerToggleButtonVisuals(timerToggleButton);
+        } else { console.error("Timer toggle button 'timerToggleButton' not found!");}
     }
 
-/**
+
+    /**
+     * --- ADDED: Handles clicks on the timer toggle button ---
+     */
+    handleTimerToggleClick() {
+        this.isTimerEnabled = !this.isTimerEnabled; // Flip the state
+        console.log("Timer enabled state:", this.isTimerEnabled);
+
+        const timerToggleButton = document.getElementById('timerToggleButton');
+        if (timerToggleButton) {
+           this.updateTimerToggleButtonVisuals(timerToggleButton);
+        }
+
+        // If timer is currently running AND we just disabled it, stop it.
+        if (!this.isTimerEnabled && this.timerInterval) {
+            this.stopTimer();
+             // Optionally update display immediately
+             this.updateTimerDisplay();
+        }
+        // Note: We don't automatically start the timer here if enabled.
+        // It will start naturally on the next quiz load via handleFileUpload -> startTimer.
+    }
+
+    /**
+     * --- Updates toggle button text and class based on state ---
+     * @param {HTMLElement} button - The toggle button element.
+     */
+     updateTimerToggleButtonVisuals(button) {
+         if (this.isTimerEnabled) {
+             button.textContent = 'Timer ON';
+             button.classList.remove('timer-off');
+         } else {
+             button.textContent = 'Timer OFF';
+             button.classList.add('timer-off');
+         }
+     }
+
+
+    /**
      * Handle file upload, parse, validate, display, and set up dynamic listeners.
      * Includes added console logs for debugging.
      */
@@ -444,27 +502,63 @@ async handleFileUpload(event) {
         // Enhanced prompt focused on concise, direct explanations for test-takers
         const basePrompt = `**Persona:**
 
-        Act as an expert Tutor and Subject Matter Expert. Your primary goal is to provide **concise, direct, and informative explanations** for multiple-choice questions to help a test taker quickly understand *why* the correct answer is right and *why* the incorrect answers are wrong. Prioritize clarity and brevity for efficient learning.
+        Act as an expert Tutor and Subject Matter Expert. Your primary objective is to deliver highly **concise, direct, and accurate explanations** for multiple-choice questions (MCQs). The goal is to enable a test-taker to rapidly understand *precisely why* the indicated correct answer is right and *why each* incorrect option is wrong. Prioritize extreme clarity and brevity for efficient learning and review.
+
+        **Context:**
+
+        You will be provided with a single multiple-choice question, its answer options (labeled A, B, C, D, etc.), and the letter corresponding to the correct answer. Your task is to analyze this information and generate a focused explanation *only* for this specific question.
+
+        **Input Specification:**
+
+        Immediately following these instructions, the user will provide:
+        1.  The multiple-choice question text.
+        2.  All answer options, clearly labeled (e.g., A, B, C, D).
+        3.  The letter designation of the **correct** answer (e.g., "Correct Answer: C").
 
         **Task:**
 
-        Analyze the provided multiple-choice question and its options. Deliver a focused explanation structured as follows:
+        Analyze the provided MCQ, options, and indicated correct answer. Generate a structured explanation following the precise format below.
 
-        1.  **Essential Concept (Optional, 1 Sentence Max):** If a single core principle is essential to differentiate the answers, state it very briefly. Otherwise, omit this section.
-        2.  **Answer Analysis:**
-            * **Correct Answer (Identify Letter, e.g., C):** Succinctly explain *why* this option is the correct answer. Directly reference the key fact, calculation, or concept that validates it.
-            * **Incorrect Answers (Identify Letters, e.g., A, B, D):** For *each* incorrect option, provide a brief and direct explanation of *why* it is wrong. State the specific flaw (e.g., "Incorrect because...", "Irrelevant factor...", "Misinterprets term X...").
-        3.  **Key Term Definition(s) (Optional):** If a crucial technical term *within the question or answers* is likely unfamiliar and essential for understanding the explanation, define it very briefly (list format if multiple). Otherwise, omit this section.
+        **Output Structure & Formatting:**
 
-        **Output Requirements & Constraints:**
+        * **Essential Concept (Optional - Max 1 Sentence):**
+            * If a single, core principle is absolutely essential to differentiate between the correct and incorrect answers *and* can be stated in one brief sentence, include it here.
+            * *If not applicable or requires more than one sentence, OMIT this section entirely.*
+        * **Answer Analysis:**
+            * **Correct Answer ([Letter provided by user]):** Succinctly explain *why* this option is correct. Directly reference the specific fact, calculation, reasoning, or concept that validates it. (e.g., "**C:** Correct because [brief explanation referencing key element].")
+            * **Incorrect Answers:** For *each* incorrect option:
+                * **[Incorrect Letter A]:** Briefly and directly state *why* it is wrong. Pinpoint the specific flaw (e.g., "**A:** Incorrect because it misinterprets term X / applies the wrong formula / is factually inaccurate regarding Y.")
+                * **[Incorrect Letter B]:** Briefly and directly state *why* it is wrong. (e.g., "**B:** Incorrect because factor Z is irrelevant here / contradicts the principle of...")
+                * **(Continue for all other incorrect letters)**
+        * **Key Term Definition(s) (Optional):**
+            * If a specific technical term *within the question or answers* is crucial for understanding the explanation *and* likely unfamiliar to a test-taker, define it very briefly.
+            * Use a bulleted list if multiple terms require definition.
+            * *If no terms require definition or they are common knowledge for the subject, OMIT this section entirely.*
 
-        * **Concise & Direct:** Get straight to the point. Use clear, economical language. Avoid introductory fluff, verbose descriptions, or excessive background detail.
-        * **Accuracy:** Ensure explanations are factually correct.
-        * **Targeted Informativeness:** Focus squarely on the information *needed* to understand the reasoning for *this specific question's* answers.
-        * **Structure:** Follow the requested structure (Concept -> Answers -> Terms). Use Markdown for clarity (e.g., bolding answer letters **A**, **B**, **C**, **D**).
-        * **DO NOT** restate the provided question.
-        * **DO NOT** use conversational filler (e.g., "Let's break this down," "Okay, I'm ready," "This question asks about...").
-        * **Directly provide the analysis** immediately following these instructions.
+        **Constraints & Rules:**
+
+        * **Extreme Conciseness & Directness:** Get straight to the point. Use economical language. No introductory phrases, verbose descriptions, or unnecessary background.
+        * **Accuracy:** All explanations must be factually correct and logically sound.
+        * **Targeted Information:** Focus *only* on the information required to justify the correctness/incorrectness of the answers for *this specific question*.
+        * **Mandatory Structure:** Strictly adhere to the "Essential Concept (Optional) -> Answer Analysis -> Key Term Definition(s) (Optional)" structure.
+        * **Markdown:** Use Markdown bolding for the answer letters (e.g., **A**, **B**, **C**, **D**) in the "Answer Analysis" section.
+        * **Negative Constraints:**
+            * **DO NOT** restate or rephrase the provided question.
+            * **DO NOT** use *any* conversational introductions, transitions, or filler (e.g., "Let's look at the options," "Okay, here's the breakdown," "This question tests...").
+            * **DO NOT** add concluding remarks or summaries beyond the defined structure.
+        * **Immediate Output:** Provide *only* the structured analysis immediately, without any preceding confirmation or introductory text.
+
+        **Example Input (User would provide this after the prompt):**
+
+        *Question:* What is the capital of France?
+        *Options:*
+        A) Berlin
+        B) Madrid
+        C) Paris
+        D) Rome
+        *Correct Answer:* C
+
+        **(LLM would then immediately generate the analysis based on the structure above)**
 
         ---
 
