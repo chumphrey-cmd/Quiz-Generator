@@ -68,12 +68,25 @@ function displayQuestions(questions) {
 
         // Feedback and LLM response areas remain structurally the same
         htmlContent += `<div class="feedback" id="feedback-${question.number}"></div>`;
-        htmlContent += `<div class="llm-response" id="llm-response-${question.number}">LLM Explanation will appear here...</div>`;
+        // Ensure the initial LLM response area is also hidden by default or controlled by logic
+        htmlContent += `<div class="llm-response" id="llm-response-${question.number}" style="display: none;">LLM Explanation will appear here...</div>`;
+
+        // HTML for the Chat Interface
+        htmlContent += `
+            <div class="llm-chat-interface-container" id="llm-chat-interface-container-${question.number}" style="display: none;">
+                <div class="chat-messages" id="chat-messages-${question.number}">
+                    </div>
+                <div class="chat-input-area">
+                    <textarea class="chat-input" id="chat-input-${question.number}" placeholder="Type your message..."></textarea>
+                    <button class="send-chat-btn" id="send-chat-btn-${question.number}" data-question-number="${question.number}">Send</button>
+                </div>
+            </div>
+        `;
 
         htmlContent += '</div>'; // Close question-container
     });
 
-    console.log("Final HTML content with conditional inputs generated.");
+    console.log("Final HTML content with conditional inputs and chat placeholders generated.");
     return htmlContent;
 }
 

@@ -22,6 +22,9 @@ class ExamManager {
         this.handleExplainClickBound = this.handleExplainClick.bind(this);
         this.handleTimerToggleClickBound = this.handleTimerToggleClick.bind(this);
         
+        this.handleSendChatMessageBound = this.handleSendChatMessage.bind(this); // Bound event handler for chat send button
+
+
         this.initializeEventListeners(); // Initial listeners (file, timer)
     }
 
@@ -454,25 +457,49 @@ async handleFileUpload(event) {
         // Call the async explanation function and wait for the result
         const explanation = await this.getLlmExplanation(questionText, questionAnswers, llmConfig);
 
-        // Display the actual explanation or error message
+        // initialExplanationHtml is declared here, in the scope of handleExplainClick
+        let initialExplanationHtml = ''; 
+
         if (responseArea) {
-        // Check if Marked.js library is available
-        if (typeof marked !== 'undefined') {
+            if (typeof marked !== 'undefined') {
+                // And assigned here
+                initialExplanationHtml = marked.parse(explanation);
+                responseArea.innerHTML = initialExplanationHtml;
+                console.log("Parsed LLM response markdown and set as innerHTML.");
+            } else {
+                // Or assigned here
+                initialExplanationHtml = explanation; 
+                responseArea.textContent = initialExplanationHtml;
+                console.warn("Marked.js library not found. Displaying LLM response as plain text.");
+            }
+            responseArea.style.display = 'block';
 
-            // Parse the LLM explanation (which might contain markdown) into HTML
-            // Use parse() here to handle potential block elements like paragraphs, lists, code blocks from the LLM
-            const formattedExplanation = marked.parse(explanation);
 
-            // Use innerHTML to render the generated HTML
-            responseArea.innerHTML = formattedExplanation;
-            console.log("Parsed LLM response markdown and set as innerHTML.");
-        } else {
-            // Fallback if Marked.js isn't loaded - display as plain text
-            responseArea.textContent = explanation;
-            console.warn("Marked.js library not found. Displaying LLM response as plain text.");
+        // New code for "Continue Discussion" button
+        // Remove any existing "Continue Discussion" button first to prevent duplicates
+        const questionContainer = document.getElementById(`container-${questionNumber}`);
+        if (questionContainer) {
+            const existingContinueBtn = questionContainer.querySelector('.continue-discussion-btn');
+            if (existingContinueBtn) {
+                existingContinueBtn.remove();
+            }
         }
-        // Ensure the response area is visible (it might have been hidden initially)
-        responseArea.style.display = 'block';
+
+        const continueButton = document.createElement('button');
+        continueButton.classList.add('continue-discussion-btn');
+        continueButton.textContent = 'Continue Discussion';
+        // We don't need to store questionNumber in dataset if using event directly,
+        // but it can be useful for debugging or if the handler is more generic.
+        // The initialExplanationHtml is crucial.
+
+        // Insert after the responseArea
+        responseArea.insertAdjacentElement('afterend', continueButton);
+
+        // Add event listener using an arrow function to maintain 'this' context
+        // and pass necessary parameters.
+        continueButton.addEventListener('click', () => {
+            this.initiateChatInterface(questionNumber, initialExplanationHtml);
+        });
 
         // Re-enable the button and reset text
         button.disabled = false;
@@ -608,7 +635,7 @@ async handleFileUpload(event) {
                 }
             }
 
-            // Gemini API Use
+            // Gemini 2.0 Flash API Use
             case 'gemini-2.0-flash': {
                 console.log("Attempting to call Google Gemini");
                 if (!config.apiKey) {
@@ -670,7 +697,7 @@ async handleFileUpload(event) {
                 }
             } // End of Gemini Case
 
-
+            // Perplexity Sonar API use
             case 'perplexity': {
                 const perplexityEndpoint = 'https://api.perplexity.ai/chat/completions';
                 const perplexityModel = "sonar";
@@ -919,6 +946,145 @@ async handleFileUpload(event) {
             alert(`${completionMessage}─────────────────────\nTotal Questions: ${this.totalQuestions}\nCorrect Answers: ${this.currentScore}\nIncorrect Answers: ${incorrectAnswers}\nFinal Score: ${percentage}%\n─────────────────────`);
         }
          // Optional: Disable all remaining inputs or provide a restart button? For now, just alert.
+    }
+
+    // Method to initiate the chat interface
+    initiateChatInterface(questionNumber, initialExplanationHtml) {
+        console.log(`Initiating chat for question ${questionNumber}.`);
+
+        const llmResponseArea = document.getElementById(`llm-response-${questionNumber}`);
+        const chatInterfaceContainer = document.getElementById(`llm-chat-interface-container-${questionNumber}`);
+        const chatMessagesContainer = document.getElementById(`chat-messages-${questionNumber}`);
+        const sendChatButton = document.getElementById(`send-chat-btn-${questionNumber}`);
+        const chatInput = document.getElementById(`chat-input-${questionNumber}`);
+
+        // Find and hide/remove the "Continue Discussion" button
+        // It should be a sibling of llmResponseArea or chatInterfaceContainer
+        if (llmResponseArea && llmResponseArea.parentElement) {
+            const continueButton = llmResponseArea.parentElement.querySelector('.continue-discussion-btn');
+            if (continueButton) {
+                continueButton.style.display = 'none'; // Or continueButton.remove();
+            }
+        }
+
+
+        // Optionally hide the initial single explanation div
+        if (llmResponseArea) {
+            llmResponseArea.style.display = 'none';
+        }
+
+        // Make the main chat interface container visible
+        if (chatInterfaceContainer) {
+            chatInterfaceContainer.style.display = 'flex'; // Use 'flex' if CSS is designed for it, otherwise 'block'
+        }
+
+        // Clear any previous messages from the chat messages area
+        if (chatMessagesContainer) {
+            chatMessagesContainer.innerHTML = '';
+        }
+
+        // Display the initial explanation as the first chat message
+        // Pass 'true' for isHtml because initialExplanationHtml is already parsed HTML.
+        this.displayChatMessage(initialExplanationHtml, 'llm', questionNumber, true);
+
+        // Add event listener for the actual send button inside this chat interface
+        if (sendChatButton) {
+            // Remove existing listener to prevent duplicates if this function could somehow be called multiple times for the same button
+            sendChatButton.removeEventListener('click', this.handleSendChatMessageBound);
+            sendChatButton.addEventListener('click', this.handleSendChatMessageBound);
+        }
+        
+        // Enable chat input and send button (in case they were disabled from a previous session)
+        if (chatInput) chatInput.disabled = false;
+        if (sendChatButton) {
+            sendChatButton.disabled = false;
+            sendChatButton.textContent = 'Send';
+        }
+    }
+
+    // Method to display a chat message
+    displayChatMessage(messageText, sender, questionNumber, isHtml = false) {
+        const chatMessagesContainer = document.getElementById(`chat-messages-${questionNumber}`);
+        if (!chatMessagesContainer) {
+            console.error(`Chat messages container not found for question ${questionNumber}`);
+            return;
+        }
+
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('chat-message'); // General class for all messages
+        messageDiv.classList.add(sender === 'user' ? 'chat-message-user' : 'chat-message-llm');
+
+        if (sender === 'llm') {
+            if (isHtml) {
+                messageDiv.innerHTML = messageText; // Message is already HTML (e.g., initial explanation)
+            } else {
+                // For new LLM messages that might contain Markdown
+                if (typeof marked !== 'undefined') {
+                    messageDiv.innerHTML = marked.parse(messageText);
+                } else {
+                    messageDiv.textContent = messageText; // Fallback if marked.js is not available
+                    console.warn("Marked.js library not found. Displaying new LLM chat message as plain text.");
+                }
+            }
+        } else { // Sender is 'user'
+            // User messages should always be treated as plain text to prevent XSS
+            messageDiv.textContent = messageText;
+        }
+
+        chatMessagesContainer.appendChild(messageDiv);
+
+        // Auto-scroll to the bottom to show the latest message
+        chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+    }
+
+    // (Partial) method to handle sending a chat message
+    async handleSendChatMessage(event) {
+        const button = event.currentTarget; // The "Send" button that was clicked
+        const questionNumber = parseInt(button.dataset.questionNumber);
+        const chatInput = document.getElementById(`chat-input-${questionNumber}`);
+
+        if (!chatInput || !chatInput.value.trim()) {
+            // Don't send empty messages
+            return;
+        }
+
+        const userMessage = chatInput.value.trim();
+
+        // 1. Display the user's message immediately
+        this.displayChatMessage(userMessage, 'user', questionNumber);
+
+        // 2. Clear the input field
+        chatInput.value = '';
+
+        // 3. Disable input and send button while waiting for LLM
+        chatInput.disabled = true;
+        button.disabled = true;
+        button.textContent = 'Sending...';
+
+        console.log(`User message for Q${questionNumber}: "${userMessage}" - Ready to send to LLM.`);
+
+        // --- THIS IS WHERE THE NEXT PHASE OF WORK WILL HAPPEN ---
+        // TODO:
+        //  a. Get chat history (if maintaining complex history, otherwise just the new userMessage and perhaps context of initial question/explanation)
+        //  b. Construct the prompt for the LLM.
+        //  c. Call an LLM API function (you might adapt getLlmExplanation or create a new one like getLlmChatResponse).
+        //      Example: const llmResponse = await this.getLlmChatResponse(userMessage, questionData, chatHistory, llmConfig);
+        //  d. Display LLM's response: this.displayChatMessage(llmResponse, 'llm', questionNumber, false); // false for isHtml, so it gets parsed
+        //  e. Re-enable input and send button:
+        //     chatInput.disabled = false;
+        //     button.disabled = false;
+        //     button.textContent = 'Send';
+        // --- END OF TODO FOR NEXT PHASE ---
+
+        // For now, to demonstrate, let's just re-enable the button after a delay (remove this in the next phase)
+        setTimeout(() => {
+            if (!this.isDestroyed) { // Check if component/manager is still active if applicable
+                 chatInput.disabled = false;
+                 button.disabled = false;
+                 button.textContent = 'Send';
+                 console.log("Mock LLM response finished. UI enabled.");
+            }
+        }, 1000); // Simulating LLM response time
     }
 
 
