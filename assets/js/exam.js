@@ -1,7 +1,11 @@
 class ExamManager {
 
-    // --- 1. CONSTRUCTOR ---
-    // Initializes properties and binds event handlers.
+    /*
+    ==========================================================================
+    --- 1. CONSTRUCTOR ---
+    Initializes properties and binds event handlers.
+    ==========================================================================
+    */
 
     /**
      * Initialize exam manager with default state
@@ -31,8 +35,12 @@ class ExamManager {
         this.initializeEventListeners(); // Initial listeners (file, timer)
     }
 
-    // --- 2. INITIALIZATION --- 
-    // Methods related to setting up initial state or dynamic event listeners.
+    /* 
+    ==========================================================================
+    --- 2. INITIALIZATION ---
+    Methods related to setting up initial state or dynamic event listeners.
+    ==========================================================================
+    */
 
     /**
      * Set up initial event listeners (file upload, timer input validation).
@@ -97,8 +105,13 @@ class ExamManager {
         console.log("Explain button listeners initialized/refreshed.");
     }
 
-    // --- 3. PRIMARY EVENT HANDLERS (Direct User Interactions) ---
-    // Methods that are directly called when the user interacts with main UI elements.
+    
+    /*
+    ==========================================================================
+    --- 3. PRIMARY EVENT HANDLERS (Direct User Interactions) --- 
+    Methods that are directly called when the user interacts with main UI elements.
+    ==========================================================================
+    */
 
     async handleFileUpload(event) {
         const files = event.target.files;
@@ -537,8 +550,12 @@ class ExamManager {
         }
     }
 
-    // --- 4. CHAT INTERFACE MANAGEMENT ---
-    // Methods specifically for controlling and updating the chat UI.
+    /*
+    ==========================================================================
+    --- 4. CHAT INTERFACE MANAGEMENT ---
+    Methods specifically for controlling and updating the chat UI.
+    ==========================================================================
+    */ 
 
     /**
     * Method to initiate the chat interface
@@ -633,8 +650,12 @@ class ExamManager {
         chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
     }
 
-    // --- 5. LLM INTERACTION LOGIC ---
-    // Methods focused on preparing prompts and interacting with the LLM (via the helper).
+    /*
+    ==========================================================================
+     --- 5. LLM INTERACTION LOGIC ---
+    Methods focused on preparing prompts and interacting with the LLM (via the helper).
+    ==========================================================================
+    */
 
     /**
      * Asynchronously gets an explanation for a given question from an LLM.
@@ -730,8 +751,12 @@ class ExamManager {
         }
     }
 
-    // --- 6. CORE QUIZ LIFECYCLE & STATE ---
-    // Methods related to the overall quiz flow, question management, and scoring.
+    /*
+    ==========================================================================
+    --- 6. CORE QUIZ LIFECYCLE & STATE ---
+    Methods related to the overall quiz flow, question management, and scoring.
+    ==========================================================================
+    */
 
     /**
      * Re-numbers questions sequentially after shuffling.
@@ -790,8 +815,12 @@ class ExamManager {
          // Optional: Disable all remaining inputs or provide a restart button? For now, just alert.
     }
 
-    // --- 7. TIMER MANAGEMENT ---
-    // All methods related to the quiz timer.
+    /* 
+    ==========================================================================
+    --- 7. TIMER MANAGEMENT ---
+    All methods related to the quiz timer.
+    ==========================================================================
+    */ 
 
     /**
      * Starts the quiz timer using duration from input field.
@@ -893,8 +922,12 @@ class ExamManager {
         // console.log(">>> Updating timer display to:", timerElement.textContent);
     }
 
-    // --- 8. UI FEEDBACK & SPECIFIC INTERACTION HELPERS ---
-    // Smaller methods that modify specific parts of the UI or assist event handlers.
+    /*
+    ==========================================================================
+    --- 8. UI FEEDBACK & SPECIFIC INTERACTION HELPERS ---
+    Smaller methods that modify specific parts of the UI or assist event handlers.
+    ==========================================================================
+    */
 
     /**
      * Disable inputs (radio/checkbox) and submit button for a specific question.
@@ -1010,8 +1043,12 @@ class ExamManager {
      }
 
 
-    // --- 9. "PRIVATE" HELPER METHODS ---
-    // Internal utility methods, often prefixed with an underscore.
+    /* 
+    ==========================================================================
+    --- 9. "PRIVATE" HELPER METHODS ---
+    Internal utility methods, often prefixed with an underscore.
+    ==========================================================================
+    */
 
     /**
      * Handle file upload, parse, validate, display, and set up dynamic listeners.
