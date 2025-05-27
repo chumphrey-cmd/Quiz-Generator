@@ -11,7 +11,7 @@ class ExamManager {
      * Initialize exam manager with default state
      */
     constructor() {
-        // Quiz state variables are internal to the manager
+        // --- Quiz State Variables ---
         this.totalQuestions = 0;
         this.answeredQuestions = 0;
         this.currentScore = 0;
@@ -20,19 +20,24 @@ class ExamManager {
         this.timeRemaining = 0;
         const initialTimerInput = document.getElementById('timerDurationInput');
         this.timerDuration = (initialTimerInput ? parseInt(initialTimerInput.value, 10) : 10) * 60;
-
         this.isTimerEnabled = true; // Timer is ON by default
 
-        // Bound event handlers to maintain 'this' context
+        // --- Chat History Storage ---
+        // This object will store chat histories for each question.
+        // The keys will be question numbers, and the values will be arrays of message objects.
+        this.chatHistories = {}; 
+        console.log("ExamManager initialized: Chat histories object created.", this.chatHistories);
+
+        // --- Bound Event Handlers ---
         this.handleFileUploadBound = this.handleFileUpload.bind(this);
         this.handleSubmitClickBound = this.handleSubmitClick.bind(this);
         this.handleExplainClickBound = this.handleExplainClick.bind(this);
         this.handleTimerToggleClickBound = this.handleTimerToggleClick.bind(this);
-        
-        this.handleSendChatMessageBound = this.handleSendChatMessage.bind(this); // Bound event handler for chat send button
+        this.handleSendChatMessageBound = this.handleSendChatMessage.bind(this);
 
-
-        this.initializeEventListeners(); // Initial listeners (file, timer)
+        // --- Initialize Event Listeners ---
+        this.initializeEventListeners();
+        console.log("ExamManager constructor finished.");
     }
 
     /* 
@@ -335,9 +340,11 @@ class ExamManager {
         }
     }
 
+
     /**
      * Handles clicks on the "Explain" button for a question.
      * Retrieves config, question, and answers, calls LLM, and displays response.
+     * It now passes raw Markdown to initiateChatInterface.
      * @param {Event} event - The click event.
      */
     async handleExplainClick(event) {
@@ -347,81 +354,79 @@ class ExamManager {
         const responseArea = document.getElementById(`llm-response-${questionNumber}`);
 
         // Prevent multiple requests while one is processing
-        if (button.disabled) return;
+        if (button.disabled) {
+            console.log(`handleExplainClick: Button for question ${questionNumber} is already disabled. Exiting.`);
+            return;
+        }
         button.disabled = true;
         button.textContent = 'Thinking...'; // Indicate loading
+        console.log(`handleExplainClick: Clicked for question ${questionNumber}. Button disabled, text set to 'Thinking...'.`);
 
         // Ensure response area exists and show loading message
         if (responseArea) {
             responseArea.textContent = 'Requesting explanation from LLM...';
             responseArea.style.display = 'block'; // Show the area
+            console.log(`handleExplainClick: Response area for question ${questionNumber} found. Displaying 'Requesting explanation...'.`);
         } else {
-            console.error(`Response area llm-response-${questionNumber} not found!`);
+            console.error(`handleExplainClick: Response area llm-response-${questionNumber} not found!`);
             button.disabled = false; // Re-enable button if response area missing
             button.textContent = 'Explain';
             return;
         }
 
-        console.log(`Explain button clicked for question number: ${questionNumber}`);
-
-        // --- Read LLM Configuration from UI ---
+        // --- Read LLM Configuration from UI (Existing) ---
         const apiKeyInput = document.getElementById('llmApiKeyInput');
         const modelSelect = document.getElementById('llmModelSelect');
-        const apiKey = apiKeyInput ? apiKeyInput.value : ''; // Get API key value
-        const selectedModel = modelSelect ? modelSelect.value : 'none'; // Get selected model value
+        const apiKey = apiKeyInput ? apiKeyInput.value : '';
+        const selectedModel = modelSelect ? modelSelect.value : 'none';
+        console.log(`handleExplainClick: LLM Config - Model: ${selectedModel}, API Key Entered: ${apiKey ? "[Key Entered]" : "[No Key Entered]"}`);
 
-        // --- Find the Question Text AND Answers ---
-        // Ensure this.questions is populated and question numbers align
+        // --- Find the Question Text AND Answers (Existing) ---
         const questionData = this.questions.find(q => q.number === questionNumber);
         if (!questionData) {
-            console.error(`Could not find question data for number ${questionNumber}`);
+            console.error(`handleExplainClick: Could not find question data for number ${questionNumber}`);
             if (responseArea) responseArea.textContent = 'Error: Could not find question data.';
             button.disabled = false; // Re-enable button
             button.textContent = 'Explain';
             return;
         }
         const questionText = questionData.text;
-        const questionAnswers = questionData.answers; // Get the answers array
+        const questionAnswers = questionData.answers;
+        console.log(`handleExplainClick: Found question data for question ${questionNumber}. Text: "${questionText.substring(0, 50)}..."`);
 
-        console.log("--- LLM Config Read ---");
-        console.log("Selected Model:", selectedModel);
-        console.log("API Key Entered:", apiKey ? "[Key Entered]" : "[No Key Entered]"); // Avoid logging key directly
-        // console.log("Question Text:", questionText); // Optional: Keep for debugging if needed
-        // console.log("Question Answers:", questionAnswers.map(a => `${a.letter}. ${a.text}`).join(', ')); // Optional
-
-        // --- Call LLM and Display Response ---
+        // --- Call LLM and Display Response (Existing) ---
         const llmConfig = {
             model: selectedModel,
             apiKey: apiKey
         };
 
-        // Call the async explanation function and wait for the result
-        const explanation = await this.getLlmExplanation(questionText, questionAnswers, llmConfig);
+        // Call the async explanation function (getLlmExplanation) which should use the renamed _fetchLlmSinglePromptResponse
+        // This will return the RAW MARKDOWN string.
+        console.log(`handleExplainClick: Calling getLlmExplanation for question ${questionNumber}.`);
+        const rawExplanationMarkdown = await this.getLlmExplanation(questionText, questionAnswers, llmConfig);
+        console.log(`handleExplainClick: Received rawExplanationMarkdown for question ${questionNumber}. Length: ${rawExplanationMarkdown.length}`);
 
-        // initialExplanationHtml is declared here, in the scope of handleExplainClick
-        let initialExplanationHtml = ''; 
-
+        // Display the raw explanation in the initial response area (llm-response)
+        // This initial display can still be Markdown parsed for immediate viewing.
+        // The raw markdown will also be passed to the chat interface.
         if (responseArea) {
             if (typeof marked !== 'undefined') {
-                // And assigned here
-                initialExplanationHtml = marked.parse(explanation);
-                responseArea.innerHTML = initialExplanationHtml;
-                console.log("Parsed LLM response markdown and set as innerHTML.");
+                responseArea.innerHTML = marked.parse(rawExplanationMarkdown); // Parse for initial display
+                console.log(`handleExplainClick: Parsed rawExplanationMarkdown and set as innerHTML for initial display in llm-response-${questionNumber}.`);
             } else {
-                // Or assigned here
-                initialExplanationHtml = explanation; 
-                responseArea.textContent = initialExplanationHtml;
-                console.warn("Marked.js library not found. Displaying LLM response as plain text.");
+                responseArea.textContent = rawExplanationMarkdown; // Fallback if marked.js is not available
+                console.warn(`handleExplainClick: Marked.js library not found. Displaying raw LLM explanation as plain text in llm-response-${questionNumber}.`);
             }
             responseArea.style.display = 'block';
+        }
 
-
-        // New code for "Continue Discussion" button
-        // Remove any existing "Continue Discussion" button first to prevent duplicates
+        // --- "Continue Discussion" Button Logic (Existing) ---
+        // Remove any existing "Continue Discussion" button first
         const questionContainer = document.getElementById(`container-${questionNumber}`);
         if (questionContainer) {
             const existingContinueBtn = questionContainer.querySelector('.continue-discussion-btn');
             if (existingContinueBtn) {
+                console.log(`handleExplainClick: Removing existing 'Continue Discussion' button for question ${questionNumber}.`);
                 existingContinueBtn.remove();
             }
         }
@@ -429,25 +434,27 @@ class ExamManager {
         const continueButton = document.createElement('button');
         continueButton.classList.add('continue-discussion-btn');
         continueButton.textContent = 'Continue Discussion';
-        // We don't need to store questionNumber in dataset if using event directly,
-        // but it can be useful for debugging or if the handler is more generic.
-        // The initialExplanationHtml is crucial.
+        console.log(`handleExplainClick: Created 'Continue Discussion' button for question ${questionNumber}.`);
 
         // Insert after the responseArea
-        responseArea.insertAdjacentElement('afterend', continueButton);
-
-        // Add event listener using an arrow function to maintain 'this' context
-        // and pass necessary parameters.
+        if (responseArea) {
+            responseArea.insertAdjacentElement('afterend', continueButton);
+            console.log(`handleExplainClick: Inserted 'Continue Discussion' button after llm-response-${questionNumber}.`);
+        } else {
+            console.error(`handleExplainClick: Could not insert 'Continue Discussion' button as responseArea for ${questionNumber} is missing.`);
+        }
+        
+        // Add event listener using an arrow function.
+        // Crucially, pass the rawExplanationMarkdown to initiateChatInterface.
         continueButton.addEventListener('click', () => {
-            this.initiateChatInterface(questionNumber, initialExplanationHtml);
+            console.log(`handleExplainClick: 'Continue Discussion' button clicked for question ${questionNumber}. Calling initiateChatInterface.`);
+            this.initiateChatInterface(questionNumber, rawExplanationMarkdown); // Pass RAW Markdown
         });
 
-        // Re-enable the button and reset text
+        // Re-enable the "Explain" button and reset text
         button.disabled = false;
         button.textContent = 'Explain';
-        console.log("LLM interaction complete.");
-        }
-
+        console.log(`handleExplainClick: LLM interaction complete for question ${questionNumber}. 'Explain' button re-enabled.`);
     }
 
     /**
@@ -558,10 +565,14 @@ class ExamManager {
     */ 
 
     /**
-    * Method to initiate the chat interface
+    * Initiates the chat interface for a given question.
+    * Hides the initial explanation display, shows the chat container,
+    * and populates the chat history with initial context and the first LLM explanation.
+    * @param {number} questionNumber - The number of the question for which to initiate chat.
+    * @param {string} rawExplanationMarkdown - The raw Markdown string of the initial LLM explanation.
     **/
-    initiateChatInterface(questionNumber, initialExplanationHtml) {
-        console.log(`Initiating chat for question ${questionNumber}.`);
+    initiateChatInterface(questionNumber, rawExplanationMarkdown) {
+        console.log(`initiateChatInterface: Called for question ${questionNumber}. Raw Markdown length: ${rawExplanationMarkdown.length}`);
 
         const llmResponseArea = document.getElementById(`llm-response-${questionNumber}`);
         const chatInterfaceContainer = document.getElementById(`llm-chat-interface-container-${questionNumber}`);
@@ -570,46 +581,107 @@ class ExamManager {
         const chatInput = document.getElementById(`chat-input-${questionNumber}`);
 
         // Find and hide/remove the "Continue Discussion" button
-        // It should be a sibling of llmResponseArea or chatInterfaceContainer
-        if (llmResponseArea && llmResponseArea.parentElement) {
-            const continueButton = llmResponseArea.parentElement.querySelector('.continue-discussion-btn');
+        // It should be a sibling of llmResponseArea or within the questionContainer
+        const questionContainer = document.getElementById(`container-${questionNumber}`);
+        if (questionContainer) {
+            const continueButton = questionContainer.querySelector('.continue-discussion-btn');
             if (continueButton) {
+                console.log(`initiateChatInterface: Hiding 'Continue Discussion' button for question ${questionNumber}.`);
                 continueButton.style.display = 'none'; // Or continueButton.remove();
             }
+        } else {
+            console.warn(`initiateChatInterface: Could not find question container for question ${questionNumber} to hide 'Continue Discussion' button.`);
         }
 
-
-        // Optionally hide the initial single explanation div
+        // Optionally hide the initial single explanation div (llm-response)
         if (llmResponseArea) {
+            console.log(`initiateChatInterface: Hiding initial llm-response area for question ${questionNumber}.`);
             llmResponseArea.style.display = 'none';
         }
 
         // Make the main chat interface container visible
         if (chatInterfaceContainer) {
-            chatInterfaceContainer.style.display = 'flex'; // Use 'flex' if CSS is designed for it, otherwise 'block'
+            console.log(`initiateChatInterface: Displaying chat interface container for question ${questionNumber}.`);
+            chatInterfaceContainer.style.display = 'flex'; // Use 'flex' as per your CSS styles.css
+        } else {
+            console.error(`initiateChatInterface: Chat interface container not found for question ${questionNumber}.`);
+            return; // Cannot proceed if the chat container is missing
         }
 
         // Clear any previous messages from the chat messages area
         if (chatMessagesContainer) {
+            console.log(`initiateChatInterface: Clearing previous messages from chat-messages-${questionNumber}.`);
             chatMessagesContainer.innerHTML = '';
+        } else {
+            console.error(`initiateChatInterface: Chat messages container not found for question ${questionNumber}.`);
         }
 
-        // Display the initial explanation as the first chat message
-        // Pass 'true' for isHtml because initialExplanationHtml is already parsed HTML.
-        this.displayChatMessage(initialExplanationHtml, 'llm', questionNumber, true);
+        // --- Initialize and Populate Chat History ---
+        console.log(`initiateChatInterface: Initializing chat history for question ${questionNumber}.`);
+        this.chatHistories[questionNumber] = []; // Initialize/reset the history array
+
+        // Retrieve questionData to form the system context message
+        const questionData = this.questions.find(q => q.number === questionNumber);
+        if (questionData) {
+            // Construct the system message content with the original question and answers
+            const questionContextForHistory = `Original Question: "${questionData.text}"\nAnswer Options:\n${questionData.answers.map(ans => `${ans.letter}. ${ans.text}`).join('\n')}`;
+            
+            // Add system message to the history
+            this.chatHistories[questionNumber].push({ 
+                role: 'system', 
+                content: questionContextForHistory 
+            });
+            console.log(`initiateChatInterface: Added system context message to chat history for question ${questionNumber}.`);
+        } else {
+            console.warn(`initiateChatInterface: Could not find questionData for question ${questionNumber} to create system context message.`);
+        }
+
+        // Add the initial LLM explanation (raw Markdown) to the history as an 'assistant' message
+        this.chatHistories[questionNumber].push({
+            role: 'assistant',
+            content: rawExplanationMarkdown
+        });
+        console.log(`initiateChatInterface: Added initial LLM explanation (as 'assistant') to chat history for question ${questionNumber}.`);
+        console.log(`initiateChatInterface: Current chat history for question ${questionNumber}:`, JSON.parse(JSON.stringify(this.chatHistories[questionNumber])));
+
+
+        // --- Display the initial explanation as the first chat message ---
+        // Pass `rawExplanationMarkdown` and `isHtml = false` so `displayChatMessage` parses it.
+        console.log(`initiateChatInterface: Calling displayChatMessage to show initial LLM explanation for question ${questionNumber}.`);
+        this.displayChatMessage(rawExplanationMarkdown, 'llm', questionNumber, false); // `false` because rawExplanationMarkdown needs parsing
 
         // Add event listener for the actual send button inside this chat interface
+        // Ensure this is bound correctly and only added once, or managed if this function can be called multiple times.
         if (sendChatButton) {
-            // Remove existing listener to prevent duplicates if this function could somehow be called multiple times for the same button
-            sendChatButton.removeEventListener('click', this.handleSendChatMessageBound);
-            sendChatButton.addEventListener('click', this.handleSendChatMessageBound);
+            // Remove existing listener to prevent duplicates if this function could be called multiple times for the same button (defensive coding)
+            // Cloning and replacing the node is a robust way to remove all listeners.
+            const newSendChatButton = sendChatButton.cloneNode(true);
+            sendChatButton.parentNode.replaceChild(newSendChatButton, sendChatButton);
+            
+            newSendChatButton.addEventListener('click', this.handleSendChatMessageBound);
+            console.log(`initiateChatInterface: Event listener for send chat button (send-chat-btn-${questionNumber}) re-attached.`);
+        } else {
+            console.error(`initiateChatInterface: Send chat button not found for question ${questionNumber}.`);
         }
         
-        // Enable chat input and send button (in case they were disabled from a previous session)
-        if (chatInput) chatInput.disabled = false;
-        if (sendChatButton) {
-            sendChatButton.disabled = false;
-            sendChatButton.textContent = 'Send';
+        // Enable chat input and send button (in case they were disabled from a previous session or error)
+        if (chatInput) {
+            chatInput.disabled = false;
+            console.log(`initiateChatInterface: Chat input for question ${questionNumber} enabled.`);
+        }
+        if (sendChatButton && sendChatButton.id.startsWith('send-chat-btn-')) { // Check it's the original or newly cloned one
+             const actualButton = document.getElementById(sendChatButton.id); // Get the potentially new button from DOM
+             if(actualButton){
+                actualButton.disabled = false;
+                actualButton.textContent = 'Send';
+                console.log(`initiateChatInterface: Send chat button for question ${questionNumber} enabled and text reset.`);
+             }
+        }
+        
+        // Focus the chat input
+        if(chatInput) {
+            chatInput.focus();
+            console.log(`initiateChatInterface: Focused chat input for question ${questionNumber}.`);
         }
     }
 
