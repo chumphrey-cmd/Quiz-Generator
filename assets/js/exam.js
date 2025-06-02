@@ -1,3 +1,34 @@
+/**
+ * Converts a standard messages array to the format expected by the Google Gemini API (generateContent).
+ * @param {Array<Object>} messagesArray - Array of message objects {role: string, content: string}.
+ * @returns {Array<Object>} Array of message objects formatted for Gemini API {role: string, parts: [{text: string}]}.
+ */
+function convertMessagesToGeminiFormat(messagesArray) {
+    console.log("convertMessagesToGeminiFormat: Converting messages for Gemini:", messagesArray);
+    const geminiMessages = messagesArray.map(msg => {
+        let role = msg.role;
+        if (msg.role === 'assistant') {
+            role = 'model'; // Gemini uses 'model' for assistant responses
+        } else if (msg.role === 'system') {
+            // System messages are handled by the 'systemInstruction' field in the main request for some Gemini models,
+            // so they are typically not included in the 'contents' array directly when 'systemInstruction' is used.
+            // If 'systemInstruction' isn't used, they might be mapped to 'user'.
+            // For this function, we'll map 'system' to 'user' if it's found in the main message history
+            // that's intended for the 'contents' field, assuming 'systemInstruction' handles the primary system prompt.
+            role = 'user'; 
+            console.warn("convertMessagesToGeminiFormat: System message from history is being mapped to role 'user' for Gemini 'contents' array. The primary system prompt should be handled by the 'systemInstruction' field in the API call if the model supports it.");
+        }
+        return {
+            role: role, // Should be 'user' or 'model' for the 'contents' array
+            parts: [{ text: msg.content }]
+        };
+    });
+    // Ensure only 'user' and 'model' roles are in the array for the 'contents' field.
+    const filteredGeminiMessages = geminiMessages.filter(msg => msg.role === 'user' || msg.role === 'model');
+    console.log("convertMessagesToGeminiFormat: Converted Gemini messages for 'contents' array:", filteredGeminiMessages);
+    return filteredGeminiMessages;
+}
+
 class ExamManager {
 
     /*
@@ -458,102 +489,91 @@ class ExamManager {
     }
 
     /**
-     * Handles sending a user's chat message to the LLM and displaying the response.
-     * This method now constructs the specific prompt for a chat follow-up
-     * Uses the _fetchLlmResponse helper for the actual API call.
+     * Handles sending a user's chat message.
+     * It now adds the user's message to the chat history,
+     * sends the entire history to the LLM via a new helper method,
+     * adds the LLM's response to the history, and displays it.
      * @param {Event} event - The click event from the "Send" button in the chat interface.
      */
     async handleSendChatMessage(event) {
-        const button = event.currentTarget; // The "Send" button that was clicked
-        const questionNumber = parseInt(button.dataset.questionNumber); // Get question number from button's data attribute
-        const chatInput = document.getElementById(`chat-input-${questionNumber}`); // Get the chat input field
+        const button = event.currentTarget; // The "Send" button
+        const questionNumber = parseInt(button.dataset.questionNumber);
+        const chatInput = document.getElementById(`chat-input-${questionNumber}`);
         
-        // Retrieve the currently selected LLM model and API key from the UI
+        console.log(`handleSendChatMessage: Called for question ${questionNumber}.`);
+
+        // Retrieve LLM configuration (existing)
         const llmConfig = {
             model: document.getElementById('llmModelSelect').value,
             apiKey: document.getElementById('llmApiKeyInput').value
         };
+        console.log(`handleSendChatMessage: LLM Config - Model: ${llmConfig.model}, API Key Entered: ${llmConfig.apiKey ? "[Key Entered]" : "[No Key Entered]"}`);
 
-        // If chat input is missing or the message is empty, do nothing
         if (!chatInput || !chatInput.value.trim()) {
+            console.log(`handleSendChatMessage: Chat input is empty for question ${questionNumber}. No action taken.`);
             return; 
         }
 
-        // Get the user's typed message
         const userMessage = chatInput.value.trim();
+        console.log(`handleSendChatMessage: User message for question ${questionNumber}: "${userMessage}"`);
 
-        // --- UI Update: Display user's message and prepare for LLM response ---
-        this.displayChatMessage(userMessage, 'user', questionNumber); // Display user's message in chat
-        chatInput.value = ''; // Clear the input field
-        chatInput.disabled = true; // Disable input while waiting
-        button.disabled = true; // Disable send button while waiting
-        button.textContent = 'Sending...'; // Update button text
+        // --- UI Update: Display user's message and prepare for LLM response (existing) ---
+        this.displayChatMessage(userMessage, 'user', questionNumber); // isHtml defaults to false, which is correct for user messages
+        chatInput.value = ''; // Clear input
+        chatInput.disabled = true;
+        button.disabled = true;
+        button.textContent = 'Sending...';
+        console.log(`handleSendChatMessage: Displayed user message for question ${questionNumber}. Input/button disabled.`);
 
         try {
-            // --- Context Gathering for Chat Prompt ---
-            const questionData = this.questions.find(q => q.number === questionNumber);
-            if (!questionData) {
-                // This error will be caught by the catch block below
-                throw new Error("Original question context not found for chat.");
+            // --- NEW: Update Chat History & Call LLM with Full History ---
+
+            // 1. Ensure chat history is initialized for this question (defensive check)
+            if (!this.chatHistories[questionNumber]) {
+                console.warn(`handleSendChatMessage: Chat history for question ${questionNumber} was not initialized. Initializing now.`);
+                // This case ideally shouldn't happen if initiateChatInterface always runs first.
+                // If it does, we might be missing initial context. For now, just initialize.
+                this.chatHistories[questionNumber] = [];
+                // Consider adding system prompt here if absolutely necessary, though it's better handled by initiateChatInterface
             }
 
-            // Retrieve the initial LLM explanation (first LLM message in this chat) to provide context
-            const chatMessagesContainer = document.getElementById(`chat-messages-${questionNumber}`);
-            const firstLlmMessageElement = chatMessagesContainer.querySelector('.chat-message-llm');
-            const initialExplanationContext = firstLlmMessageElement ? firstLlmMessageElement.innerHTML : "Context: Initial explanation not available.";
+            // 2. Add User's Message to History
+            this.chatHistories[questionNumber].push({ role: 'user', content: userMessage });
+            console.log(`handleSendChatMessage: Added user message to chat history for question ${questionNumber}.`);
+            console.log(`handleSendChatMessage: Current chat history for question ${questionNumber} (before LLM call):`, JSON.parse(JSON.stringify(this.chatHistories[questionNumber])));
 
-            // --- Chat Prompt Construction ---
+            // 3. Prepare for LLM Call: Get the current history array
+            const messagesArray = this.chatHistories[questionNumber];
 
-            const chatPrompt = `
-            Context of our discussion:
-            Original Question: "${questionData.text}"
-            Answer Options:
-            ${questionData.answers.map(ans => `${ans.letter}. ${ans.text}`).join('\n')}
+            // 4. Call New Chat History Helper (to be implemented in Section IV)
+            // This helper will take the entire conversation history.
+            console.log(`handleSendChatMessage: Calling _fetchLlmChatHistoryResponse for question ${questionNumber}.`);
+            const llmChatResponseMarkdown = await this._fetchLlmChatHistoryResponse(llmConfig, messagesArray);
 
-            My previous explanation (which you, the LLM, provided):
-            ---
-            ${initialExplanationContext}
-            ---
+            // 5. Add LLM's Response to History
+            this.chatHistories[questionNumber].push({ role: 'assistant', content: llmChatResponseMarkdown });
+            console.log(`handleSendChatMessage: Added LLM response to chat history for question ${questionNumber}.`);
+            console.log(`handleSendChatMessage: Updated chat history for question ${questionNumber} (after LLM call):`, JSON.parse(JSON.stringify(this.chatHistories[questionNumber])));
 
-            The user now has a follow-up question or comment regarding this.
-            User's follow-up: "${userMessage}"
-
-            Please provide a concise and relevant response to the user's follow-up, keeping the original question and previous explanation in mind.
-            If the user's follow-up seems unrelated, gently guide them back or ask for clarification.
-            Adopt the same persona as the initial explanation (Expert Tutor and Subject Matter Expert).
-            Focus on clarity and directness.
-            Do not repeat the entire original question or previous explanation unless absolutely necessary for context in your new response.
-            Directly address the user's follow-up: "${userMessage}"
-            `;
-
-            // --- Call Centralized LLM Fetch Logic ---
-            // Delegate the actual API call to the _fetchLlmResponse helper method.
-            // 'llmConfig' contains the provider and API key.
-            // 'chatPrompt' is the fully constructed prompt for this chat turn.
-            console.log("Calling _fetchLlmResponse for chat message...");
-            const llmChatResponse = await this._fetchLlmResponse(llmConfig, chatPrompt);
-            
-            // --- Display LLM's Chat Response ---
-            // Display the LLM's response in the chat interface.
-            // Pass 'false' for isHtml, so if the LLM returns Markdown, it gets parsed by marked.js.
-            this.displayChatMessage(llmChatResponse, 'llm', questionNumber, false);
+            // 6. Display LLM's Response
+            // Pass false for isHtml, so if the LLM returns Markdown, it gets parsed by marked.js.
+            this.displayChatMessage(llmChatResponseMarkdown, 'llm', questionNumber, false);
+            console.log(`handleSendChatMessage: Displayed LLM response for question ${questionNumber}.`);
 
         } catch (error) {
-            // --- Error Handling ---
-            // If any error occurred during context gathering or the _fetchLlmResponse call.
-            console.error("Error during handling send chat message:", error);
-            // Display a user-friendly error message in the chat interface.
+            // --- Error Handling (existing, ensure it's robust) ---
+            console.error(`handleSendChatMessage: Error during sending chat message for question ${questionNumber}:`, error);
             this.displayChatMessage(`Sorry, I encountered an error processing your message: ${error.message}`, 'llm', questionNumber, false);
         } finally {
-            // --- UI Finalization ---
-            // This block executes whether the try block succeeded or failed.
-            // Re-enable the chat input field if it exists.
+            // --- UI Finalization (existing) ---
             if (chatInput) chatInput.disabled = false;
-            // Re-enable the send button if it exists and reset its text.
             if (button) {
                 button.disabled = false;
                 button.textContent = 'Send';
             }
+            // Focus the chat input again for the next message
+            if(chatInput) chatInput.focus();
+            console.log(`handleSendChatMessage: UI finalized for question ${questionNumber}. Input/button re-enabled. Input focused.`);
         }
     }
 
@@ -1136,6 +1156,191 @@ class ExamManager {
         });
     }
 
+    // --- HELPER METHOD FOR LLM CHAT HISTORY API CALLS ---
+    /**
+     * Private helper method to make API calls to the selected LLM provider using chat history.
+     * @param {object} llmConfig - Configuration for the LLM { model: string (e.g., "gemini-2.0-flash", "perplexity"), apiKey: string }.
+     * @param {Array<Object>} messagesArray - Array of message objects {role: string, content: string}.
+     * @returns {Promise<string>} A promise that resolves with the LLM's raw Markdown text response.
+     * @throws {Error} If the API call fails or the response format is unexpected.
+     */
+    async _fetchLlmChatHistoryResponse(llmConfig, messagesArray) {
+        let textResponse = '';
+        if (!messagesArray || messagesArray.length === 0) {
+            console.error("_fetchLlmChatHistoryResponse: messagesArray is empty. Cannot make API call.");
+            throw new Error("Cannot send an empty message list to the LLM.");
+        }
+
+        console.log(`_fetchLlmChatHistoryResponse: Attempting to fetch LLM chat response. Provider/Model from config: ${llmConfig.model}. Number of messages: ${messagesArray.length}`);
+        // Log the last message for context, being careful not to log overly sensitive data if messages are large.
+        if (messagesArray.length > 0) {
+            console.log(`_fetchLlmChatHistoryResponse: Last message - Role: ${messagesArray[messagesArray.length - 1].role}, Content Snippet: "${messagesArray[messagesArray.length - 1].content.substring(0, 100)}..."`);
+        }
+
+
+        switch (llmConfig.model) {
+            case 'ollama': {
+                const ollamaEndpoint = 'http://localhost:11434/api/chat';
+                // You might want to make "mistral:latest" configurable if you use other Ollama models for chat
+                const ollamaModelName = "mistral:latest"; 
+                console.log(`_fetchLlmChatHistoryResponse: Calling Ollama (Model: ${ollamaModelName}) via /api/chat.`);
+
+                const response = await fetch(ollamaEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: ollamaModelName,
+                        messages: messagesArray, // Pass the whole history
+                        stream: false
+                    }),
+                });
+
+                if (!response.ok) {
+                    let errorBody = await response.text();
+                    try { const errorJson = JSON.parse(errorBody); if (errorJson && errorJson.error) { errorBody = errorJson.error; } } catch (e) {/*ignore parsing error*/ }
+                    console.error(`_fetchLlmChatHistoryResponse: Ollama API /api/chat request failed (${response.status}):`, errorBody);
+                    throw new Error(`Ollama API Error (${response.status}): ${errorBody}`);
+                }
+                const data = await response.json();
+                // For /api/chat, the response structure is typically data.message.content
+                if (data.message && data.message.content) {
+                    textResponse = data.message.content.trim();
+                } else {
+                    console.error("_fetchLlmChatHistoryResponse: Unexpected response structure from Ollama /api/chat:", data);
+                    textResponse = 'Error: Empty or unexpected response from Ollama chat.';
+                }
+                console.log(`_fetchLlmChatHistoryResponse: Ollama /api/chat response received. Length: ${textResponse.length}`);
+                break;
+            }
+
+            case 'gemini-2.0-flash': { // Matches the value from your llmModelSelect
+                if (!llmConfig.apiKey) {
+                    console.error("_fetchLlmChatHistoryResponse: API Key required for Google Gemini model.");
+                    throw new Error("API Key required for Google Gemini model.");
+                }
+                const geminiModelName = llmConfig.model; // Use the exact model name from the config: "gemini-2.0-flash"
+                const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModelName}:generateContent?key=${llmConfig.apiKey}`;
+                console.log(`_fetchLlmChatHistoryResponse: Calling Gemini (Model: ${geminiModelName}).`);
+
+                let systemInstruction = null;
+                let historyForGeminiContents = messagesArray; // By default, use all messages for conversion
+
+                // If the first message is a system prompt, extract it for the 'systemInstruction' field
+                if (messagesArray.length > 0 && messagesArray[0].role === 'system') {
+                    systemInstruction = { parts: [{ text: messagesArray[0].content }] };
+                    historyForGeminiContents = messagesArray.slice(1); // The rest of the messages go into 'contents'
+                    console.log("_fetchLlmChatHistoryResponse: Extracted system instruction for Gemini from the first message.");
+                }
+                
+                // Convert the (potentially sliced) history for the 'contents' field
+                const geminiFormattedMessages = convertMessagesToGeminiFormat(historyForGeminiContents);
+
+                const requestBody = {
+                    contents: geminiFormattedMessages,
+                    // Default generationConfig and safetySettings can be added here if needed globally for Gemini
+                    // generationConfig: { temperature: 0.7, topP: 1.0, ... },
+                    // safetySettings: [ { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" }, ... ],
+                };
+
+                if (systemInstruction) {
+                    requestBody.systemInstruction = systemInstruction;
+                    console.log("_fetchLlmChatHistoryResponse: Applying systemInstruction to Gemini request.");
+                }
+
+                const response = await fetch(geminiEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody),
+                });
+
+                if (!response.ok) {
+                    let errorMsg = `_fetchLlmChatHistoryResponse: Gemini API request failed (${response.status})`;
+                    try { const errorData = await response.json(); if (errorData && errorData.error && errorData.error.message) { errorMsg += `: ${errorData.error.message}`; } } catch (e) {/*ignore parsing error*/}
+                    console.error(errorMsg);
+                    throw new Error(errorMsg);
+                }
+                const data = await response.json();
+                if (data.candidates && data.candidates.length > 0 &&
+                    data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0 &&
+                    data.candidates[0].content.parts[0].text) {
+                    textResponse = data.candidates[0].content.parts[0].text.trim();
+                } else {
+                    // Check for block reason more thoroughly
+                    let blockReasonDetail = "No specific block reason found in response.";
+                    if (data.promptFeedback?.blockReason) {
+                        blockReasonDetail = `Reason: ${data.promptFeedback.blockReason}.`;
+                        if (data.promptFeedback.safetyRatings && data.promptFeedback.safetyRatings.length > 0) {
+                            blockReasonDetail += ` Safety Ratings: ${JSON.stringify(data.promptFeedback.safetyRatings)}`;
+                        }
+                    } else if (data.candidates && data.candidates.length > 0 && data.candidates[0].finishReason && data.candidates[0].finishReason !== "STOP") {
+                         blockReasonDetail = `Finish Reason: ${data.candidates[0].finishReason}.`;
+                         if (data.candidates[0].safetyRatings && data.candidates[0].safetyRatings.length > 0) {
+                             blockReasonDetail += ` Safety Ratings: ${JSON.stringify(data.candidates[0].safetyRatings)}`;
+                         }
+                    }
+
+                    console.error(`_fetchLlmChatHistoryResponse: Gemini request potentially blocked or empty response. ${blockReasonDetail} Full response:`, data);
+                    throw new Error(`Gemini request blocked or yielded empty content. ${blockReasonDetail} Please revise your input or check safety settings.`);
+                }
+                console.log(`_fetchLlmChatHistoryResponse: Gemini response received. Length: ${textResponse.length}`);
+                break;
+            }
+
+            case 'perplexity': { // Matches the value from your llmModelSelect if it's "perplexity"
+                if (!llmConfig.apiKey) {
+                    console.error("_fetchLlmChatHistoryResponse: API Key required for Perplexity model.");
+                    throw new Error("API Key required for Perplexity model.");
+                }
+                const perplexityEndpoint = 'https://api.perplexity.ai/chat/completions';
+                const perplexityModelName = "sonar";
+                console.log(`_fetchLlmChatHistoryResponse: Calling Perplexity (Model: ${perplexityModelName}). (Original config model was: "${llmConfig.model}")`);
+
+
+                const response = await fetch(perplexityEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${llmConfig.apiKey}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: perplexityModelName,
+                        messages: messagesArray, // Perplexity expects 'system', 'user', 'assistant' roles
+                    }),
+                });
+
+                if (!response.ok) {
+                    let errorMsg = `_fetchLlmChatHistoryResponse: Perplexity API request failed (${response.status})`;
+                    try { const errorData = await response.json(); if (errorData && errorData.detail) { errorMsg += `: ${JSON.stringify(errorData.detail)}`; } else if (response.statusText) { errorMsg += `: ${response.statusText}`;}} catch (e) { errorMsg += `: ${response.statusText || "Could not retrieve error details."}`; }
+                    console.error(errorMsg);
+                    throw new Error(errorMsg);
+                }
+                const data = await response.json();
+                if (data.choices && data.choices.length > 0 &&
+                    data.choices[0].message && data.choices[0].message.content) {
+                    textResponse = data.choices[0].message.content.trim();
+                } else {
+                    console.error("_fetchLlmChatHistoryResponse: Unexpected Perplexity response format:", data);
+                    throw new Error('Error: Unexpected response format from Perplexity.');
+                }
+                console.log(`_fetchLlmChatHistoryResponse: Perplexity response received. Length: ${textResponse.length}`);
+                break;
+            }
+
+            case 'none':
+                console.log("_fetchLlmChatHistoryResponse: 'none' selected for LLM model. No API call made.");
+                textResponse = "Please select an LLM model to get a response.";
+                // Consider if this should throw an error to be caught by handleSendChatMessage
+                // throw new Error("No LLM model selected.");
+                break;
+
+            default:
+                console.warn(`_fetchLlmChatHistoryResponse: Unsupported LLM model specified in config: ${llmConfig.model}`);
+                throw new Error(`Unsupported LLM model for chat history: ${llmConfig.model}`);
+        }
+        return textResponse;
+    }
+    
     /**
      * Private helper method to make API calls to the selected LLM provider.
      * This centralizes the fetch logic for different LLMs.
