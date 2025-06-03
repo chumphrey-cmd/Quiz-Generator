@@ -149,21 +149,30 @@ class ExamManager {
     ==========================================================================
     */
 
+    /**
+     * Handles file upload, parses questions, validates them, displays them,
+     * and sets up dynamic event listeners.
+     * Now also resets chat histories when new files are uploaded.
+     * @param {Event} event - The file input change event.
+     */
     async handleFileUpload(event) {
+        // --- Reset Chat Histories ---
+        // Clear any existing chat histories from previous sessions/files.
+        this.chatHistories = {};
+        console.log("handleFileUpload: Chat histories have been reset.");
+
         const files = event.target.files;
         if (!files || files.length === 0) {
-            console.log("handleFileUpload: No files selected."); // Added Log
+            console.log("handleFileUpload: No files selected.");
             return;
         }
-        console.log(`handleFileUpload: Processing ${files.length} file(s)...`); // Added Log
+        console.log(`handleFileUpload: Processing ${files.length} file(s)...`);
     
-        // File reading logic
         let allParsedQuestions = [];
         let fileReadPromises = [];
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             if (file.name.endsWith('.txt') && file.type === 'text/plain') {
-                 // console.log(`handleFileUpload: Reading file: ${file.name}`); // Optional log
                  fileReadPromises.push(this.readFileContent(file).catch(e => ({ error: e, fileName: file.name })));
             } else {
                  console.warn(`handleFileUpload: Skipping non-TXT file: ${file.name}`);
@@ -171,56 +180,41 @@ class ExamManager {
         }
     
         try {
-            // Wait for all files to be read
             const fileContents = await Promise.all(fileReadPromises);
             let combinedRawText = "";
-            fileContents.forEach((content, index) => {
+            fileContents.forEach((content) => {
                  if (content.error) {
-                      console.error(`handleFileUpload: Error reading file ${content.fileName}:`, content.error); // Added Log
+                      console.error(`handleFileUpload: Error reading file ${content.fileName}:`, content.error);
                       alert(`Could not read file: ${content.fileName}. Skipping.`);
-                      // Don't append content if there was an error reading it
                  } else {
-                    // Append content only if read successfully
-                    combinedRawText += content + "\n\n"; // Ensure separation between files
+                    combinedRawText += content + "\n\n"; 
                  }
             });
-            console.log("handleFileUpload: Combined raw text length:", combinedRawText.length); // Added Log
-            // Trim trailing newlines from combining files before processing
+            console.log("handleFileUpload: Combined raw text length:", combinedRawText.length);
             combinedRawText = combinedRawText.trim();
     
-            // Inner try-catch specifically for parsing/validation phase
             try {
-                // Call the parser function from parser.js
-                console.log("handleFileUpload: Calling processQuestions..."); // Added Log
-                const parsedFromCombined = processQuestions(combinedRawText); // Assumes processQuestions handles trimming if needed
-                // *** ADDED LOG ***: Check the direct return value
+                console.log("handleFileUpload: Calling processQuestions...");
+                const parsedFromCombined = processQuestions(combinedRawText); 
                 console.log("handleFileUpload: processQuestions returned:", parsedFromCombined);
     
-                // Check if the result is truthy (an array, even empty, is truthy; null/undefined is falsy)
                 if (parsedFromCombined !== null && typeof parsedFromCombined !== 'undefined') {
-                     // *** ADDED LOG ***: Confirm assignment path
                      console.log("handleFileUpload: Assigning parsed questions to allParsedQuestions.");
-                    allParsedQuestions = parsedFromCombined; // Assign the array (potentially empty)
+                    allParsedQuestions = parsedFromCombined; 
                 } else {
-                     // *** ADDED LOG ***: Log if parser explicitly returned null/falsy (likely validation error)
-                     console.log("handleFileUpload: processQuestions returned null or undefined value. Resetting.");
-                     // Error message/alert likely happened inside processQuestions
-                     resetDisplays(0);
-                     return; // Exit if parsing/validation failed explicitly
+                     console.log("handleFileUpload: processQuestions returned null or undefined value. Resetting displays.");
+                     resetDisplays(0); // Assuming resetDisplays is a global function from ui.js or part of ExamManager
+                     return; 
                 }
             } catch (error) {
-                // Catch errors specifically occurring *during* the processQuestions call
-                console.error('handleFileUpload: Error during processQuestions call:', error); // Added Log
+                console.error('handleFileUpload: Error during processQuestions call:', error);
                 alert('An error occurred while parsing the questions.');
                 resetDisplays(0);
                 return;
             }
     
-            // *** ADDED LOG *** Check the array variable *after* the assignment logic
             console.log("handleFileUpload: Value of allParsedQuestions before length check:", allParsedQuestions);
     
-            // --- Check if questions were actually parsed ---
-            // Ensure allParsedQuestions is an array before checking length
             if (!Array.isArray(allParsedQuestions)) {
                 console.error("handleFileUpload: Error - allParsedQuestions is not an array! Value:", allParsedQuestions);
                 alert("An internal error occurred after parsing. Check console.");
@@ -228,62 +222,69 @@ class ExamManager {
                 return;
             }
     
-            // Now safely check the length
             if (allParsedQuestions.length === 0) {
-                 // *** ADDED LOG ***
                  console.log("handleFileUpload: allParsedQuestions array is empty. Alerting user.");
-                alert("No valid questions were successfully parsed from the selected file(s). Check file format and console logs (including parser logs).");
+                alert("No valid questions were successfully parsed from the selected file(s). Check file format and console logs.");
                 resetDisplays(0);
-                return; // Stop if no questions were parsed
+                return; 
             }
     
-            // --- If we have questions, proceed ---
-            console.log(`handleFileUpload: Total valid questions parsed: ${allParsedQuestions.length}`); // Existing log
+            console.log(`handleFileUpload: Total valid questions parsed: ${allParsedQuestions.length}`);
     
-            // Shuffle and renumber (unchanged)
             this.questions = this.shuffleArray(allParsedQuestions);
             this.renumberQuestions();
     
-            // Reset state and UI (unchanged)
             this.totalQuestions = this.questions.length;
             this.answeredQuestions = 0;
             this.currentScore = 0;
-            this.resetTimer();
-            resetDisplays(this.totalQuestions);
-    
-            // Render questions using ui.js function
-            console.log("handleFileUpload: Calling displayQuestions..."); // Added Log
+            
+            // Call resetDisplays (from ui.js) before starting the timer or rendering new questions
+            // Assuming resetDisplays is globally available or you call it via an instance if it's part of a class.
+            // Make sure resetDisplays is defined and accessible. From your ui.js, it's a global function.
+            if (typeof resetDisplays === 'function') {
+                resetDisplays(this.totalQuestions);
+                console.log("handleFileUpload: Called resetDisplays().");
+            } else {
+                console.warn("handleFileUpload: resetDisplays function not found. UI might not reset correctly.");
+            }
+            
+            this.resetTimer(); // Reset and prepare the timer state
+            // Note: resetDisplays already updates score and progress. Timer display is handled by resetTimer then updateTimerDisplay.
+
+
+            console.log("handleFileUpload: Calling displayQuestions to generate HTML content...");
             const htmlContent = displayQuestions(this.questions); // From ui.js
-            console.log("handleFileUpload: HTML content generated length:", htmlContent.length); // Added Log
-            // Ensure quiz-content element exists before setting innerHTML
+            console.log("handleFileUpload: HTML content generated length:", htmlContent.length);
+            
             const quizContentElement = document.getElementById('quiz-content');
             if (quizContentElement) {
                 quizContentElement.innerHTML = htmlContent;
-                console.log("handleFileUpload: Injected HTML into quiz-content."); // Added Log
+                console.log("handleFileUpload: Injected HTML into quiz-content.");
             } else {
                 console.error("handleFileUpload: Could not find quiz-content element to inject HTML!");
                 alert("Error: Could not display questions. UI element missing.");
                 return;
             }
     
-            // Initialize listeners for the newly added buttons
-            console.log("handleFileUpload: Initializing Submit listeners..."); // Added Log
+            console.log("handleFileUpload: Initializing Submit listeners...");
             this.initializeSubmitListeners();
-            console.log("handleFileUpload: Initializing Explain listeners..."); // Added Log
+            console.log("handleFileUpload: Initializing Explain listeners...");
             this.initializeExplainListeners();
+            // Chat send button listeners are initialized within initiateChatInterface dynamically.
     
-            console.log('handleFileUpload: Quiz initialized successfully.'); // Added Log
-            this.startTimer();
+            console.log('handleFileUpload: Quiz initialized successfully.');
+            this.startTimer(); // Start the timer after everything is set up
     
         } catch (error) {
-             // Catch errors from await Promise.all or other general issues in the outer try
-             console.error('handleFileUpload: General error in outer try block:', error); // Added Log
+             console.error('handleFileUpload: General error in outer try block:', error);
             alert('An unexpected error occurred while processing the files.');
-            resetDisplays(0);
+            if (typeof resetDisplays === 'function') {
+                resetDisplays(0);
+            }
         }
-         // Clear file input value regardless of success/failure
          if(event && event.target) {
-            event.target.value = null;
+            event.target.value = null; // Clear the file input
+            console.log("handleFileUpload: File input value cleared.");
          }
     }
 
@@ -431,7 +432,6 @@ class ExamManager {
             apiKey: apiKey
         };
 
-        // Call the async explanation function (getLlmExplanation) which should use the renamed _fetchLlmSinglePromptResponse
         // This will return the RAW MARKDOWN string.
         console.log(`handleExplainClick: Calling getLlmExplanation for question ${questionNumber}.`);
         const rawExplanationMarkdown = await this.getLlmExplanation(questionText, questionAnswers, llmConfig);
@@ -752,7 +752,7 @@ class ExamManager {
     /**
      * Asynchronously gets an explanation for a given question from an LLM.
      * This method now constructs the specific prompt for an initial explanation
-     * and uses the _fetchLlmResponse helper for the actual API call.
+     * and uses the _fetchLlmSinglePromptResponse helper for the actual API call.
      * @param {string} questionText - The text of the question to explain.
      * @param {Array} questionAnswers - The array of answer objects [{letter: 'A', text: '...'}].
      * @param {object} config - Configuration object { model: string (provider), apiKey: string }.
@@ -824,20 +824,20 @@ class ExamManager {
         Options:
         ${formattedAnswers}`;
 
-        // Use a try-catch block to handle potential errors from the _fetchLlmResponse call.
+        // Use a try-catch block to handle potential errors from the _fetchLlmSinglePromptResponse call.
         try {
             // Delegate the actual API call to the new centralized helper method.
             // 'config' contains the LLM provider and API key.
             // 'basePrompt' is the fully constructed prompt string for this initial explanation.
-            console.log("Calling _fetchLlmResponse for initial explanation...");
-            const explanation = await this._fetchLlmResponse(config, basePrompt);
+            console.log("Calling _fetchLlmSinglePromptResponse for initial explanation...");
+            const explanation = await this._fetchLlmSinglePromptResponse(config, basePrompt);
             
             // Return the text explanation received from the LLM.
             return explanation;
         } catch (error) {
-            // If _fetchLlmResponse throws an error (e.g., API error, network issue),
+            // If _fetchLlmSinglePromptResponse throws an error (e.g., API error, network issue),
             // log it and return a user-friendly error message.
-            console.error('Error in getLlmExplanation while calling _fetchLlmResponse:', error.message);
+            console.error('Error in getLlmExplanation while calling _fetchLlmSinglePromptResponse:', error.message);
             // This message will be displayed in the UI where the explanation was expected.
             return `Sorry, I couldn't fetch an explanation at this time. Error: ${error.message}`;
         }
@@ -1286,15 +1286,49 @@ class ExamManager {
                 break;
             }
 
-            case 'perplexity': { // Matches the value from your llmModelSelect if it's "perplexity"
+            case 'perplexity': {
                 if (!llmConfig.apiKey) {
                     console.error("_fetchLlmChatHistoryResponse: API Key required for Perplexity model.");
                     throw new Error("API Key required for Perplexity model.");
                 }
                 const perplexityEndpoint = 'https://api.perplexity.ai/chat/completions';
                 const perplexityModelName = "sonar";
-                console.log(`_fetchLlmChatHistoryResponse: Calling Perplexity (Model: ${perplexityModelName}). (Original config model was: "${llmConfig.model}")`);
+                
+                console.log(`_fetchLlmChatHistoryResponse: Calling Perplexity. Config model from UI: "${llmConfig.model}", Using API Model ID: "${perplexityModelName}".`);
 
+                // --- Adjust messages array for Perplexity's role alternation requirement ---
+                let messagesForApi = [...messagesArray]; // Create a mutable copy
+
+                // Perplexity Note: "After the (optional) system message(s), user and assistant roles should be alternating."
+                // This means a sequence like [system, assistant, user] is problematic.
+                // If our history starts with a system message, followed by our initial assistant explanation,
+                // then the user's first actual query, we should remove the initial assistant explanation
+                // from the array *sent to the API* for this turn.
+                // The initial explanation is context the user has, and their first message is a response to it.
+                if (messagesForApi.length >= 2 &&
+                    messagesForApi[0].role === 'system' &&
+                    messagesForApi[1].role === 'assistant') {
+                    
+                    console.warn(`_fetchLlmChatHistoryResponse (Perplexity): Original message sequence starts [system, assistant, ...]. Adjusting for API call.`);
+                    // Remove the initial assistant message (at index 1) to ensure alternation after system.
+                    // This applies if the sequence is [system, assistant, user, ...] or just [system, assistant] (though the latter shouldn't occur before a user sends a message).
+                    messagesForApi.splice(1, 1); 
+                    console.log("_fetchLlmChatHistoryResponse (Perplexity): Messages for API after adjustment:", JSON.stringify(messagesForApi, null, 2));
+
+                    // If after splicing, the array is just [system], it's not a valid chat turn to send.
+                    // This shouldn't happen because handleSendChatMessage adds a user message.
+                    if (messagesForApi.length === 1 && messagesForApi[0].role === 'system') {
+                        console.error("_fetchLlmChatHistoryResponse (Perplexity): After adjustment, only a system message remains. Invalid API call.");
+                        throw new Error("Cannot send only a system message to Perplexity after adjustment.");
+                    }
+                }
+
+                const requestPayload = {
+                    model: perplexityModelName,
+                    messages: messagesForApi, // Use the adjusted array
+                };
+
+                console.log("_fetchLlmChatHistoryResponse: Perplexity request payload (final):", JSON.stringify(requestPayload, null, 2));
 
                 const response = await fetch(perplexityEndpoint, {
                     method: 'POST',
@@ -1303,15 +1337,35 @@ class ExamManager {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
                     },
-                    body: JSON.stringify({
-                        model: perplexityModelName,
-                        messages: messagesArray, // Perplexity expects 'system', 'user', 'assistant' roles
-                    }),
+                    body: JSON.stringify(requestPayload),
                 });
 
                 if (!response.ok) {
                     let errorMsg = `_fetchLlmChatHistoryResponse: Perplexity API request failed (${response.status})`;
-                    try { const errorData = await response.json(); if (errorData && errorData.detail) { errorMsg += `: ${JSON.stringify(errorData.detail)}`; } else if (response.statusText) { errorMsg += `: ${response.statusText}`;}} catch (e) { errorMsg += `: ${response.statusText || "Could not retrieve error details."}`; }
+                    let errorDetail = response.statusText || "Could not retrieve error details from response header.";
+                    try {
+                        const errorData = await response.json();
+                        console.error("_fetchLlmChatHistoryResponse: Perplexity API error response body:", errorData);
+                        if (errorData && errorData.detail) {
+                           if (typeof errorData.detail === 'string') {
+                               errorDetail = errorData.detail;
+                           } else if (errorData.detail.message) {
+                               errorDetail = errorData.detail.message;
+                           } else {
+                               errorDetail = JSON.stringify(errorData.detail);
+                           }
+                        } else if (errorData && errorData.error && errorData.error.message) { // More generic error structure
+                            errorDetail = errorData.error.message;
+                        }
+                    } catch (e) {
+                        try {
+                            errorDetail = await response.text();
+                            console.error("_fetchLlmChatHistoryResponse: Perplexity API error response raw text:", errorDetail);
+                        } catch (e_text) {
+                             console.error("_fetchLlmChatHistoryResponse: Could not parse Perplexity error as JSON or get raw text.");
+                        }
+                    }
+                    errorMsg += `: ${errorDetail}`;
                     console.error(errorMsg);
                     throw new Error(errorMsg);
                 }
@@ -1320,8 +1374,8 @@ class ExamManager {
                     data.choices[0].message && data.choices[0].message.content) {
                     textResponse = data.choices[0].message.content.trim();
                 } else {
-                    console.error("_fetchLlmChatHistoryResponse: Unexpected Perplexity response format:", data);
-                    throw new Error('Error: Unexpected response format from Perplexity.');
+                    console.error("_fetchLlmChatHistoryResponse: Unexpected Perplexity response format (no content):", data);
+                    throw new Error('Error: Unexpected response format from Perplexity (no content).');
                 }
                 console.log(`_fetchLlmChatHistoryResponse: Perplexity response received. Length: ${textResponse.length}`);
                 break;
@@ -1330,8 +1384,6 @@ class ExamManager {
             case 'none':
                 console.log("_fetchLlmChatHistoryResponse: 'none' selected for LLM model. No API call made.");
                 textResponse = "Please select an LLM model to get a response.";
-                // Consider if this should throw an error to be caught by handleSendChatMessage
-                // throw new Error("No LLM model selected.");
                 break;
 
             default:
@@ -1350,7 +1402,7 @@ class ExamManager {
      * @returns {Promise<string>} A promise that resolves with the LLM's text response.
      * @throws {Error} If the API call fails or the response format is unexpected.
      */
-    async _fetchLlmResponse(llmConfig, promptString) {
+    async  _fetchLlmSinglePromptResponse(llmConfig, promptString) {
         // This variable will store the final text response from the LLM.
         let textResponse = '';
 

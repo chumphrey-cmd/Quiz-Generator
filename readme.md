@@ -48,7 +48,7 @@ git clone https://github.com/chumphrey-cmd/QA-Generator.git
 ### In Progress... ⏳
 
 * **Additional LLM Features:**
-  * Current the Ollama model is hard-coded. I would like the application the ability to identify which models you currently have loaded and provide you the ability to select the model of choice.
+  * Currently the Ollama models are hard-coded. I would like the application the ability to identify which models you currently have loaded and provide you the ability to select the model of choice.
   * Include API syntax for other Gemini models
   * Integrate session-only, per-question chat history
 
