@@ -52,6 +52,7 @@ class ExamManager {
         const initialTimerInput = document.getElementById('timerDurationInput');
         this.timerDuration = (initialTimerInput ? parseInt(initialTimerInput.value, 10) : 10) * 60;
         this.isTimerEnabled = true; // Timer is ON by default
+        this.isTimeInfinite = false; // Tracks if the timer is set to no limit
 
         // --- Chat History Storage ---
         // This object will store chat histories for each question.
@@ -69,6 +70,10 @@ class ExamManager {
         // --- Initialize Event Listeners ---
         this.initializeEventListeners();
         console.log("ExamManager constructor finished.");
+
+        // -- Populate Ollama models ---
+        this.populateOllamaModelsDropdown(); 
+
     }
 
     /* 
@@ -99,7 +104,7 @@ class ExamManager {
              // Blur event listener for min/max enforcement
               timerInput.addEventListener('blur', function() {
                    const min = parseInt(this.min, 10) || 1;
-                   const max = parseInt(this.max, 10) || 180;
+                   const max = parseInt(this.max, 10) || 999999;
                    let currentValue = parseInt(this.value, 10);
                    if (isNaN(currentValue) || currentValue < min) this.value = min;
                    else if (currentValue > max) this.value = max;
@@ -1138,7 +1143,7 @@ class ExamManager {
     /* 
     ==========================================================================
     --- 9. "PRIVATE" HELPER METHODS ---
-    Internal utility methods, often prefixed with an underscore.
+    Internal utility methods
     ==========================================================================
     */
 
@@ -1159,441 +1164,524 @@ class ExamManager {
     // --- HELPER METHOD FOR LLM CHAT HISTORY API CALLS ---
     /**
      * Private helper method to make API calls to the selected LLM provider using chat history.
-     * @param {object} llmConfig - Configuration for the LLM { model: string (e.g., "gemini-2.0-flash", "perplexity"), apiKey: string }.
+     * This method now dynamically handles Ollama models selected from the UI.
+     * @param {object} llmConfig - Configuration for the LLM { model: string (e.g., "ollama/mistral:latest", "gemini-2.0-flash"), apiKey: string }.
      * @param {Array<Object>} messagesArray - Array of message objects {role: string, content: string}.
      * @returns {Promise<string>} A promise that resolves with the LLM's raw Markdown text response.
      * @throws {Error} If the API call fails or the response format is unexpected.
      */
     async _fetchLlmChatHistoryResponse(llmConfig, messagesArray) {
+        // This variable will store the final text response from the LLM.
         let textResponse = '';
+
+        // Ensure messagesArray is not empty before proceeding, as it's crucial for chat history.
         if (!messagesArray || messagesArray.length === 0) {
             console.error("_fetchLlmChatHistoryResponse: messagesArray is empty. Cannot make API call.");
             throw new Error("Cannot send an empty message list to the LLM.");
         }
 
-        console.log(`_fetchLlmChatHistoryResponse: Attempting to fetch LLM chat response. Provider/Model from config: ${llmConfig.model}. Number of messages: ${messagesArray.length}`);
-        // Log the last message for context, being careful not to log overly sensitive data if messages are large.
+        // Log the attempt to fetch, showing which provider/model is selected from the config
+        // and the number of messages in the history.
+        console.log(`_fetchLlmChatHistoryResponse: Attempting response. Provider/Model from config: ${llmConfig.model}. Messages in history: ${messagesArray.length}`);
+        // Log the last message for context, useful for debugging.
         if (messagesArray.length > 0) {
             console.log(`_fetchLlmChatHistoryResponse: Last message - Role: ${messagesArray[messagesArray.length - 1].role}, Content Snippet: "${messagesArray[messagesArray.length - 1].content.substring(0, 100)}..."`);
         }
 
+        // --- Check if the selected model is an Ollama model based on the "ollama/" prefix ---
+        let isOllamaCall = false;
+        let specificOllamaModelName = null; // To store the actual Ollama model name like "mistral:latest"
 
-        switch (llmConfig.model) {
-            case 'ollama': {
-                const ollamaEndpoint = 'http://localhost:11434/api/chat';
-                // You might want to make "mistral:latest" configurable if you use other Ollama models for chat
-                const ollamaModelName = "mistral:latest"; 
-                console.log(`_fetchLlmChatHistoryResponse: Calling Ollama (Model: ${ollamaModelName}) via /api/chat.`);
+        if (llmConfig.model && llmConfig.model.startsWith('ollama/')) {
+            isOllamaCall = true;
+            // If it's an Ollama model, extract the model name part after "ollama/"
+            // For example, if llmConfig.model is "ollama/mistral:latest", specificOllamaModelName will be "mistral:latest"
+            specificOllamaModelName = llmConfig.model.substring('ollama/'.length);
+            console.log(`_fetchLlmChatHistoryResponse: Detected Ollama call. Specific model to use: ${specificOllamaModelName}`);
+        }
 
+        // --- Handle Ollama calls separately if detected ---
+        if (isOllamaCall) {
+            // Define the local Ollama API endpoint for chat conversations.
+            const ollamaEndpoint = 'http://localhost:11434/api/chat';
+            // Use the dynamically extracted model name for the API call.
+            const modelNameForApi = specificOllamaModelName;
+
+            console.log(`_fetchLlmChatHistoryResponse: Calling Ollama (Model: ${modelNameForApi}) via /api/chat endpoint.`);
+
+            try {
+                // Make the asynchronous POST request to the Ollama /api/chat endpoint.
                 const response = await fetch(ollamaEndpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        model: ollamaModelName,
-                        messages: messagesArray, // Pass the whole history
-                        stream: false
+                        model: modelNameForApi,    // Send the specific model name
+                        messages: messagesArray, // Send the entire chat history
+                        stream: false            // We want the full response
                     }),
                 });
 
+                // Check if the HTTP response status indicates an error.
                 if (!response.ok) {
                     let errorBody = await response.text();
-                    try { const errorJson = JSON.parse(errorBody); if (errorJson && errorJson.error) { errorBody = errorJson.error; } } catch (e) {/*ignore parsing error*/ }
+                    try { const errorJson = JSON.parse(errorBody); if (errorJson && errorJson.error) { errorBody = errorJson.error; } } catch (e) { /* ignore parsing error */ }
                     console.error(`_fetchLlmChatHistoryResponse: Ollama API /api/chat request failed (${response.status}):`, errorBody);
                     throw new Error(`Ollama API Error (${response.status}): ${errorBody}`);
                 }
+                
                 const data = await response.json();
-                // For /api/chat, the response structure is typically data.message.content
+                // For Ollama's /api/chat, the response is usually in data.message.content
                 if (data.message && data.message.content) {
                     textResponse = data.message.content.trim();
                 } else {
-                    console.error("_fetchLlmChatHistoryResponse: Unexpected response structure from Ollama /api/chat:", data);
+                    console.error("_fetchLlmChatHistoryResponse: Unexpected response structure from Ollama /api/chat (missing 'message.content'):", data);
                     textResponse = 'Error: Empty or unexpected response from Ollama chat.';
                 }
                 console.log(`_fetchLlmChatHistoryResponse: Ollama /api/chat response received. Length: ${textResponse.length}`);
-                break;
+            
+            } catch (error) { // Catch network errors or errors from the 'throw' statements above.
+                 console.error(`_fetchLlmChatHistoryResponse: Error during Ollama /api/chat call for model ${modelNameForApi}:`, error);
+                 throw error; // Re-throw to be handled by the calling function (handleSendChatMessage)
             }
+        } else {
+            // --- If not an Ollama call, proceed with the existing switch statement for other providers ---
+            console.log(`_fetchLlmChatHistoryResponse: Not an Ollama call. Processing model "${llmConfig.model}" with switch statement.`);
+            // Use a switch statement to handle logic specific to each other LLM provider.
+            switch (llmConfig.model) {
+                // The 'ollama' case from your original code is now effectively handled by the 'if (isOllamaCall)' block.
 
-            case 'gemini-2.0-flash': { // Matches the value from your llmModelSelect
-                if (!llmConfig.apiKey) {
-                    console.error("_fetchLlmChatHistoryResponse: API Key required for Google Gemini model.");
-                    throw new Error("API Key required for Google Gemini model.");
-                }
-                const geminiModelName = llmConfig.model; // Use the exact model name from the config: "gemini-2.0-flash"
-                const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModelName}:generateContent?key=${llmConfig.apiKey}`;
-                console.log(`_fetchLlmChatHistoryResponse: Calling Gemini (Model: ${geminiModelName}).`);
-
-                let systemInstruction = null;
-                let historyForGeminiContents = messagesArray; // By default, use all messages for conversion
-
-                // If the first message is a system prompt, extract it for the 'systemInstruction' field
-                if (messagesArray.length > 0 && messagesArray[0].role === 'system') {
-                    systemInstruction = { parts: [{ text: messagesArray[0].content }] };
-                    historyForGeminiContents = messagesArray.slice(1); // The rest of the messages go into 'contents'
-                    console.log("_fetchLlmChatHistoryResponse: Extracted system instruction for Gemini from the first message.");
-                }
-                
-                // Convert the (potentially sliced) history for the 'contents' field
-                const geminiFormattedMessages = convertMessagesToGeminiFormat(historyForGeminiContents);
-
-                const requestBody = {
-                    contents: geminiFormattedMessages,
-                    // Default generationConfig and safetySettings can be added here if needed globally for Gemini
-                    // generationConfig: { temperature: 0.7, topP: 1.0, ... },
-                    // safetySettings: [ { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" }, ... ],
-                };
-
-                if (systemInstruction) {
-                    requestBody.systemInstruction = systemInstruction;
-                    console.log("_fetchLlmChatHistoryResponse: Applying systemInstruction to Gemini request.");
-                }
-
-                const response = await fetch(geminiEndpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody),
-                });
-
-                if (!response.ok) {
-                    let errorMsg = `_fetchLlmChatHistoryResponse: Gemini API request failed (${response.status})`;
-                    try { const errorData = await response.json(); if (errorData && errorData.error && errorData.error.message) { errorMsg += `: ${errorData.error.message}`; } } catch (e) {/*ignore parsing error*/}
-                    console.error(errorMsg);
-                    throw new Error(errorMsg);
-                }
-                const data = await response.json();
-                if (data.candidates && data.candidates.length > 0 &&
-                    data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0 &&
-                    data.candidates[0].content.parts[0].text) {
-                    textResponse = data.candidates[0].content.parts[0].text.trim();
-                } else {
-                    // Check for block reason more thoroughly
-                    let blockReasonDetail = "No specific block reason found in response.";
-                    if (data.promptFeedback?.blockReason) {
-                        blockReasonDetail = `Reason: ${data.promptFeedback.blockReason}.`;
-                        if (data.promptFeedback.safetyRatings && data.promptFeedback.safetyRatings.length > 0) {
-                            blockReasonDetail += ` Safety Ratings: ${JSON.stringify(data.promptFeedback.safetyRatings)}`;
-                        }
-                    } else if (data.candidates && data.candidates.length > 0 && data.candidates[0].finishReason && data.candidates[0].finishReason !== "STOP") {
-                         blockReasonDetail = `Finish Reason: ${data.candidates[0].finishReason}.`;
-                         if (data.candidates[0].safetyRatings && data.candidates[0].safetyRatings.length > 0) {
-                             blockReasonDetail += ` Safety Ratings: ${JSON.stringify(data.candidates[0].safetyRatings)}`;
-                         }
+                case 'gemini-2.0-flash': { // Matches the value from your llmModelSelect
+                    // (This is your existing Gemini logic, ensure it's complete and correct)
+                    if (!llmConfig.apiKey) {
+                        console.error("_fetchLlmChatHistoryResponse: API Key required for Google Gemini model.");
+                        throw new Error("API Key required for Google Gemini model.");
                     }
+                    const geminiModelName = llmConfig.model; 
+                    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModelName}:generateContent?key=${llmConfig.apiKey}`;
+                    console.log(`_fetchLlmChatHistoryResponse: Calling Gemini (Model: ${geminiModelName}) for chat history.`);
 
-                    console.error(`_fetchLlmChatHistoryResponse: Gemini request potentially blocked or empty response. ${blockReasonDetail} Full response:`, data);
-                    throw new Error(`Gemini request blocked or yielded empty content. ${blockReasonDetail} Please revise your input or check safety settings.`);
-                }
-                console.log(`_fetchLlmChatHistoryResponse: Gemini response received. Length: ${textResponse.length}`);
-                break;
-            }
+                    let systemInstruction = null;
+                    let historyForGeminiContents = messagesArray; 
 
-            case 'perplexity': {
-                if (!llmConfig.apiKey) {
-                    console.error("_fetchLlmChatHistoryResponse: API Key required for Perplexity model.");
-                    throw new Error("API Key required for Perplexity model.");
-                }
-                const perplexityEndpoint = 'https://api.perplexity.ai/chat/completions';
-                const perplexityModelName = "sonar";
-                
-                console.log(`_fetchLlmChatHistoryResponse: Calling Perplexity. Config model from UI: "${llmConfig.model}", Using API Model ID: "${perplexityModelName}".`);
-
-                // --- Adjust messages array for Perplexity's role alternation requirement ---
-                let messagesForApi = [...messagesArray]; // Create a mutable copy
-
-                // Perplexity Note: "After the (optional) system message(s), user and assistant roles should be alternating."
-                // This means a sequence like [system, assistant, user] is problematic.
-                // If our history starts with a system message, followed by our initial assistant explanation,
-                // then the user's first actual query, we should remove the initial assistant explanation
-                // from the array *sent to the API* for this turn.
-                // The initial explanation is context the user has, and their first message is a response to it.
-                if (messagesForApi.length >= 2 &&
-                    messagesForApi[0].role === 'system' &&
-                    messagesForApi[1].role === 'assistant') {
+                    if (messagesArray.length > 0 && messagesArray[0].role === 'system') {
+                        systemInstruction = { parts: [{ text: messagesArray[0].content }] };
+                        historyForGeminiContents = messagesArray.slice(1); 
+                        console.log("_fetchLlmChatHistoryResponse: Extracted system instruction for Gemini from the first message.");
+                    }
                     
-                    console.warn(`_fetchLlmChatHistoryResponse (Perplexity): Original message sequence starts [system, assistant, ...]. Adjusting for API call.`);
-                    // Remove the initial assistant message (at index 1) to ensure alternation after system.
-                    // This applies if the sequence is [system, assistant, user, ...] or just [system, assistant] (though the latter shouldn't occur before a user sends a message).
-                    messagesForApi.splice(1, 1); 
-                    console.log("_fetchLlmChatHistoryResponse (Perplexity): Messages for API after adjustment:", JSON.stringify(messagesForApi, null, 2));
+                    const geminiFormattedMessages = convertMessagesToGeminiFormat(historyForGeminiContents); // Make sure convertMessagesToGeminiFormat is available
 
-                    // If after splicing, the array is just [system], it's not a valid chat turn to send.
-                    // This shouldn't happen because handleSendChatMessage adds a user message.
-                    if (messagesForApi.length === 1 && messagesForApi[0].role === 'system') {
-                        console.error("_fetchLlmChatHistoryResponse (Perplexity): After adjustment, only a system message remains. Invalid API call.");
-                        throw new Error("Cannot send only a system message to Perplexity after adjustment.");
+                    const requestBody = {
+                        contents: geminiFormattedMessages,
+                    };
+
+                    if (systemInstruction) {
+                        requestBody.systemInstruction = systemInstruction;
+                        console.log("_fetchLlmChatHistoryResponse: Applying systemInstruction to Gemini request.");
                     }
+
+                    const response = await fetch(geminiEndpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(requestBody),
+                    });
+
+                    if (!response.ok) {
+                        let errorMsg = `_fetchLlmChatHistoryResponse: Gemini API request failed (${response.status})`;
+                        try { const errorData = await response.json(); if (errorData && errorData.error && errorData.error.message) { errorMsg += `: ${errorData.error.message}`; } } catch (e) {/*ignore parsing error*/}
+                        console.error(errorMsg);
+                        throw new Error(errorMsg);
+                    }
+                    const data = await response.json();
+                    if (data.candidates && data.candidates.length > 0 &&
+                        data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts.length > 0 &&
+                        data.candidates[0].content.parts[0].text) {
+                        textResponse = data.candidates[0].content.parts[0].text.trim();
+                    } else {
+                        let blockReasonDetail = "No specific block reason found in response.";
+                        if (data.promptFeedback?.blockReason) {
+                            blockReasonDetail = `Reason: ${data.promptFeedback.blockReason}.`;
+                            if (data.promptFeedback.safetyRatings && data.promptFeedback.safetyRatings.length > 0) {
+                                blockReasonDetail += ` Safety Ratings: ${JSON.stringify(data.promptFeedback.safetyRatings)}`;
+                            }
+                        } else if (data.candidates && data.candidates.length > 0 && data.candidates[0].finishReason && data.candidates[0].finishReason !== "STOP") {
+                             blockReasonDetail = `Finish Reason: ${data.candidates[0].finishReason}.`;
+                             if (data.candidates[0].safetyRatings && data.candidates[0].safetyRatings.length > 0) {
+                                 blockReasonDetail += ` Safety Ratings: ${JSON.stringify(data.candidates[0].safetyRatings)}`;
+                             }
+                        }
+                        console.error(`_fetchLlmChatHistoryResponse: Gemini request potentially blocked or empty response. ${blockReasonDetail} Full response:`, data);
+                        throw new Error(`Gemini request blocked or yielded empty content for chat. ${blockReasonDetail} Please revise your input or check safety settings.`);
+                    }
+                    console.log(`_fetchLlmChatHistoryResponse: Gemini chat response received. Length: ${textResponse.length}`);
+                    break;
                 }
 
-                const requestPayload = {
-                    model: perplexityModelName,
-                    messages: messagesForApi, // Use the adjusted array
-                };
+                case 'perplexity': {
+                    // (This is your existing Perplexity logic, including the role alternation fix)
+                    if (!llmConfig.apiKey) {
+                        console.error("_fetchLlmChatHistoryResponse: API Key required for Perplexity model.");
+                        throw new Error("API Key required for Perplexity model.");
+                    }
+                    const perplexityEndpoint = 'https://api.perplexity.ai/chat/completions';
+                    const perplexityModelName = "sonar"; // As per your confirmation for the API
+                    
+                    console.log(`_fetchLlmChatHistoryResponse: Calling Perplexity. Config model from UI: "${llmConfig.model}", Using API Model ID: "${perplexityModelName}".`);
 
-                console.log("_fetchLlmChatHistoryResponse: Perplexity request payload (final):", JSON.stringify(requestPayload, null, 2));
-
-                const response = await fetch(perplexityEndpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${llmConfig.apiKey}`,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                    },
-                    body: JSON.stringify(requestPayload),
-                });
-
-                if (!response.ok) {
-                    let errorMsg = `_fetchLlmChatHistoryResponse: Perplexity API request failed (${response.status})`;
-                    let errorDetail = response.statusText || "Could not retrieve error details from response header.";
-                    try {
-                        const errorData = await response.json();
-                        console.error("_fetchLlmChatHistoryResponse: Perplexity API error response body:", errorData);
-                        if (errorData && errorData.detail) {
-                           if (typeof errorData.detail === 'string') {
-                               errorDetail = errorData.detail;
-                           } else if (errorData.detail.message) {
-                               errorDetail = errorData.detail.message;
-                           } else {
-                               errorDetail = JSON.stringify(errorData.detail);
-                           }
-                        } else if (errorData && errorData.error && errorData.error.message) { // More generic error structure
-                            errorDetail = errorData.error.message;
+                    let messagesForApi = [...messagesArray]; 
+                    if (messagesForApi.length >= 2 &&
+                        messagesForApi[0].role === 'system' &&
+                        messagesForApi[1].role === 'assistant') {
+                        console.warn(`_fetchLlmChatHistoryResponse (Perplexity): Original message sequence starts [system, assistant, ...]. Adjusting for API call.`);
+                        messagesForApi.splice(1, 1); 
+                        console.log("_fetchLlmChatHistoryResponse (Perplexity): Messages for API after adjustment:", JSON.stringify(messagesForApi, null, 2));
+                        if (messagesForApi.length === 1 && messagesForApi[0].role === 'system') {
+                            console.error("_fetchLlmChatHistoryResponse (Perplexity): After adjustment, only a system message remains. Invalid API call.");
+                            throw new Error("Cannot send only a system message to Perplexity after adjustment.");
                         }
-                    } catch (e) {
+                    }
+
+                    const requestPayload = {
+                        model: perplexityModelName,
+                        messages: messagesForApi, 
+                    };
+                    console.log("_fetchLlmChatHistoryResponse: Perplexity request payload (final for chat):", JSON.stringify(requestPayload, null, 2));
+
+                    const response = await fetch(perplexityEndpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${llmConfig.apiKey}`,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify(requestPayload),
+                    });
+
+                    if (!response.ok) {
+                        let errorMsg = `_fetchLlmChatHistoryResponse: Perplexity API request failed (${response.status})`;
+                        let errorDetail = response.statusText || "Could not retrieve error details from response header.";
                         try {
-                            errorDetail = await response.text();
-                            console.error("_fetchLlmChatHistoryResponse: Perplexity API error response raw text:", errorDetail);
-                        } catch (e_text) {
-                             console.error("_fetchLlmChatHistoryResponse: Could not parse Perplexity error as JSON or get raw text.");
+                            const errorData = await response.json();
+                            console.error("_fetchLlmChatHistoryResponse: Perplexity API error response body:", errorData);
+                            if (errorData && errorData.detail) { if (typeof errorData.detail === 'string') { errorDetail = errorData.detail;} else if (errorData.detail.message) { errorDetail = errorData.detail.message;} else { errorDetail = JSON.stringify(errorData.detail);}} else if (errorData && errorData.error && errorData.error.message) { errorDetail = errorData.error.message;}
+                        } catch (e) {
+                            try { errorDetail = await response.text(); console.error("_fetchLlmChatHistoryResponse: Perplexity API error response raw text:", errorDetail); } catch (e_text) { console.error("_fetchLlmChatHistoryResponse: Could not parse Perplexity error as JSON or get raw text.");}
                         }
+                        errorMsg += `: ${errorDetail}`;
+                        console.error(errorMsg);
+                        throw new Error(errorMsg);
                     }
-                    errorMsg += `: ${errorDetail}`;
-                    console.error(errorMsg);
-                    throw new Error(errorMsg);
+                    const data = await response.json();
+                    if (data.choices && data.choices.length > 0 &&
+                        data.choices[0].message && data.choices[0].message.content) {
+                        textResponse = data.choices[0].message.content.trim();
+                    } else {
+                        console.error("_fetchLlmChatHistoryResponse: Unexpected Perplexity response format (no content):", data);
+                        throw new Error('Error: Unexpected response format from Perplexity (no content from chat).');
+                    }
+                    console.log(`_fetchLlmChatHistoryResponse: Perplexity chat response received. Length: ${textResponse.length}`);
+                    break;
                 }
-                const data = await response.json();
-                if (data.choices && data.choices.length > 0 &&
-                    data.choices[0].message && data.choices[0].message.content) {
-                    textResponse = data.choices[0].message.content.trim();
-                } else {
-                    console.error("_fetchLlmChatHistoryResponse: Unexpected Perplexity response format (no content):", data);
-                    throw new Error('Error: Unexpected response format from Perplexity (no content).');
-                }
-                console.log(`_fetchLlmChatHistoryResponse: Perplexity response received. Length: ${textResponse.length}`);
-                break;
+
+                case 'none':
+                    console.log("_fetchLlmChatHistoryResponse: 'none' selected for LLM model. No API call made for chat.");
+                    textResponse = "Please select an LLM model to continue the chat.";
+                    break;
+
+                default:
+                     // This default case will only be triggered if llmConfig.model is not "ollama/...",
+                    // and not one of the other specific cases like 'gemini-2.0-flash', 'perplexity', or 'none'.
+                    console.warn(`_fetchLlmChatHistoryResponse: Unsupported LLM model specified in config: ${llmConfig.model}`);
+                    throw new Error(`Unsupported LLM model for chat history: ${llmConfig.model}`);
             }
-
-            case 'none':
-                console.log("_fetchLlmChatHistoryResponse: 'none' selected for LLM model. No API call made.");
-                textResponse = "Please select an LLM model to get a response.";
-                break;
-
-            default:
-                console.warn(`_fetchLlmChatHistoryResponse: Unsupported LLM model specified in config: ${llmConfig.model}`);
-                throw new Error(`Unsupported LLM model for chat history: ${llmConfig.model}`);
         }
+        // Return the successfully fetched text response.
         return textResponse;
     }
     
     /**
-     * Private helper method to make API calls to the selected LLM provider.
-     * This centralizes the fetch logic for different LLMs.
+     * Private helper method to make API calls to the selected LLM provider for a single prompt.
+     * This method now dynamically handles Ollama models selected from the UI.
      * @param {object} llmConfig - Configuration for the LLM.
-     * Example: { model: 'ollama'/'gemini-2.0-flash'/'perplexity', apiKey: 'YOUR_API_KEY_IF_NEEDED' }
+     * Example: { model: 'ollama/mistral:latest' or 'gemini-2.0-flash', apiKey: 'YOUR_API_KEY_IF_NEEDED' }
      * @param {string} promptString - The fully prepared prompt string to send to the LLM.
      * @returns {Promise<string>} A promise that resolves with the LLM's text response.
      * @throws {Error} If the API call fails or the response format is unexpected.
      */
-    async  _fetchLlmSinglePromptResponse(llmConfig, promptString) {
+    async _fetchLlmSinglePromptResponse(llmConfig, promptString) {
         // This variable will store the final text response from the LLM.
         let textResponse = '';
 
-        // Log the attempt to fetch, showing which provider and a snippet of the prompt for debugging.
-        console.log(`Attempting to fetch LLM response from provider: ${llmConfig.model}. Prompt snippet: "${promptString.substring(0, 100)}..."`);
+        // Log the attempt to fetch, showing which provider/model is selected from the config
+        // and a snippet of the prompt for debugging.
+        console.log(`_fetchLlmSinglePromptResponse: Attempting response from provider/model: ${llmConfig.model}. Prompt snippet: "${promptString.substring(0, 100)}..."`);
 
-        // Use a switch statement to handle logic specific to each LLM provider.
-        switch (llmConfig.model) {
-            // ---- OLLAMA CASE ----
-            case 'ollama': {
-                // Define the local Ollama API endpoint.
-                const ollamaEndpoint = 'http://localhost:11434/api/generate';
-                // Define the specific Ollama model name to use.
-                // This can be made more dynamic later (e.g., user selection or part of llmConfig).
-                const modelName = "mistral:latest"; 
-                console.log(`Workspaceing from Ollama (Model: ${modelName}).`);
+        // --- Check if the selected model is an Ollama model based on the "ollama/" prefix ---
+        let isOllamaCall = false;
+        let specificOllamaModelName = null; // To store the actual Ollama model name like "mistral:latest"
 
-                // Make the asynchronous POST request to the Ollama API.
+        if (llmConfig.model && llmConfig.model.startsWith('ollama/')) {
+            isOllamaCall = true;
+            // If it's an Ollama model, extract the model name part after "ollama/"
+            // For example, if llmConfig.model is "ollama/mistral:latest", specificOllamaModelName will be "mistral:latest"
+            specificOllamaModelName = llmConfig.model.substring('ollama/'.length);
+            console.log(`_fetchLlmSinglePromptResponse: Detected Ollama call. Specific model to use: ${specificOllamaModelName}`);
+        }
+
+        // --- Handle Ollama calls separately if detected ---
+        if (isOllamaCall) {
+            // Define the local Ollama API endpoint for single prompt generation.
+            const ollamaEndpoint = 'http://localhost:11434/api/generate';
+            // Use the dynamically extracted model name for the API call.
+            const modelNameForApi = specificOllamaModelName;
+
+            console.log(`_fetchLlmSinglePromptResponse: Calling Ollama (Model: ${modelNameForApi}) via /api/generate endpoint.`);
+
+            try {
+                // Make the asynchronous POST request to the Ollama /api/generate endpoint.
                 const response = await fetch(ollamaEndpoint, {
                     method: 'POST', // HTTP method
-                    headers: { 
+                    headers: {
                         'Content-Type': 'application/json' // Specify that we're sending JSON data
                     },
                     body: JSON.stringify({ // Convert the JavaScript payload object to a JSON string
-                        model: modelName,      // The Ollama model to use
-                        prompt: promptString,  // The actual prompt content
-                        stream: false          // Request the full response at once, not as a stream
+                        model: modelNameForApi,  // The specific Ollama model to use (e.g., "mistral:latest")
+                        prompt: promptString,    // The actual prompt content for /api/generate
+                        stream: false            // Request the full response at once, not as a stream
                     }),
                 });
 
                 // Check if the HTTP response status indicates an error (e.g., 4xx or 5xx).
                 if (!response.ok) {
-                    let errorBody = await response.text(); // Try to get more error details from the response body
+                    let errorBody = await response.text(); // Try to get more error details from the response body.
                     // Attempt to parse errorBody if it's JSON, to get a more specific error message from Ollama.
-                    try { 
-                        const errorJson = JSON.parse(errorBody); 
-                        if (errorJson && errorJson.error) { errorBody = errorJson.error; } 
-                    } catch (e) { /* If errorBody is not JSON, ignore parsing error and use the raw text. */ }
-                    console.error(`Ollama API request failed with status: ${response.status}`, errorBody);
-                    // Throw an error to be caught by the calling function.
+                    try {
+                        const errorJson = JSON.parse(errorBody);
+                        if (errorJson && errorJson.error) { errorBody = errorJson.error; }
+                    } catch (e) { /* If errorBody is not JSON, use the raw text. */ }
+                    console.error(`_fetchLlmSinglePromptResponse: Ollama API /api/generate request failed (${response.status}):`, errorBody);
+                    // Throw an error to be caught by the calling function (e.g., getLlmExplanation).
                     throw new Error(`Ollama API Error (${response.status}): ${errorBody}`);
                 }
+
                 // If the request was successful, parse the JSON data from the response body.
                 const data = await response.json();
-                // Extract the LLM's text response from the 'response' field of the Ollama JSON structure.
-                // Trim whitespace from the beginning and end.
-                textResponse = data.response ? data.response.trim() : 'Error: Empty response from Ollama.';
-                break; // Exit the switch statement for the 'ollama' case.
-            }
 
-            // ---- GEMINI CASE ----
-            case 'gemini-2.0-flash': {
-                // Check if an API key is provided, as Gemini requires it.
-                if (!llmConfig.apiKey) {
-                    throw new Error("API Key required for Google Gemini model.");
-                }
-                // Define the specific Gemini model name.
-                const geminiModelName = "gemini-2.0-flash";
-                // Construct the Gemini API endpoint URL, including the model name and API key.
-                const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModelName}:generateContent?key=${llmConfig.apiKey}`;
-                console.log(`Workspaceing from Gemini (Model: ${geminiModelName}).`);
-
-                // Make the asynchronous POST request to the Gemini API.
-                const response = await fetch(geminiEndpoint, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json' 
-                    },
-                    body: JSON.stringify({
-                        // Gemini API expects a 'contents' array, where each item represents a turn or part of a turn.
-                        // For simplicity in this refactoring, we send the entire 'promptString' as a single text part.
-                        contents: [{ 
-                            parts: [{ 
-                                text: promptString 
-                            }] 
-                        }],
-                        // Optional: You could add 'generationConfig' or 'safetySettings' here if needed
-                        // for all Gemini calls, or pass them via an extended llmConfig.
-                    }),
-                });
-
-                // Check if the HTTP response status indicates an error.
-                if (!response.ok) {
-                    let errorMsg = `Gemini API request failed: ${response.status}`;
-                    try {
-                        const errorData = await response.json(); // Try to parse error details from Gemini
-                        if (errorData && errorData.error && errorData.error.message) {
-                            errorMsg += `: ${errorData.error.message}`;
-                        }
-                    } catch (e) { /* If error response body isn't JSON, ignore. */ }
-                    console.error(errorMsg);
-                    throw new Error(errorMsg); // Propagate the error.
-                }
-                // If successful, parse the JSON data from the response.
-                const data = await response.json();
-                // Extract the LLM's text response from Gemini's 'candidates' structure.
-                if (data.candidates && data.candidates.length > 0 && 
-                    data.candidates[0].content?.parts?.[0]?.text) {
-                    textResponse = data.candidates[0].content.parts[0].text.trim();
+                // Extract the LLM's text response from the 'response' field of the Ollama /api/generate JSON structure.
+                if (data.response) {
+                    textResponse = data.response.trim(); // Trim whitespace.
                 } else {
-                    // Check if the response was blocked due to safety settings.
-                    if (data.promptFeedback?.blockReason) {
-                        throw new Error(`Gemini request blocked by safety settings (${data.promptFeedback.blockReason}).`);
-                    }
-                    // If the response format is unexpected, log and throw an error.
-                    console.error("Unexpected Gemini response format:", data);
-                    throw new Error('Error: Unexpected response format from Gemini.');
+                    console.error("_fetchLlmSinglePromptResponse: Unexpected response structure from Ollama /api/generate (missing 'response' field):", data);
+                    textResponse = 'Error: Empty or unexpected response from Ollama /api/generate.';
                 }
-                break; // Exit the switch statement for the 'gemini-2.0-flash' case.
+                console.log(`_fetchLlmSinglePromptResponse: Ollama /api/generate response received. Length: ${textResponse.length}`);
+            
+            } catch (error) { // Catch network errors or errors from the 'throw' statements above.
+                 console.error(`_fetchLlmSinglePromptResponse: Error during Ollama /api/generate call for model ${modelNameForApi}:`, error);
+                 throw error; // Re-throw the error to propagate it.
             }
+        } else {
+            // --- If not an Ollama call, proceed with the existing switch statement for other providers ---
+            console.log(`_fetchLlmSinglePromptResponse: Not an Ollama call. Processing model "${llmConfig.model}" with switch statement.`);
+            // Use a switch statement to handle logic specific to each other LLM provider.
+            switch (llmConfig.model) {
 
-            // ---- PERPLEXITY CASE ----
-            case 'perplexity': {
-                // Check if an API key is provided for Perplexity.
-                if (!llmConfig.apiKey) {
-                    throw new Error("API Key required for Perplexity model.");
-                }
-                // Define the Perplexity API endpoint for chat completions.
-                const perplexityEndpoint = 'https://api.perplexity.ai/chat/completions';
-                // Define the specific Perplexity model name. Adjust as needed.
-                const perplexityModelName = "sonar"; 
-                console.log(`Workspaceing from Perplexity (Model: ${perplexityModelName}).`);
-                
-                // Perplexity's chat completions API expects a 'messages' array.
-                // We send our 'promptString' as the content of a single "user" message.
-                const messages = [{ role: "user", content: promptString }];
-                // Optional: A system message could be prepended to the 'messages' array if needed.
-                // messages.unshift({ role: "system", content: "You are an expert tutor." });
+                // ---- GEMINI CASE ----
+                case 'gemini-2.0-flash': {
+                    // (Your existing, complete Gemini logic for single prompts goes here)
+                    // Ensure all comments from your original version are maintained or enhanced.
+                    if (!llmConfig.apiKey) {
+                        console.error("_fetchLlmSinglePromptResponse: API Key required for Google Gemini model.");
+                        throw new Error("API Key required for Google Gemini model.");
+                    }
+                    const geminiModelName = llmConfig.model; // This will be "gemini-2.0-flash"
+                    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModelName}:generateContent?key=${llmConfig.apiKey}`;
+                    console.log(`_fetchLlmSinglePromptResponse: Calling Gemini (Model: ${geminiModelName}).`);
 
-                // Make the asynchronous POST request to the Perplexity API.
-                const response = await fetch(perplexityEndpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${llmConfig.apiKey}`, // Perplexity uses Bearer token authentication
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json', // Indicate we expect JSON back
-                    },
-                    body: JSON.stringify({
-                        model: perplexityModelName, // The Perplexity model to use
-                        messages: messages,          // The array of messages
-                        // Optional: Add parameters like 'temperature', 'max_tokens', etc.
-                    }),
-                });
+                    const requestBody = {
+                        contents: [{ parts: [{ text: promptString }] }],
+                    };
+                    
+                    const response = await fetch(geminiEndpoint, { /* ... (method, headers, body: JSON.stringify(requestBody)) ... */ 
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(requestBody)
+                    });
 
-                // Check if the HTTP response status indicates an error.
-                if (!response.ok) {
-                    let errorMsg = `Perplexity API request failed: ${response.status}`;
-                    try {
-                        const errorData = await response.json(); // Try to parse error details
-                        // Perplexity's error details might be in errorData.detail
-                        if (errorData && errorData.detail) {
-                             errorMsg += `: ${JSON.stringify(errorData.detail)}`; // Convert detail to string
-                        } else if (response.statusText) { // Fallback to statusText
-                            errorMsg += `: ${response.statusText}`;
+                    if (!response.ok) {
+                        let errorMsg = `_fetchLlmSinglePromptResponse: Gemini API request failed: ${response.status}`;
+                        try {
+                            const errorData = await response.json();
+                            if (errorData && errorData.error && errorData.error.message) {
+                                errorMsg += `: ${errorData.error.message}`;
+                            }
+                        } catch (e) { /* If error response body isn't JSON, ignore. */ }
+                        console.error(errorMsg);
+                        throw new Error(errorMsg);
+                    }
+                    const data = await response.json();
+                    if (data.candidates && data.candidates.length > 0 &&
+                        data.candidates[0].content?.parts?.[0]?.text) {
+                        textResponse = data.candidates[0].content.parts[0].text.trim();
+                    } else {
+                        if (data.promptFeedback?.blockReason) {
+                            console.error(`_fetchLlmSinglePromptResponse: Gemini request blocked by safety settings (${data.promptFeedback.blockReason}).`);
+                            throw new Error(`Gemini request blocked by safety settings (${data.promptFeedback.blockReason}).`);
                         }
-                    } catch (e) {  
-                        errorMsg += `: ${response.statusText || "Could not retrieve error details."}`; 
+                        console.error("_fetchLlmSinglePromptResponse: Unexpected Gemini response format:", data);
+                        throw new Error('Error: Unexpected response format from Gemini.');
                     }
-                    console.error(errorMsg);
-                    throw new Error(errorMsg); // Propagate the error.
+                    console.log(`_fetchLlmSinglePromptResponse: Gemini response received. Length: ${textResponse.length}`);
+                    break; 
                 }
-                // If successful, parse the JSON data.
-                const data = await response.json();
-                // Extract the LLM's text response from Perplexity's 'choices' structure.
-                if (data.choices && data.choices.length > 0 && 
-                    data.choices[0].message?.content) {
-                    textResponse = data.choices[0].message.content.trim();
-                } else {
-                    // If the response format is unexpected, log and throw an error.
-                    console.error("Unexpected Perplexity response format:", data);
-                    throw new Error('Error: Unexpected response format from Perplexity.');
+
+                // ---- PERPLEXITY CASE ----
+                case 'perplexity': {
+                    // (Your existing, complete Perplexity logic for single prompts goes here)
+                    // Remember Perplexity /chat/completions expects a 'messages' array even for single user prompts.
+                    // Ensure all comments from your original version are maintained or enhanced.
+                    if (!llmConfig.apiKey) {
+                        console.error("_fetchLlmSinglePromptResponse: API Key required for Perplexity model.");
+                        throw new Error("API Key required for Perplexity model.");
+                    }
+                    const perplexityEndpoint = 'https://api.perplexity.ai/chat/completions';
+                    const perplexityModelName = "sonar"; // Or your chosen specific model for single explanations if different from chat
+                    console.log(`_fetchLlmSinglePromptResponse: Calling Perplexity (Model: ${perplexityModelName}). (Original config model from UI: "${llmConfig.model}")`);
+
+                    const messagesForSinglePrompt = [{ role: "user", content: promptString }];
+                    const requestPayload = {
+                        model: perplexityModelName,
+                        messages: messagesForSinglePrompt,
+                    };
+                    console.log("_fetchLlmSinglePromptResponse: Perplexity request payload (single prompt):", JSON.stringify(requestPayload, null, 2));
+                    
+                    const response = await fetch(perplexityEndpoint, { /* ... (method, headers, body: JSON.stringify(requestPayload)) ... */ 
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${llmConfig.apiKey}`,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify(requestPayload)
+                    });
+
+                    if (!response.ok) {
+                        let errorMsg = `_fetchLlmSinglePromptResponse: Perplexity API request failed: ${response.status}`;
+                        // Using the more detailed error parsing from the chat history version
+                        let errorDetail = response.statusText || "Could not retrieve error details from response header.";
+                        try {
+                            const errorData = await response.json();
+                            console.error("_fetchLlmSinglePromptResponse: Perplexity API error response body:", errorData);
+                            if (errorData && errorData.detail) { if (typeof errorData.detail === 'string') { errorDetail = errorData.detail; } else if (errorData.detail.message) { errorDetail = errorData.detail.message; } else { errorDetail = JSON.stringify(errorData.detail); }} else if (errorData && errorData.error && errorData.error.message) { errorDetail = errorData.error.message; }
+                        } catch (e) { try { errorDetail = await response.text(); console.error("_fetchLlmSinglePromptResponse: Perplexity API error response raw text:", errorDetail); } catch (e_text) { console.error("_fetchLlmSinglePromptResponse: Could not parse error as JSON or text."); } }
+                        errorMsg += `: ${errorDetail}`;
+                        console.error(errorMsg);
+                        throw new Error(errorMsg);
+                    }
+                    const data = await response.json();
+                    if (data.choices && data.choices.length > 0 &&
+                        data.choices[0].message?.content) {
+                        textResponse = data.choices[0].message.content.trim();
+                    } else {
+                        console.error("_fetchLlmSinglePromptResponse: Unexpected Perplexity response format:", data);
+                        throw new Error('Error: Unexpected response format from Perplexity.');
+                    }
+                    console.log(`_fetchLlmSinglePromptResponse: Perplexity response received. Length: ${textResponse.length}`);
+                    break; 
                 }
-                break; // Exit the switch statement for the 'perplexity' case.
+
+                // ---- NO MODEL SELECTED CASE ----
+                case 'none':
+                    console.log("_fetchLlmSinglePromptResponse: 'none' selected for LLM model. No API call made.");
+                    textResponse = "Please select an LLM model to get an explanation.";
+                    break;
+
+                // ---- DEFAULT CASE (Unsupported Model) ----
+                default:
+                    // This default case will only be triggered if llmConfig.model is not "ollama/...",
+                    // and not "gemini-2.0-flash", "perplexity", or "none".
+                    console.warn(`_fetchLlmSinglePromptResponse: Unsupported LLM model specified: ${llmConfig.model}`);
+                    throw new Error(`Unsupported LLM model for single prompt: ${llmConfig.model}`);
             }
-
-            // ---- NO MODEL SELECTED CASE ----
-            case 'none':
-                // If 'none' was selected in the UI, set a message or throw an error.
-                textResponse = "Please select an LLM model.";
-                // Alternatively, to be consistent with other error handling:
-                // throw new Error("No LLM model selected."); 
-                break;
-
-            // ---- DEFAULT CASE (Unsupported Model) ----
-            default:
-                // If llmConfig.model doesn't match any known cases.
-                console.warn(`Unsupported LLM model specified for fetching: ${llmConfig.model}`);
-                throw new Error(`Unsupported LLM model: ${llmConfig.model}`);
         }
-        // Return the extracted text response.
+        // Return the extracted text response (or error message if 'none' was selected).
         return textResponse;
+    }
+
+    /**
+     * Fetches the list of available models from the local Ollama API.
+     * @returns {Promise<Array<string>>} A promise that resolves with an array of model names (e.g., ["mistral:latest", "llama3:8b"]).
+     * Returns an empty array if an error occurs or no models are found.
+     * @private
+     */
+    async _fetchAvailableOllamaModels() {
+        const ollamaTagsEndpoint = 'http://localhost:11434/api/tags';
+        console.log("_fetchAvailableOllamaModels: Attempting to fetch models from Ollama at", ollamaTagsEndpoint);
+        try {
+            const response = await fetch(ollamaTagsEndpoint);
+            if (!response.ok) {
+                console.error(`_fetchAvailableOllamaModels: Failed to fetch Ollama models. Status: ${response.status} - ${response.statusText}`);
+                // Don't alert here, allow UI to function without Ollama if it's not running.
+                return []; // Return empty array on HTTP error
+            }
+            const data = await response.json();
+            if (data && data.models && Array.isArray(data.models)) {
+                const modelNames = data.models.map(model => model.name);
+                console.log("_fetchAvailableOllamaModels: Successfully fetched Ollama models:", modelNames);
+                return modelNames;
+            } else {
+                console.warn("_fetchAvailableOllamaModels: No models found or unexpected response structure from Ollama:", data);
+                return []; // Return empty if no models array or unexpected structure
+            }
+        } catch (error) {
+            console.error("_fetchAvailableOllamaModels: Error connecting to Ollama or parsing response. Ollama might not be running or reachable.", error);
+            // Inform the user subtly, perhaps by not populating Ollama options or adding a disabled one.
+            return []; // Return empty array on network error or other exceptions
+        }
+    }
+
+    /**
+     * Populates the #llmModelSelect dropdown with available Ollama models.
+     * It prepends "ollama/" to the value to distinguish them and make parsing easier later.
+     */
+    async populateOllamaModelsDropdown() {
+        console.log("populateOllamaModelsDropdown: Starting to populate Ollama models.");
+        const llmModelSelect = document.getElementById('llmModelSelect');
+        if (!llmModelSelect) {
+            console.error("populateOllamaModelsDropdown: Could not find the #llmModelSelect dropdown element.");
+            return;
+        }
+
+        const ollamaModels = await this._fetchAvailableOllamaModels();
+
+        if (ollamaModels.length === 0) {
+            console.log("populateOllamaModelsDropdown: No Ollama models fetched or Ollama not available. No new options will be added.");
+            const existingOllamaOption = llmModelSelect.querySelector('option[value="ollama"]');
+            if (existingOllamaOption) {
+                console.log("populateOllamaModelsDropdown: Removing static 'Ollama (Local)' option as no specific models were found or Ollama is unavailable.");
+                existingOllamaOption.remove();
+            }
+            return;
+        }
+
+        // Remove the generic "Ollama (Local)" option if it exists, as we'll add specific ones.
+        const existingOllamaOption = llmModelSelect.querySelector('option[value="ollama"]');
+        if (existingOllamaOption) {
+            console.log("populateOllamaModelsDropdown: Removing static 'Ollama (Local)' option to replace with specific models.");
+            existingOllamaOption.remove();
+        }
+
+        // Add new options for each fetched Ollama model
+        ollamaModels.forEach(modelName => {
+            const option = document.createElement('option');
+            // Store the value with a prefix to identify it as an Ollama model and include the actual model name.
+            option.value = `ollama/${modelName}`; 
+            option.textContent = `Ollama | ${modelName}`; // User-friendly display text
+            llmModelSelect.appendChild(option);
+            console.log(`populateOllamaModelsDropdown: Added option - Value: "${option.value}", Text: "${option.textContent}"`);
+        });
+
+        console.log("populateOllamaModelsDropdown: Finished populating Ollama models.");
     }
 
 }
