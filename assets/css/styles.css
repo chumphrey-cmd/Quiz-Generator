@@ -589,6 +589,38 @@ Controls (Header Inputs/Selects)
     border: 1px solid #555;
 }
 
+
+.timer-control-btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--button-border);
+    background-color: var(--primary-color);
+    color: white;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+    margin-left: var(--spacing-xs);
+}
+
+.timer-control-btn:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+.timer-control-btn:disabled {
+    background-color: #ccc;
+    border-color: #bbb;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Dark theme disabled */
+[data-theme="dark"] .timer-control-btn:disabled {
+    background-color: #555;
+    border-color: #777;
+    color: #999;
+}
+
+
 /* --- LLM Configuration --- */
 .llm-config-container {
     display: flex;

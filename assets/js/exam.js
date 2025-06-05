@@ -53,6 +53,9 @@ class ExamManager {
         this.timerDuration = (initialTimerInput ? parseInt(initialTimerInput.value, 10) : 10) * 60;
         this.isTimerEnabled = true; // Timer is ON by default
         this.isTimeInfinite = false; // Tracks if the timer is set to no limit
+        this.initialTimerDuration = 0; // Stores the duration set by user (in seconds)
+        this.isTimerRunning = false;   // Tracks if countdown is active (running or paused)
+        this.isTimerPaused = false;    // Tracks if countdown is specifically paused
 
         // --- Chat History Storage ---
         // This object will store chat histories for each question.
@@ -66,14 +69,20 @@ class ExamManager {
         this.handleExplainClickBound = this.handleExplainClick.bind(this);
         this.handleTimerToggleClickBound = this.handleTimerToggleClick.bind(this);
         this.handleSendChatMessageBound = this.handleSendChatMessage.bind(this);
+        this.handleTimerStartPauseResumeClickBound = this.handleTimerStartPauseResumeClick.bind(this);
+        this.handleTimerResetClickBound = this.handleTimerResetClick.bind(this);
 
         // --- Initialize Event Listeners ---
         this.initializeEventListeners();
-        console.log("ExamManager constructor finished.");
+        
 
         // -- Populate Ollama models ---
         this.populateOllamaModelsDropdown(); 
 
+        // --- Set initial button states for timer ---
+        this._updateTimerControlEventsUI();
+
+        console.log("ExamManager constructor finished.");
     }
 
     /* 
@@ -118,6 +127,26 @@ class ExamManager {
             // Optional: Update button appearance on initial load based on state
             this.updateTimerToggleButtonVisuals(timerToggleButton);
         } else { console.error("Timer toggle button 'timerToggleButton' not found!");}
+
+        // --- Listeners for Timer Control Buttons ---
+        const startPauseResumeButton = document.getElementById('timerStartPauseResumeButton');
+        if (startPauseResumeButton) {
+            // We'll create this.handleTimerStartPauseResumeClickBound soon
+            this.handleTimerStartPauseResumeClickBound = this.handleTimerStartPauseResumeClick.bind(this);
+            startPauseResumeButton.addEventListener('click', this.handleTimerStartPauseResumeClickBound);
+        } else {
+            console.error("Timer Start/Pause/Resume button 'timerStartPauseResumeButton' not found!");
+        }
+
+        const resetButton = document.getElementById('timerResetButton');
+        if (resetButton) {
+            // We'll create this.handleTimerResetClickBound soon
+            this.handleTimerResetClickBound = this.handleTimerResetClick.bind(this);
+            resetButton.addEventListener('click', this.handleTimerResetClickBound);
+        } else {
+            console.error("Timer Reset button 'timerResetButton' not found!");
+        }
+    
     }
 
     /**
@@ -254,7 +283,6 @@ class ExamManager {
             }
             
             this.resetTimer(); // Reset and prepare the timer state
-            // Note: resetDisplays already updates score and progress. Timer display is handled by resetTimer then updateTimerDisplay.
 
 
             console.log("handleFileUpload: Calling displayQuestions to generate HTML content...");
@@ -279,6 +307,8 @@ class ExamManager {
     
             console.log('handleFileUpload: Quiz initialized successfully.');
             this.startTimer(); // Start the timer after everything is set up
+
+            this._updateTimerControlEventsUI(); // Update buttons based on loaded quiz & timer config
     
         } catch (error) {
              console.error('handleFileUpload: General error in outer try block:', error);
@@ -297,22 +327,26 @@ class ExamManager {
      * Handles clicks on the timer toggle button
      */
     handleTimerToggleClick() {
-        this.isTimerEnabled = !this.isTimerEnabled; // Flip the state
-        console.log("Timer enabled state:", this.isTimerEnabled);
+        this.isTimerEnabled = !this.isTimerEnabled;
+        console.log("Timer global enabled state:", this.isTimerEnabled);
 
         const timerToggleButton = document.getElementById('timerToggleButton');
         if (timerToggleButton) {
-           this.updateTimerToggleButtonVisuals(timerToggleButton);
+        this.updateTimerToggleButtonVisuals(timerToggleButton);
         }
 
-        // If timer is currently running AND we just disabled it, stop it.
-        if (!this.isTimerEnabled && this.timerInterval) {
-            this.stopTimer();
-             // Optionally update display immediately
-             this.updateTimerDisplay();
+        if (!this.isTimerEnabled) {
+            if (this.isTimerRunning && !this.isTimerPaused) {
+                // If it was running, effectively pause it internally when disabled globally
+                this.isTimerPaused = true; // Mark as paused so resume is possible if re-enabled
+                // The stopTimer() will clear the interval
+            }
+            this.stopTimer(); 
+        } else {
+            console.log("Timer globally enabled. Control button states will be updated.");
         }
-        // Note: We don't automatically start the timer here if enabled.
-        // It will start naturally on the next quiz load via handleFileUpload -> startTimer.
+        this.updateTimerDisplay();
+        this._updateTimerControlEventsUI(); // NEW: Update buttons based on master toggle
     }
 
     /**
@@ -920,49 +954,26 @@ class ExamManager {
     */ 
 
     /**
-     * Starts the quiz timer using duration from input field.
+     * Configures the timer's duration based on the input field when questions are loaded.
+     * This method is called when questions are loaded (e.g., in handleFileUpload).
+     * It sets initialTimerDuration, timeRemaining, and isTimeInfinite by calling _configureTimerFromInput.
+     * It DOES NOT start the countdown interval itself.
      */
-    startTimer() {
-        console.log("Attempting to start timer. Enabled:", this.isTimerEnabled);
-        // --- Check if timer is enabled ---
-        if (!this.isTimerEnabled) {
-            console.log("Timer is disabled. Not starting.");
-            this.updateTimerDisplay(); // Update display to show 'Disabled' or similar
-            return; // Exit function, do not start the timer
+    startTimer() { // This method is called in handleFileUpload
+        console.log("startTimer: Configuring timer settings from input for newly loaded quiz.");
+        
+        this._configureTimerFromInput(); // Read input and set initial state
+
+        this.updateTimerDisplay(); // Update display with configured time or "No Time Limit"
+        
+        // Clear any pre-existing timer interval as a safety measure.
+        // The actual countdown is started by _startCountdown when the user clicks "Start".
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+            console.log("startTimer: Cleared any pre-existing timer interval during configuration.");
         }
-
-        // Get duration from input
-        const durationInput = document.getElementById('timerDurationInput');
-        let durationMinutes = parseInt(durationInput.value, 10);
-
-        // Validate input, set default if invalid
-        if (isNaN(durationMinutes) || durationMinutes <= 0) {
-            console.warn("Invalid timer duration input, using default (10 minutes).");
-            durationMinutes = 10; // Default duration in minutes
-            durationInput.value = 10; // Update input field to show default
-        }
-
-        this.timerDuration = durationMinutes * 60; // Convert minutes to seconds
-
-        this.timeRemaining = this.timerDuration; // Set initial time based on input/default
-        this.updateTimerDisplay(); // Show initial time immediately
-
-        // Start countdown interval
-        this.timerInterval = setInterval(() => {
-            console.log(">>> Timer interval running, time remaining:", this.timeRemaining);
-            this.timeRemaining--; // Decrement time
-            this.updateTimerDisplay(); // Update UI
-
-            // Check if time has run out
-            if (this.timeRemaining <= 0) {
-                this.stopTimer();
-                // alert('Time is up!');
-                console.log("Time expired. Disabling inputs.");
-                this.disableAllInputs(); // Used to disable buttons
-                this.handleQuizCompletion(true); // Pass flag indicating time ran out
-            }
-        }, 1000); // Update every second
-        console.log("Timer started with duration (seconds):", this.timerDuration);
+        // Note: _updateTimerControlEventsUI() is typically called after this in handleFileUpload
     }
 
     /**
@@ -977,13 +988,22 @@ class ExamManager {
     }
 
     /**
-     * Resets the timer display and state.
+     * Resets all timer-related state variables and updates the UI.
+     * Called during file upload and by the manual reset button (_resetCountdown calls this).
      */
     resetTimer() {
-        this.stopTimer(); // Stop any active timer
-        this.timeRemaining = 0; // Reset time
-        this.updateTimerDisplay(); // Update UI (will show 'Timer OFF' if disabled)
-        console.log("Timer reset.");
+        console.log("resetTimer: Fully resetting timer states.");
+        this.stopTimer(); // Ensures any active interval is cleared
+
+        this.timeRemaining = 0;
+        this.initialTimerDuration = 0; // Crucial: reset for fresh configuration by startTimer()
+        this.isTimeInfinite = false; // Default to finite time until startTimer() evaluates input
+        this.isTimerRunning = false;
+        this.isTimerPaused = false;
+        
+        this.updateTimerDisplay(); // Update the timer's text display (e.g., to 00:00:00 or Timer OFF)
+        this._updateTimerControlEventsUI(); // Update the Start/Pause/Reset buttons' states
+        console.log("resetTimer: Timer states have been fully reset.");
     }
 
     /**
@@ -1143,7 +1163,7 @@ class ExamManager {
     /* 
     ==========================================================================
     --- 9. "PRIVATE" HELPER METHODS ---
-    Internal utility methods
+    Internal utility methods: LLM implementation and timer controls
     ==========================================================================
     */
 
@@ -1682,6 +1702,342 @@ class ExamManager {
         });
 
         console.log("populateOllamaModelsDropdown: Finished populating Ollama models.");
+    }
+
+    
+    /* 
+    ==========================================================================
+    --- 10. "PRIVATE" HELPER METHODS ---
+    Helper methods for internal timer controls
+    ==========================================================================
+    */
+
+    /**
+     * Updates the UI of the timer control buttons (text and enabled/disabled state).
+     */
+    _updateTimerControlEventsUI() {
+        const startPauseResumeButton = document.getElementById('timerStartPauseResumeButton');
+        const resetButton = document.getElementById('timerResetButton');
+
+        if (!startPauseResumeButton || !resetButton) {
+            console.warn("_updateTimerControlEventsUI: Control buttons not found.");
+            return;
+        }
+
+        // Are the controls globally enabled by the main timer toggle?
+        const controlsShouldBeEnabled = this.isTimerEnabled && !this.isTimeInfinite && this.totalQuestions > 0;
+
+        if (!controlsShouldBeEnabled) {
+            startPauseResumeButton.disabled = true;
+            resetButton.disabled = true;
+            startPauseResumeButton.textContent = 'Start'; // Default text when disabled
+            console.log("_updateTimerControlEventsUI: Timer controls disabled (timer off, infinite, or no quiz).");
+            return;
+        }
+
+        // If controls are generally allowed:
+        resetButton.disabled = false; // Reset is usually always available if timer is on and finite
+
+        if (this.isTimerRunning) {
+            if (this.isTimerPaused) {
+                startPauseResumeButton.textContent = 'Resume';
+                startPauseResumeButton.disabled = false;
+            } else {
+                startPauseResumeButton.textContent = 'Pause';
+                startPauseResumeButton.disabled = false;
+            }
+        } else { // Timer is not running (either ready to start or has been reset/finished)
+            startPauseResumeButton.textContent = 'Start';
+            // Enable Start button only if there's time set or time remaining
+            startPauseResumeButton.disabled = !(this.initialTimerDuration > 0 || this.timeRemaining > 0) ;
+        }
+        console.log(`_updateTimerControlEventsUI: Start/Pause/Resume button text: "${startPauseResumeButton.textContent}", disabled: ${startPauseResumeButton.disabled}. Reset button disabled: ${resetButton.disabled}`);
+    }
+    
+    /**
+     * Handles clicks on the Start/Pause/Resume timer button.
+     * This method determines the current state of the timer and calls the
+     * appropriate internal method (_startCountdown, _pauseCountdown, or _resumeCountdown).
+     * @param {Event} event - The click event (not directly used but good practice for event handlers).
+     */
+    handleTimerStartPauseResumeClick(event) {
+        console.log("handleTimerStartPauseResumeClick: Button clicked.");
+
+        // First, check if the timer is globally enabled via the main toggle button.
+        // Also, these controls are not applicable if the timer is set to "No Time Limit".
+        if (!this.isTimerEnabled) {
+            console.warn("handleTimerStartPauseResumeClick: Timer is globally disabled. No action.");
+            alert("The timer is currently OFF. Please turn it ON to use the timer controls.");
+            this._updateTimerControlEventsUI(); // Ensure button states are correct
+            return;
+        }
+        if (this.isTimeInfinite) {
+            console.warn("handleTimerStartPauseResumeClick: Timer is set to 'No Time Limit'. Start/Pause/Resume controls are not applicable.");
+            alert("Timer controls (Start/Pause/Resume) are not available when 'No Time Limit' is set.");
+            this._updateTimerControlEventsUI(); // Ensure button states are correct
+            return;
+        }
+
+        // Logic to decide whether to start, pause, or resume:
+        if (!this.isTimerRunning) {
+            // If the timer is not currently running (i.e., it's stopped or has been reset),
+            // this button acts as a "Start" button.
+            console.log("handleTimerStartPauseResumeClick: Timer is not running. Calling _startCountdown().");
+            this._startCountdown();
+        } else {
+            // If the timer IS running, this button toggles between "Pause" and "Resume".
+            if (this.isTimerPaused) {
+                // If the timer is running but currently paused, this button acts as a "Resume" button.
+                console.log("handleTimerStartPauseResumeClick: Timer is running and paused. Calling _resumeCountdown().");
+                this._resumeCountdown();
+            } else {
+                // If the timer is running and NOT paused, this button acts as a "Pause" button.
+                console.log("handleTimerStartPauseResumeClick: Timer is running and not paused. Calling _pauseCountdown().");
+                this._pauseCountdown();
+            }
+        }
+        // Note: The _startCountdown, _pauseCountdown, and _resumeCountdown methods
+        // are responsible for calling _updateTimerControlEventsUI() to update the button's text and state.
+    }
+
+    /**
+     * Handles clicks on the Reset timer button.
+     * This method calls the internal _resetCountdown method to reset the timer
+     * to its initially configured duration.
+     * @param {Event} event - The click event (not directly used).
+     */
+    handleTimerResetClick(event) {
+        console.log("handleTimerResetClick: Button clicked.");
+
+        // Check if the timer is globally enabled. Resetting a disabled timer might be confusing,
+        // but generally, reset should work to set it back to its initial state regardless of running status.
+        // However, if it's infinite, reset also just sets it to a non-counting state.
+        if (!this.isTimerEnabled) {
+            console.warn("handleTimerResetClick: Timer is globally disabled. Reset will still set time but not run.");
+            // Allow reset even if globally disabled, to set it back to initial state.
+            // _resetCountdown will also update the button UI via _updateTimerControlEventsUI.
+        }
+        if (this.isTimeInfinite) {
+            console.log("handleTimerResetClick: Timer is set to 'No Time Limit'. Resetting to 'No Time Limit' display and non-running state.");
+            // _resetCountdown handles the isTimeInfinite case appropriately.
+        }
+
+        console.log("handleTimerResetClick: Calling _resetCountdown().");
+        this._resetCountdown();
+        // The _resetCountdown method calls _updateTimerControlEventsUI() to update button states.
+    }
+
+    /**
+     * Starts the timer countdown. Sets up the interval to decrement timeRemaining.
+     * If it's a fresh start, it re-configures the timer from the input.
+     * @private
+     */
+    _startCountdown() {
+        // Only proceed if timer is globally enabled and not already running (unless it was paused for a resume)
+        if (!this.isTimerEnabled || (this.isTimerRunning && !this.isTimerPaused)) {
+            if (!this.isTimerEnabled) {
+                 console.warn("_startCountdown: Cannot start, timer is globally disabled.");
+                 alert("The timer is currently OFF. Please turn it ON to start.");
+            }
+            if (this.isTimerRunning && !this.isTimerPaused) {
+                console.warn("_startCountdown: Timer is already running and not paused.");
+            }
+            this._updateTimerControlEventsUI(); // Ensure UI is consistent
+            return;
+        }
+
+        // If this is a fresh start (timer wasn't running), re-configure from input.
+        // This ensures any changes to the duration input before clicking "Start" are captured.
+        if (!this.isTimerRunning) {
+            console.log("_startCountdown: This is a fresh start. Re-configuring timer from input.");
+            this._configureTimerFromInput();
+        }
+        // After _configureTimerFromInput(), this.isTimeInfinite and this.timeRemaining are up-to-date.
+
+        // If timer is set to "No Time Limit" after configuration, don't start countdown.
+        if (this.isTimeInfinite) {
+            console.log("_startCountdown: Timer is configured to 'No Time Limit'. No countdown will start.");
+            this.updateTimerDisplay(); // Ensure "No Time Limit" or "Timer OFF" is displayed
+            this._updateTimerControlEventsUI(); // Update buttons accordingly
+            return;
+        }
+
+        // If, after configuration, there's no time set for a finite timer, cannot start.
+        if (this.timeRemaining <= 0) {
+            console.warn("_startCountdown: No timer duration (timeRemaining is 0 or less after configuration). Cannot start countdown.");
+            alert("Please set a timer duration greater than 0 minutes to start the timer.");
+            this.updateTimerDisplay(); // Reflects 00:00:00
+            this._updateTimerControlEventsUI();
+            return;
+        }
+
+        // All checks passed, proceed to start/resume the countdown.
+        this.isTimerRunning = true;  // Mark timer as active
+        this.isTimerPaused = false;   // Ensure not paused
+        console.log(`_startCountdown: Timer countdown initiated/resumed. Time remaining: ${this.timeRemaining}s`);
+
+        // Clear any existing interval before starting a new one (safety for resume logic)
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+        }
+
+        this.updateTimerDisplay(); // Update display immediately
+
+        this.timerInterval = setInterval(() => {
+            if (this.isTimerPaused) { // Interval continues, but doesn't decrement if paused
+                return;
+            }
+
+            this.timeRemaining--;
+            this.updateTimerDisplay();
+
+            if (this.timeRemaining < 0) { // Ensure it stops at 0
+                this.timeRemaining = 0; // Correct to 0 if it somehow went negative
+                this.updateTimerDisplay(); // Update display to show 00:00:00
+                
+                console.log("Timer interval: Time expired.");
+                this.stopTimer(); // Clears interval
+                this.isTimerRunning = false;
+                this.isTimerPaused = false;
+                this.disableAllInputs();
+                this.handleQuizCompletion(true); // True for timeExpired
+                this._updateTimerControlEventsUI();
+            }
+        }, 1000);
+
+        this._updateTimerControlEventsUI(); // Update button text to "Pause", enable Reset, etc.
+    }
+
+    /**
+     * Pauses the currently running timer countdown.
+     * @private
+     */
+    _pauseCountdown() {
+        if (!this.isTimerRunning || this.isTimerPaused) {
+            console.log("_pauseCountdown: Timer is not running or already paused. No action.");
+            return;
+        }
+
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval); // Stop the interval
+            this.timerInterval = null;
+            console.log("_pauseCountdown: Timer interval cleared (paused).");
+        }
+        this.isTimerPaused = true;
+        // isTimerRunning remains true because the session is active, just paused.
+        this._updateTimerControlEventsUI(); // Update button text to "Resume", etc.
+        this.updateTimerDisplay(); // Optionally, could add a (Paused) indicator to display here
+    }
+
+    /**
+     * Resumes a paused timer countdown.
+     * @private
+     */
+    _resumeCountdown() {
+        if (!this.isTimerRunning || !this.isTimerPaused) {
+            console.log("_resumeCountdown: Timer is not running or not paused. No action.");
+            return;
+        }
+        if (this.isTimeInfinite) { // Should not be able to pause/resume infinite timer
+            console.log("_resumeCountdown: Cannot resume, timer is set to infinite.");
+             this._updateTimerControlEventsUI();
+            return;
+        }
+
+        this.isTimerPaused = false;
+        console.log("_resumeCountdown: Resuming timer countdown. Time remaining:", this.timeRemaining);
+        
+        // Re-initiate the countdown (which sets up the interval again)
+        // _startCountdown has checks to prevent re-starting if already running & not paused.
+        // Here we explicitly want to restart the interval if it was paused.
+        // A simpler way for resume is to just call _startCountdown's interval part.
+        // For simplicity and to reuse the interval logic:
+        if (this.timerInterval) { // Clear any residual interval, though _pauseCountdown should have.
+            clearInterval(this.timerInterval);
+        }
+        // Re-use the interval logic from _startCountdown, but without resetting timeRemaining
+        this.timerInterval = setInterval(() => {
+            if (this.isTimerPaused) return;
+
+            this.timeRemaining--;
+            this.updateTimerDisplay();
+
+            if (this.timeRemaining <= 0) {
+                console.log("Timer interval: Time expired after resume.");
+                this.stopTimer();
+                this.isTimerRunning = false;
+                this.isTimerPaused = false;
+                this.disableAllInputs();
+                this.handleQuizCompletion(true);
+                this._updateTimerControlEventsUI();
+            }
+        }, 1000);
+        
+        this._updateTimerControlEventsUI(); // Update button text to "Pause", etc.
+    }
+
+    /**
+     * Resets the timer to its currently configured duration (from input) and stops the countdown.
+     * @private
+     */
+    _resetCountdown() {
+        console.log("_resetCountdown: Resetting timer countdown.");
+        this.stopTimer(); // Clears any active interval
+
+        this.isTimerRunning = false; // Mark timer as not active
+        this.isTimerPaused = false;  // Ensure not paused
+
+        // Re-configure the timer from the current input value
+        this._configureTimerFromInput(); 
+        
+        this.updateTimerDisplay();     // Update the timer's text display
+        this._updateTimerControlEventsUI(); // Update control buttons (e.g., "Start" should be visible)
+        console.log("_resetCountdown: Timer has been reset and re-configured from input.");
+    }
+
+    /**
+     * Reads the timer duration from the input field and configures timer state.
+     * Sets initialTimerDuration, timeRemaining, and isTimeInfinite.
+     * @private
+     */
+    _configureTimerFromInput() {
+        console.log("_configureTimerFromInput: Reading timer duration input and configuring timer state.");
+        this.isTimeInfinite = false; // Assume finite time initially
+
+        const durationInput = document.getElementById('timerDurationInput');
+        if (!durationInput) {
+            console.error("_configureTimerFromInput: Could not find timerDurationInput element!");
+            // Fallback if input element is missing
+            this.initialTimerDuration = 0;
+            this.timeRemaining = 0;
+            this.isTimeInfinite = true; // Default to no time limit if input is missing
+            console.warn("_configureTimerFromInput: timerDurationInput missing, defaulting to No Time Limit.");
+            return;
+        }
+
+        const inputValue = durationInput.value;
+        let durationMinutes = parseInt(inputValue, 10);
+        console.log(`_configureTimerFromInput: Raw input value: "${inputValue}", Parsed minutes: ${durationMinutes}`);
+
+        // Handle "0", empty, or invalid input as "No Time Limit"
+        if (isNaN(durationMinutes) || durationMinutes <= 0) {
+            console.log("_configureTimerFromInput: Duration is 0 or invalid. Setting to NO TIME LIMIT.");
+            this.isTimeInfinite = true;
+            this.initialTimerDuration = 0; // For "no limit", these are 0
+            this.timeRemaining = 0;
+            // Standardize input field to "0" for "No Time Limit" state if it was invalid/empty
+            if (inputValue.trim() === '' || isNaN(parseInt(inputValue, 10))) {
+                durationInput.value = '0';
+            } else if (parseInt(inputValue, 10) < 0) { // Ensure negative numbers also become "0"
+                 durationInput.value = '0';
+            }
+        } else {
+            console.log(`_configureTimerFromInput: Finite timer duration set to ${durationMinutes} minutes.`);
+            this.isTimeInfinite = false; // Explicitly finite
+            this.initialTimerDuration = durationMinutes * 60; // Store in seconds
+            this.timeRemaining = this.initialTimerDuration;   // Set remaining time
+        }
+        console.log(`_configureTimerFromInput: Configuration complete. isTimeInfinite: ${this.isTimeInfinite}, initialTimerDuration: ${this.initialTimerDuration}s, timeRemaining: ${this.timeRemaining}s`);
     }
 
 }
