@@ -175,6 +175,18 @@ class ExamManager {
         console.log("Explain button listeners initialized/refreshed.");
     }
 
+    /**
+     * Adds click event listeners to all "Flag for Review" icons.
+     */
+    initializeFlagListeners() {
+        this.handleFlagToggleBound = this.handleFlagToggle.bind(this);
+
+        document.querySelectorAll('.flag-icon').forEach(icon => {
+            icon.removeEventListener('click', this.handleFlagToggleBound);
+            icon.addEventListener('click', this.handleFlagToggleBound);
+        });
+        console.log("Flag for Review icon listeners initialized/refreshed.");
+    }
     
     /*
     ==========================================================================
@@ -267,6 +279,13 @@ class ExamManager {
     
             this.questions = this.shuffleArray(allParsedQuestions);
             this.renumberQuestions();
+
+            // Loop through the questions to add our new tracking properties.
+            this.questions.forEach(question => {
+            question.wasAnsweredIncorrectly = false;
+            question.isFlaggedForReview = false;
+            });
+            console.log("Initialized wasAnsweredIncorrectly and isFlaggedForReview for all questions.");
     
             this.totalQuestions = this.questions.length;
             this.answeredQuestions = 0;
@@ -301,8 +320,14 @@ class ExamManager {
     
             console.log("handleFileUpload: Initializing Submit listeners...");
             this.initializeSubmitListeners();
+
             console.log("handleFileUpload: Initializing Explain listeners...");
             this.initializeExplainListeners();
+
+            console.log("handleFileUpload: Initializing Flag Listeners")
+            this.initializeFlagListeners();
+
+
             // Chat send button listeners are initialized within initiateChatInterface dynamically.
     
             console.log('handleFileUpload: Quiz initialized successfully.');
@@ -400,12 +425,16 @@ class ExamManager {
         this.answeredQuestions++;
         if (isCorrect) {
             this.currentScore++;
+        } else {
+            questionData.wasAnsweredIncorrectly = true;
+            console.log(`Question ${questionNumber} marked as incorrect.`); 
         }
+
         // Call UI update functions
         updateScoreDisplay(this.currentScore, this.answeredQuestions, this.totalQuestions);
         updateProgressBar(this.answeredQuestions, this.totalQuestions);
 
-        // Check for quiz completion (Unchanged)
+        // Check for quiz completion
         if (this.answeredQuestions === this.totalQuestions) {
             this.handleQuizCompletion();
         }
@@ -613,6 +642,34 @@ class ExamManager {
             // Focus the chat input again for the next message
             if(chatInput) chatInput.focus();
             console.log(`handleSendChatMessage: UI finalized for question ${questionNumber}. Input/button re-enabled. Input focused.`);
+        }
+    }
+
+    /**
+     * Handles the click event for a "Flag for Review" icon.
+     * Toggles the isFlaggedForReview state and the icon's visual appearance.
+     * @param {Event} event - The click event from the icon.
+     */
+    handleFlagToggle(event) {
+        const flagIcon = event.currentTarget;
+        const questionNumber = parseInt(flagIcon.dataset.questionNumber, 10);
+        
+        const questionData = this.questions.find(q => q.number === questionNumber);
+
+        if (questionData) {
+            // Toggle the boolean state
+            questionData.isFlaggedForReview = !questionData.isFlaggedForReview;
+            
+            // Toggle the 'flagged' CSS class on the icon to change its color
+            flagIcon.classList.toggle('flagged', questionData.isFlaggedForReview);
+
+            // Also toggle the icon class between regular (outline) and solid
+            flagIcon.classList.toggle('fa-regular', !questionData.isFlaggedForReview);
+            flagIcon.classList.toggle('fa-solid', questionData.isFlaggedForReview);
+
+            console.log(`Question ${questionNumber} flagged status set to: ${questionData.isFlaggedForReview}`);
+        } else {
+            console.error(`Could not find question data for number ${questionNumber} to flag.`);
         }
     }
 
@@ -944,6 +1001,48 @@ class ExamManager {
             alert(`${completionMessage}─────────────────────\nTotal Questions: ${this.totalQuestions}\nCorrect Answers: ${this.currentScore}\nIncorrect Answers: ${incorrectAnswers}\nFinal Score: ${percentage}%\n─────────────────────`);
         }
          // Optional: Disable all remaining inputs or provide a restart button? For now, just alert.
+    }
+
+    /**
+     * Filters for questions that have been flagged and re-renders the UI to show them in a review mode.
+     */
+    initiateReviewSession() {
+        console.log("Initiating review session for flagged questions.");
+
+        // --- 1. Filter for Flagged Questions ---
+        // Create a new array containing only the questions where 'isFlaggedForReview' is true.
+        const questionsToReview = this.questions.filter(q => q.isFlaggedForReview);
+
+        // --- 2. Check if There Are Questions to Review ---
+        if (questionsToReview.length === 0) {
+            alert("You haven't flagged any questions to review!");
+            return; // Exit the function
+        }
+
+        console.log(`Found ${questionsToReview.length} flagged questions to review.`);
+
+        // --- 3. Prepare the UI for Review Mode ---
+        const quizContentElement = document.getElementById('quiz-content');
+        const headerControls = document.querySelector('.header-controls');
+        
+        // Hide the main header controls for a focused review experience.
+        if (headerControls) {
+            headerControls.style.display = 'none';
+        }
+
+        // Clear the current quiz content and add a review header.
+        quizContentElement.innerHTML = '<h2 class="review-header">Reviewing Flagged Questions</h2>';
+
+        // --- 4. Display the Filtered Questions in "Review Mode" ---
+        // Pass a special options object to displayQuestions to render it correctly.
+        const reviewOptions = { isReviewMode: true };
+        const reviewHtmlContent = displayQuestions(questionsToReview, reviewOptions);
+        
+        // Append the review questions to the quiz content area.
+        quizContentElement.innerHTML += reviewHtmlContent;
+
+        // In review mode, we still want the "Explain" buttons to work.
+        this.initializeExplainListeners();
     }
 
     /* 

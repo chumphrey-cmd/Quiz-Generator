@@ -389,14 +389,17 @@ fieldset.answers { /* Use fieldset for semantic grouping */
      color: #888;
      border-color: #888;
 }
+
 [data-theme="dark"] .explain-btn {
      color: var(--primary-color); /* Use theme color */
      border-color: var(--primary-color);
 }
+
 [data-theme="dark"] .explain-btn:hover:not(:disabled) {
      background-color: var(--primary-color);
      color: var(--container-bg); /* Text becomes background color */
 }
+
 [data-theme="dark"] .explain-btn:disabled {
     color: #777;
     border-color: #777;
@@ -432,6 +435,36 @@ fieldset.answers { /* Use fieldset for semantic grouping */
     background-color: #555;
     border-color: #777;
     color: #ccc;
+}
+
+/* --- Flag for Review Icon --- */
+.flag-container {
+    margin-left: var(--spacing-sm); /* Space from the explain button */
+    cursor: pointer;
+    padding: var(--spacing-xs); /* Makes the click area slightly larger */
+}
+
+.flag-icon {
+    font-size: 1.1rem; /* Adjust icon size */
+    color: #888; /* Default color for an un-flagged icon */
+    transition: color 0.2s ease-in-out, transform 0.2s ease-in-out;
+}
+
+.flag-icon:hover {
+    transform: scale(1.2); /* Slightly enlarge on hover */
+}
+
+/* This is the style for a flagged (active) icon */
+.flag-icon.flagged {
+    color: var(--error-color); /* Use your theme's error color (red) */
+}
+
+[data-theme="dark"] .flag-icon {
+    color: #aaa;
+}
+
+[data-theme="dark"] .flag-icon.flagged {
+    color: #ef4444;
 }
 
 

@@ -62,7 +62,5 @@ git clone https://github.com/chumphrey-cmd/QA-Generator.git
   * Create a nice splash/introduction page/logo for the tool when the user first opens up the quiz.html file.
   * Ensure that the entire quiz header is pinned while we scroll down the MC Qs.
   * Have the "submit button" for each question take you to the next question, similar to exam like conditions. 
-  * Increase the number of time beyond 180 mins AND have the option to remove the timing constraints
   * Have the ability to specify two settings for the exam that you are going to take (e.g., A. Study Session and B. Exam Conditions)
-  * Remove the Correct/Incorrect at the heading of the page and just keep the timer and progress bar...
-  * Incorporate the ability to export/copy the raw contents of each question back out...
+  * Implement an "Explain (✨)" icon to replace the current "Explain" button.
