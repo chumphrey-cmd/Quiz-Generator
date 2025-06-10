@@ -68,26 +68,34 @@
 
 </header>
 
-<!-- Main content wrapper -->
 <main class="main-content">
 
     <div class="quiz-container">
         <div id="quiz-content">
-            <!-- Questions will be inserted here by parser.js -->
-        </div>
+            </div>
     </div>
 
 </main>
 
-    <!-- Script tags for JavaScript modules -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <script src="assets/js/theme.js"></script>
     <script src="assets/js/parser.js"></script>
     
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="assets/js/ui.js"></script>
     <script src="assets/js/exam.js"></script>
 
+    <div id="end-of-quiz-modal-container" class="modal-container">
+        <div class="modal-content">
+            <h2 id="modal-title">Quiz Complete!</h2>
+            <p id="modal-score"></p>
+            <div class="modal-actions">
+                <button id="retake-quiz-btn" class="modal-btn">Retake Exam</button>
+                <button id="review-session-btn" class="modal-btn review">Review Flagged & Incorrect</button>
+                
+                <button id="import-new-btn" class="modal-btn import">Import New Questions</button>
+                </div>
+        </div>
+    </div>
 </body>
 </html>

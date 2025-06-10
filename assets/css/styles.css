@@ -587,6 +587,118 @@ Progress and Feedback
     border-left-color: #4ade80; /* Brighter green border */
 }
 
+/* --- End of Quiz Modal --- */
+
+/* The full-screen, semi-transparent background. */
+.modal-container {
+    position: fixed; /* Sits on top of all other content. */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Black with 60% opacity. */
+    display: flex; /* Uses flexbox to easily center the content. */
+    justify-content: center;
+    align-items: center;
+    opacity: 0; /* Starts fully transparent. */
+    visibility: hidden; /* Starts completely hidden and un-interactable. */
+    transition: opacity 0.3s ease, visibility 0.3s ease; /* Smooth fade-in transition. */
+    z-index: 2000; /* Ensures it's on top of all other elements. */
+}
+
+/* This class will be added by JavaScript to show the modal. */
+.modal-container.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* The white content box in the middle of the screen. */
+.modal-content {
+    background: var(--container-bg);
+    padding: var(--spacing-xl);
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    text-align: center;
+    width: 90%;
+    max-width: 450px;
+    transform: scale(0.9); /* Starts slightly scaled down. */
+    transition: transform 0.3s ease; /* Smooth pop-in animation. */
+}
+
+/* When the modal is shown, the content box scales to its normal size. */
+.modal-container.show .modal-content {
+    transform: scale(1);
+}
+
+#modal-title {
+    margin-top: 0;
+    color: var(--primary-color);
+}
+
+#modal-score {
+    font-size: 1.2rem;
+    line-height: 1.5; /* Improves readability for multi-line scores. */
+    white-space: pre-wrap; /* Ensures the line breaks from the score function are respected. */
+    margin-bottom: var(--spacing-lg);
+    display: inline-block;
+    text-align: center;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-md);
+}
+
+.modal-btn {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border: none;
+    border-radius: var(--border-radius-md);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.modal-btn:hover {
+    transform: translateY(-2px); /* Slight lift effect on hover. */
+}
+
+/* Style for the less prominent "Retake" button. */
+#retake-quiz-btn {
+    background-color: #6c757d; /* A neutral grey. */
+    color: white;
+}
+#retake-quiz-btn:hover {
+    background-color: #5a6268;
+}
+
+/* Style for the primary "Review" button. */
+.modal-btn.review {
+    background-color: var(--primary-color);
+    color: white;
+}
+.modal-btn.review:hover {
+    background-color: var(--secondary-color);
+}
+
+/* This rule targets our new button using the 'import' class. */
+.modal-btn.import {
+    background-color: #17a2b8; /* A distinct teal/cyan color. */
+    color: white;
+}
+
+.modal-btn.import:hover {
+    background-color: #138496; /* A slightly darker shade for the hover effect. */
+}
+
+/* You might also want to adjust the gap if three buttons feel cramped */
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-sm); /* Using a smaller gap for three buttons */
+}
+
 /*
 ==========================================================================
 Controls (Header Inputs/Selects)

@@ -47,6 +47,7 @@ class ExamManager {
         this.answeredQuestions = 0;
         this.currentScore = 0;
         this.questions = [];
+        this.originalQuestions = []; // Used to store original imported Qs
         this.timerInterval = null;
         this.timeRemaining = 0;
         const initialTimerInput = document.getElementById('timerDurationInput');
@@ -92,11 +93,16 @@ class ExamManager {
     ==========================================================================
     */
 
+// In assets/js/exam.js
+
     /**
-     * Set up initial event listeners (file upload, timer input validation).
-     * Submit/Explain listeners are added *after* questions are rendered.
+     * Sets up all persistent event listeners for the application.
+     * This method is called only once when the ExamManager is created.
      */
     initializeEventListeners() {
+        console.log("Initializing all persistent event listeners...");
+
+        // --- Listeners for Static Header Controls ---
         const fileInput = document.getElementById('questionFile');
         if (fileInput) {
             fileInput.addEventListener('change', this.handleFileUploadBound);
@@ -104,34 +110,28 @@ class ExamManager {
 
         const timerInput = document.getElementById('timerDurationInput');
         if (timerInput) {
-            // Input event listener for numeric only
             timerInput.addEventListener('input', function() {
                 this.value = this.value.replace(/[^0-9]/g, '');
-                 if (this.value.length > 1 && this.value.startsWith('0')) this.value = this.value.substring(1);
-                 if (this.value === '') this.value = '1';
+                if (this.value.length > 1 && this.value.startsWith('0')) this.value = this.value.substring(1);
+                if (this.value === '') this.value = '1';
             });
-             // Blur event listener for min/max enforcement
-              timerInput.addEventListener('blur', function() {
-                   const min = parseInt(this.min, 10) || 1;
-                   const max = parseInt(this.max, 10) || 999999;
-                   let currentValue = parseInt(this.value, 10);
-                   if (isNaN(currentValue) || currentValue < min) this.value = min;
-                   else if (currentValue > max) this.value = max;
-              });
+            timerInput.addEventListener('blur', function() {
+                const min = parseInt(this.min, 10) || 1;
+                const max = parseInt(this.max, 10) || 999999;
+                let currentValue = parseInt(this.value, 10);
+                if (isNaN(currentValue) || currentValue < min) this.value = min;
+                else if (currentValue > max) this.value = max;
+            });
         } else { console.error("Timer duration input element not found!"); }
 
         const timerToggleButton = document.getElementById('timerToggleButton');
         if (timerToggleButton) {
             timerToggleButton.addEventListener('click', this.handleTimerToggleClickBound);
-
-            // Optional: Update button appearance on initial load based on state
             this.updateTimerToggleButtonVisuals(timerToggleButton);
         } else { console.error("Timer toggle button 'timerToggleButton' not found!");}
 
-        // --- Listeners for Timer Control Buttons ---
         const startPauseResumeButton = document.getElementById('timerStartPauseResumeButton');
         if (startPauseResumeButton) {
-            // We'll create this.handleTimerStartPauseResumeClickBound soon
             this.handleTimerStartPauseResumeClickBound = this.handleTimerStartPauseResumeClick.bind(this);
             startPauseResumeButton.addEventListener('click', this.handleTimerStartPauseResumeClickBound);
         } else {
@@ -140,52 +140,80 @@ class ExamManager {
 
         const resetButton = document.getElementById('timerResetButton');
         if (resetButton) {
-            // We'll create this.handleTimerResetClickBound soon
             this.handleTimerResetClickBound = this.handleTimerResetClick.bind(this);
             resetButton.addEventListener('click', this.handleTimerResetClickBound);
         } else {
             console.error("Timer Reset button 'timerResetButton' not found!");
         }
-    
+
+        // --- Master Listener for Dynamic Quiz Content (Event Delegation) ---
+        const quizContentElement = document.getElementById('quiz-content');
+        if (quizContentElement) {
+            this.handleQuizContentClickBound = this.handleQuizContentClick.bind(this);
+            quizContentElement.addEventListener('click', this.handleQuizContentClickBound);
+            console.log("Master event listener attached to #quiz-content for delegation.");
+        } else {
+            console.error("CRITICAL: Could not find #quiz-content div to attach master listener.");
+        }
+
+        // --- Listeners for Static Modal Buttons ---
+        console.log("Attempting to find and attach listeners to modal buttons...");
+        const retakeBtn = document.getElementById('retake-quiz-btn');
+        if (retakeBtn) {
+            retakeBtn.addEventListener('click', () => {
+                console.log("'Retake Exam' button clicked.");
+                this.startNewQuiz(this.originalQuestions);
+            });
+            console.log("Event listener attached to 'Retake Exam' button.");
+        }
+
+        const reviewBtn = document.getElementById('review-session-btn');
+        if (reviewBtn) {
+            reviewBtn.addEventListener('click', () => {
+                console.log("'Review' button clicked.");
+                this.initiateReviewQuiz();
+            });
+            console.log("Event listener attached to 'Review' button.");
+        }
+
+        const importBtn = document.getElementById('import-new-btn');
+        if (importBtn) {
+            importBtn.addEventListener('click', () => {
+                console.log("'Import New' button clicked.");
+                document.getElementById('questionFile').click();
+                document.getElementById('end-of-quiz-modal-container').classList.remove('show');
+            });
+            console.log("Event listener attached to 'Import New' button.");
+        }
     }
 
     /**
-     * Initialize listeners for all SUBMIT buttons after rendering questions.
+     * Event handler that listens for all clicks inside the quiz area.
+     * It uses event delegation to determine what was clicked and calls the appropriate function.
+     * @param {Event} event - The master click event.
      */
-    initializeSubmitListeners() {
-        document.querySelectorAll('.submit-btn').forEach(button => {
-             // Remove potential old listener first to prevent duplicates on reload
-             button.removeEventListener('click', this.handleSubmitClickBound);
-             // Add the listener using the bound handler
-            button.addEventListener('click', this.handleSubmitClickBound);
-        });
-        console.log("Submit button listeners initialized/refreshed.");
-    }
+    handleQuizContentClick(event) {
+        // 'event.target' is the actual element that was clicked (e.g., the specific <i> icon).
+        const target = event.target;
 
-    /**
-     * Adds click event listeners to all "Explain" buttons.
-     */
-    initializeExplainListeners() {
-        const explainButtons = document.querySelectorAll('.explain-btn');
-        console.log(`Found ${explainButtons.length} explain buttons.`);
-        explainButtons.forEach(button => {
-             button.removeEventListener('click', this.handleExplainClickBound); // Remove old before adding
-             button.addEventListener('click', this.handleExplainClickBound);
-        });
-        console.log("Explain button listeners initialized/refreshed.");
-    }
+        // Check if the clicked element (or its parent) is a submit button.
+        if (target.matches('.submit-btn')) {
+            console.log("Delegated click detected on a submit button.");
+            // We pass the event object to handleSubmitClick so it can get the button.
+            this.handleSubmitClick(event);
+        }
+        
+        // Check if the clicked element is a flag icon.
+        if (target.matches('.flag-icon')) {
+            console.log("Delegated click detected on a flag icon.");
+            this.handleFlagToggle(event);
+        }
 
-    /**
-     * Adds click event listeners to all "Flag for Review" icons.
-     */
-    initializeFlagListeners() {
-        this.handleFlagToggleBound = this.handleFlagToggle.bind(this);
-
-        document.querySelectorAll('.flag-icon').forEach(icon => {
-            icon.removeEventListener('click', this.handleFlagToggleBound);
-            icon.addEventListener('click', this.handleFlagToggleBound);
-        });
-        console.log("Flag for Review icon listeners initialized/refreshed.");
+        // Check if the clicked element is an explain button.
+        if (target.matches('.explain-btn')) {
+            console.log("Delegated click detected on an explain button.");
+            this.handleExplainClick(event);
+        }
     }
     
     /*
@@ -275,65 +303,13 @@ class ExamManager {
                 return; 
             }
     
-            console.log(`handleFileUpload: Total valid questions parsed: ${allParsedQuestions.length}`);
-    
-            this.questions = this.shuffleArray(allParsedQuestions);
-            this.renumberQuestions();
-
-            // Loop through the questions to add our new tracking properties.
-            this.questions.forEach(question => {
-            question.wasAnsweredIncorrectly = false;
-            question.isFlaggedForReview = false;
-            });
-            console.log("Initialized wasAnsweredIncorrectly and isFlaggedForReview for all questions.");
-    
-            this.totalQuestions = this.questions.length;
-            this.answeredQuestions = 0;
-            this.currentScore = 0;
+            console.log(`handleFileUpload: Total valid questions parsed: ${allParsedQuestions.length}. Storing for retakes.`);
             
-            // Call resetDisplays (from ui.js) before starting the timer or rendering new questions
-            // Assuming resetDisplays is globally available or you call it via an instance if it's part of a class.
-            // Make sure resetDisplays is defined and accessible. From your ui.js, it's a global function.
-            if (typeof resetDisplays === 'function') {
-                resetDisplays(this.totalQuestions);
-                console.log("handleFileUpload: Called resetDisplays().");
-            } else {
-                console.warn("handleFileUpload: resetDisplays function not found. UI might not reset correctly.");
-            }
+            // 1. Store the clean, original set of questions. The spread operator '[...array]' to create a true copy, not just a reference.
+            this.originalQuestions = [...allParsedQuestions];
             
-            this.resetTimer(); // Reset and prepare the timer state
-
-
-            console.log("handleFileUpload: Calling displayQuestions to generate HTML content...");
-            const htmlContent = displayQuestions(this.questions); // From ui.js
-            console.log("handleFileUpload: HTML content generated length:", htmlContent.length);
-            
-            const quizContentElement = document.getElementById('quiz-content');
-            if (quizContentElement) {
-                quizContentElement.innerHTML = htmlContent;
-                console.log("handleFileUpload: Injected HTML into quiz-content.");
-            } else {
-                console.error("handleFileUpload: Could not find quiz-content element to inject HTML!");
-                alert("Error: Could not display questions. UI element missing.");
-                return;
-            }
-    
-            console.log("handleFileUpload: Initializing Submit listeners...");
-            this.initializeSubmitListeners();
-
-            console.log("handleFileUpload: Initializing Explain listeners...");
-            this.initializeExplainListeners();
-
-            console.log("handleFileUpload: Initializing Flag Listeners")
-            this.initializeFlagListeners();
-
-
-            // Chat send button listeners are initialized within initiateChatInterface dynamically.
-    
-            console.log('handleFileUpload: Quiz initialized successfully.');
-            this.startTimer(); // Start the timer after everything is set up
-
-            this._updateTimerControlEventsUI(); // Update buttons based on loaded quiz & timer config
+            // 2. Calling function (.startNewQuiz) to start the quiz for the first time.
+            this.startNewQuiz(this.originalQuestions);
     
         } catch (error) {
              console.error('handleFileUpload: General error in outer try block:', error);
@@ -346,6 +322,83 @@ class ExamManager {
             event.target.value = null; // Clear the file input
             console.log("handleFileUpload: File input value cleared.");
          }
+    }
+
+    /**
+     * The primary method for starting any quiz, whether it's the full exam or a review session.
+     * It takes an array of questions, sets up the state, and renders the UI.
+     * @param {Array} questionsToStart - The array of question objects to begin the quiz with.
+     */
+    startNewQuiz(questionsToStart) {
+        console.log(`Starting a new quiz with ${questionsToStart.length} questions.`);
+        
+        // 1. Ensure the modal is hidden and the main header is visible.
+        const modalContainer = document.getElementById('end-of-quiz-modal-container');
+        if (modalContainer) modalContainer.classList.remove('show');
+        const headerControls = document.querySelector('.header-controls');
+        if (headerControls) headerControls.style.display = 'flex';
+
+        // 2. Set up the quiz state with the provided questions.
+        this.questions = this.shuffleArray(questionsToStart);
+        this.renumberQuestions();
+
+        // 3. Initialize tracking properties for this new quiz session.
+        this.questions.forEach(question => {
+            question.wasAnsweredIncorrectly = false;
+            question.isFlaggedForReview = false;
+        });
+
+        // 4. Reset scores and progress trackers.
+        this.totalQuestions = this.questions.length;
+        this.answeredQuestions = 0;
+        this.currentScore = 0;
+        
+        // 5. Reset and display all UI elements (progress bar, timer, etc.).
+        resetDisplays(this.totalQuestions);
+        this.resetTimer();
+
+        // 6. Render the new questions to the page.
+        const htmlContent = displayQuestions(this.questions); 
+        const quizContentElement = document.getElementById('quiz-content');
+        if (quizContentElement) {
+            quizContentElement.innerHTML = htmlContent;
+            console.log("SUCCESS: Injected new HTML into #quiz-content.");
+        } else {
+            console.error("CRITICAL: Could not find #quiz-content div. Questions cannot be displayed.");
+        }
+
+        // 7. Configure and start the timer.
+        this.startTimer();
+        this._updateTimerControlEventsUI();
+    }
+
+    /**
+     * Filters for questions that were either flagged or answered incorrectly,
+     * and then starts a new, active quiz session with only those questions.
+     */
+    initiateReviewQuiz() {
+        console.log("Initiating active review quiz for flagged and incorrect questions.");
+
+        // 1. Filter the master list of questions to find the ones the user struggled with.
+        // A question is included if it was flagged OR if it was answered incorrectly.
+        const questionsToReview = this.questions.filter(
+            q => q.isFlaggedForReview || q.wasAnsweredIncorrectly
+        );
+
+        // 2. Check if there are any questions to review.
+        if (questionsToReview.length === 0) {
+            // If the user got a perfect score and didn't flag anything, show a positive message.
+            alert("There are no flagged or incorrect questions to review. Great job!");
+            return; // Exit the function if there's nothing to review.
+        }
+
+        // 3. The magic happens here. We hand off the filtered list of questions
+        //    to our powerful, reusable startNewQuiz function. It will handle everything:
+        //    - Hiding the modal
+        //    - Resetting the score and progress bars
+        //    - Shuffling and re-rendering the UI with the review questions
+        //    - Re-initializing all necessary event listeners for an active quiz
+        this.startNewQuiz(questionsToReview);
     }
 
     /**
@@ -380,7 +433,7 @@ class ExamManager {
      * @param {Event} event - Click event from the submit button.
      */
     handleSubmitClick(event) {
-        const submitButton = event.currentTarget;
+        const submitButton = event.target;
         const questionNumber = parseInt(submitButton.getAttribute('data-question'), 10);
         const container = document.getElementById(`container-${questionNumber}`);
         const feedbackElement = document.getElementById(`feedback-${questionNumber}`);
@@ -426,8 +479,10 @@ class ExamManager {
         if (isCorrect) {
             this.currentScore++;
         } else {
-            questionData.wasAnsweredIncorrectly = true;
-            console.log(`Question ${questionNumber} marked as incorrect.`); 
+        // If the answer is incorrect, we set our new property to true.
+        // This allows us to easily find all incorrect questions later for the review session.
+        questionData.wasAnsweredIncorrectly = true;
+        console.log(`Question ${questionNumber} marked as incorrect.`); 
         }
 
         // Call UI update functions
@@ -449,7 +504,7 @@ class ExamManager {
      */
     async handleExplainClick(event) {
         event.preventDefault(); // Prevent any default button action
-        const button = event.currentTarget;
+        const button = event.target;
         const questionNumber = parseInt(button.getAttribute('data-question-number'), 10);
         const responseArea = document.getElementById(`llm-response-${questionNumber}`);
 
@@ -646,30 +701,28 @@ class ExamManager {
     }
 
     /**
-     * Handles the click event for a "Flag for Review" icon.
-     * Toggles the isFlaggedForReview state and the icon's visual appearance.
+     * Handles clicks on a flag icon.
+     * Toggles the isFlaggedForReview state for the question and updates the icon's visual style.
      * @param {Event} event - The click event from the icon.
      */
     handleFlagToggle(event) {
-        const flagIcon = event.currentTarget;
+        const flagIcon = event.target; 
         const questionNumber = parseInt(flagIcon.dataset.questionNumber, 10);
         
         const questionData = this.questions.find(q => q.number === questionNumber);
 
         if (questionData) {
-            // Toggle the boolean state
+            // 1. Toggle the boolean state in our data model.
             questionData.isFlaggedForReview = !questionData.isFlaggedForReview;
             
-            // Toggle the 'flagged' CSS class on the icon to change its color
+            // 2. Toggle the 'flagged' CSS class to change the icon's color.
             flagIcon.classList.toggle('flagged', questionData.isFlaggedForReview);
 
-            // Also toggle the icon class between regular (outline) and solid
-            flagIcon.classList.toggle('fa-regular', !questionData.isFlaggedForReview);
-            flagIcon.classList.toggle('fa-solid', questionData.isFlaggedForReview);
+            // 3. Toggle the Font Awesome class to switch between the outline and solid icon.
+            flagIcon.classList.toggle('fa-regular', !questionData.isFlaggedForReview); // Show outline if not flagged.
+            flagIcon.classList.toggle('fa-solid', questionData.isFlaggedForReview);   // Show solid if flagged.
 
             console.log(`Question ${questionNumber} flagged status set to: ${questionData.isFlaggedForReview}`);
-        } else {
-            console.error(`Could not find question data for number ${questionNumber} to flag.`);
         }
     }
 
@@ -973,75 +1026,91 @@ class ExamManager {
     }
 
     /**
-     * Handle quiz completion and display final score
+     * Handles the completion of the quiz.
+     * Calculates the final score and displays it in the new modal menu.
      * @param {boolean} [timeExpired=false] - Flag indicating if completion was due to time running out.
      */
     handleQuizCompletion(timeExpired = false) {
-        this.stopTimer(); // Stop the timer when quiz completes
+        this.stopTimer(); // Stop the timer first.
 
-        // Ensure totalQuestions is not zero to avoid division by zero
-        if (this.totalQuestions === 0) {
-            alert("Quiz finished, but there were no questions.");
+        // Find the modal elements from the DOM.
+        const modalContainer = document.getElementById('end-of-quiz-modal-container');
+        const modalScoreElement = document.getElementById('modal-score');
+        const modalTitle = document.getElementById('modal-title');
+
+        // Safety check to ensure the HTML elements exist.
+        if (!modalContainer || !modalScoreElement || !modalTitle) {
+            console.error("End of quiz modal elements not found! Check quiz.html.");
+            // Fallback to a simple alert if the modal is missing from the HTML.
+            alert("Quiz Complete!"); 
             return;
         }
 
-        const percentage = Math.round((this.currentScore / this.totalQuestions) * 100);
-        const incorrectAnswers = this.totalQuestions - this.currentScore;
-
-        // Define the message based on whether time expired
-        let completionMessage = timeExpired ? "Time's up!\n" : "Quiz Complete!\n";
-
-        // Use the globally available showFinalScore function if it exists for better formatting, otherwise use alert
-        if (typeof showFinalScore === 'function') {
-             // Prepend the completion message to the score details from showFinalScore
-            const scoreMessage = showFinalScore(this.currentScore, this.totalQuestions);
-            alert(completionMessage + scoreMessage.replace(/^Quiz Complete!\n/, '')); // Attempt to remove duplicate header
-        } else {
-            // Fallback alert using the user's original detailed format
-            alert(`${completionMessage}─────────────────────\nTotal Questions: ${this.totalQuestions}\nCorrect Answers: ${this.currentScore}\nIncorrect Answers: ${incorrectAnswers}\nFinal Score: ${percentage}%\n─────────────────────`);
+        // Update the title if the time expired.
+        if (timeExpired) {
+            modalTitle.textContent = "Time's Up!";
         }
-         // Optional: Disable all remaining inputs or provide a restart button? For now, just alert.
+
+        // Generate the detailed score message using the function from ui.js
+        const scoreMessage = showFinalScore(this.currentScore, this.totalQuestions);
+        // Clean up the message for better presentation inside the modal paragraph.
+        modalScoreElement.innerText = scoreMessage
+            .replace(/Quiz Complete!\n/g, '') // Remove redundant header.
+            .replace(/─/g, ''); // Remove separator characters.
+
+        // Add the 'show' class to the container to trigger the fade-in animation.
+        modalContainer.classList.add('show');
     }
 
     /**
-     * Filters for questions that have been flagged and re-renders the UI to show them in a review mode.
+     * Initiates a review session showing all questions that were either flagged OR answered incorrectly.
+     * This method is triggered by the "Review Flagged & Incorrect" button in the end-of-quiz modal.
      */
     initiateReviewSession() {
-        console.log("Initiating review session for flagged questions.");
+        console.log("Initiating unified review session for flagged and incorrect questions.");
 
-        // --- 1. Filter for Flagged Questions ---
-        // Create a new array containing only the questions where 'isFlaggedForReview' is true.
-        const questionsToReview = this.questions.filter(q => q.isFlaggedForReview);
+        const modalContainer = document.getElementById('end-of-quiz-modal-container');
+        
+        // --- 1. Filter Questions ---
+        // Create a new array containing only the questions where the user struggled.
+        // The filter checks if either `isFlaggedForReview` OR `wasAnsweredIncorrectly` is true.
+        const questionsToReview = this.questions.filter(
+            q => q.isFlaggedForReview || q.wasAnsweredIncorrectly
+        );
 
         // --- 2. Check if There Are Questions to Review ---
         if (questionsToReview.length === 0) {
-            alert("You haven't flagged any questions to review!");
-            return; // Exit the function
+            // If the user got a perfect score and didn't flag anything, give them positive feedback!
+            alert("There are no flagged or incorrect questions to review. Great job!");
+            return; // Stop the function here.
         }
 
-        console.log(`Found ${questionsToReview.length} flagged questions to review.`);
-
-        // --- 3. Prepare the UI for Review Mode ---
-        const quizContentElement = document.getElementById('quiz-content');
-        const headerControls = document.querySelector('.header-controls');
+        console.log(`Found ${questionsToReview.length} questions to review.`);
         
-        // Hide the main header controls for a focused review experience.
+        // --- 3. Prepare the UI for Review Mode ---
+        // Hide the modal so it's not in the way.
+        if (modalContainer) {
+            modalContainer.classList.remove('show');
+        }
+        // Hide the main header controls for a clean, focused review experience.
+        const headerControls = document.querySelector('.header-controls');
         if (headerControls) {
             headerControls.style.display = 'none';
         }
 
-        // Clear the current quiz content and add a review header.
-        quizContentElement.innerHTML = '<h2 class="review-header">Reviewing Flagged Questions</h2>';
-
+        // Clear the main content area and add a header for the review session.
+        const quizContentElement = document.getElementById('quiz-content');
+        quizContentElement.innerHTML = '<h2 class="review-header">Reviewing Flagged & Incorrect Questions</h2>';
+        
         // --- 4. Display the Filtered Questions in "Review Mode" ---
-        // Pass a special options object to displayQuestions to render it correctly.
+        // We pass the special isReviewMode option to our displayQuestions function.
         const reviewOptions = { isReviewMode: true };
         const reviewHtmlContent = displayQuestions(questionsToReview, reviewOptions);
-        
-        // Append the review questions to the quiz content area.
+        // Append the generated HTML for the review questions.
         quizContentElement.innerHTML += reviewHtmlContent;
 
-        // In review mode, we still want the "Explain" buttons to work.
+        // The "Explain" buttons should still work in review mode.
+        // We need to re-initialize their listeners because we just rewrote the HTML.
         this.initializeExplainListeners();
     }
 
@@ -2141,4 +2210,10 @@ class ExamManager {
 
 }
 
-const examManager = new ExamManager();
+/**
+ * This event listener waits for the entire HTML document to be fully loaded and parsed before it runs the code inside. This guarantees that all HTML elements, including. This fixes the unresponsiveness of our "Review" buttons at the end of our quiz
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    new ExamManager();
+    console.log("DOM fully loaded and parsed. ExamManager created.");
+});
