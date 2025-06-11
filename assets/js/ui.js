@@ -20,7 +20,9 @@ function displayQuestions(questions) {
                         ${question.number}. ${formattedQuestionText}
                         ${isMultipleChoice ? '<span class="question-hint">(Select all that apply)</span>' : ''}
                     </div>
-                    <button class="explain-btn" data-question-number="${question.number}">Explain</button>
+                    <div class="explain-container" title="Explain Question">
+                        <i class="fa-solid fa-wand-magic-sparkles explain-icon" data-question-number="${question.number}"></i>
+                    </div>
                     <div class="flag-container" title="Flag for Review">
                         <i class="fa-regular fa-flag flag-icon" data-question-number="${question.number}"></i>
                     </div>

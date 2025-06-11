@@ -358,52 +358,43 @@ fieldset.answers { /* Use fieldset for semantic grouping */
     opacity: 0.6;
 }
 
-/* --- Explain Button --- */
-.explain-btn {
-    padding: 5px 10px;
-    font-size: 0.8rem;
-    font-weight: 500;
+/* --- Explain Icon --- */
+.explain-container {
+    margin-left: var(--spacing-sm); /* A little less space for a cleaner look */
     cursor: pointer;
-    background-color: transparent; /* Outline style */
+    padding: var(--spacing-xs);
+    /* This container holds the icon. */
+}
+
+.explain-icon {
+    font-size: 1.1rem;
+    color: #888;
+    transition: color 0.2s ease, transform 0.2s ease;
+    /* This is just the icon itself (the 'i' element). */
+}
+
+.explain-icon:hover {
+    transform: scale(1.2); /* "Lift" effect on hover */
     color: var(--primary-color);
-    border: 1px solid var(--primary-color);
-    border-radius: var(--border-radius-md);
-    transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
-    flex-shrink: 0;
-    white-space: nowrap;
 }
 
-.explain-btn:hover:not(:disabled) {
-    background-color: var(--primary-color);
-    color: white;
-    transform: translateY(-1px);
-}
-.explain-btn:active:not(:disabled) {
-    transform: translateY(0px);
-}
-.explain-btn:disabled {
-     opacity: 0.5;
-     cursor: not-allowed;
-     transform: none;
-     background-color: transparent;
-     color: #888;
-     border-color: #888;
+/* This class is added by JS to show a disabled state. */
+.explain-icon.disabled {
+    color: #ccc;
+    cursor: not-allowed;
+    transform: none; /* No hover effect when disabled. */
 }
 
-[data-theme="dark"] .explain-btn {
-     color: var(--primary-color); /* Use theme color */
-     border-color: var(--primary-color);
+[data-theme="dark"] .explain-icon {
+    color: #aaa;
 }
 
-[data-theme="dark"] .explain-btn:hover:not(:disabled) {
-     background-color: var(--primary-color);
-     color: var(--container-bg); /* Text becomes background color */
+[data-theme="dark"] .explain-icon:hover {
+    color: var(--primary-color);
 }
 
-[data-theme="dark"] .explain-btn:disabled {
-    color: #777;
-    border-color: #777;
-    opacity: 0.5;
+[data-theme="dark"] .explain-icon.disabled {
+    color: #555;
 }
 
 
@@ -452,6 +443,7 @@ fieldset.answers { /* Use fieldset for semantic grouping */
 
 .flag-icon:hover {
     transform: scale(1.2); /* Slightly enlarge on hover */
+    color: #ef4444;
 }
 
 /* This is the style for a flagged (active) icon */
@@ -461,6 +453,10 @@ fieldset.answers { /* Use fieldset for semantic grouping */
 
 [data-theme="dark"] .flag-icon {
     color: #aaa;
+}
+
+[data-theme="dark"] .flag-icon:hover {
+    color: #ef4444;
 }
 
 [data-theme="dark"] .flag-icon.flagged {

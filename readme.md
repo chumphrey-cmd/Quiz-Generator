@@ -48,6 +48,7 @@ git clone https://github.com/chumphrey-cmd/QA-Generator.git
   * Currently the Ollama models are hard-coded. I would like the application the ability to identify which models you currently have loaded and provide you the ability to select the model of choice.
   * Include API syntax for other Gemini models
   * Integrate session-only, per-question chat history
+* **Review Missed Questions:** Have the ability for your most missed questions to be marked and reviewed rather than having to retake the entire quiz all over again. Be provided a "Review button" at the end of the quiz/test that allows you to review only your missed or questions marked for review!
 
 ### In Progress... ⏳
 
@@ -56,7 +57,6 @@ git clone https://github.com/chumphrey-cmd/QA-Generator.git
   * Implement the ability to specify the number of questions that you want to display at a time (e.g., 90/120 total questions)
   * Have the ability to pause, save, or reset your current session while you are reviewing. 
   * Have the ability to re-initiate your current saved session to restart your progress.
-  * Have the ability for your most missed questions to be marked and reviewed rather than having to retake the entire quiz all over again. Be provided a "Review button" at the end of the quiz/test that allows you to review only your missed or questions marked for review!
 
 * **UI/UX:** 
   * Create a nice splash/introduction page/logo for the tool when the user first opens up the quiz.html file.
@@ -64,3 +64,4 @@ git clone https://github.com/chumphrey-cmd/QA-Generator.git
   * Have the "submit button" for each question take you to the next question, similar to exam like conditions. 
   * Have the ability to specify two settings for the exam that you are going to take (e.g., A. Study Session and B. Exam Conditions)
   * Implement an "Explain (✨)" icon to replace the current "Explain" button.
+  * Remove the Timer ON/OFF feature because the Resume/Pause/Reset features handle the timer functionality
