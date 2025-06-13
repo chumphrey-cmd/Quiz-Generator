@@ -49,6 +49,8 @@ git clone https://github.com/chumphrey-cmd/QA-Generator.git
   * Include API syntax for other Gemini models
   * Integrate session-only, per-question chat history
 * **Review Missed Questions:** Have the ability for your most missed questions to be marked and reviewed rather than having to retake the entire quiz all over again. Be provided a "Review button" at the end of the quiz/test that allows you to review only your missed or questions marked for review!
+* Implement an "Explain (✨)" icon to replace the current "Explain" button.
+* Remove the Timer ON/OFF feature because the Resume/Pause/Reset features handle the timer functionality
 
 ### In Progress... ⏳
 
@@ -63,5 +65,3 @@ git clone https://github.com/chumphrey-cmd/QA-Generator.git
   * Ensure that the entire quiz header is pinned while we scroll down the MC Qs.
   * Have the "submit button" for each question take you to the next question, similar to exam like conditions. 
   * Have the ability to specify two settings for the exam that you are going to take (e.g., A. Study Session and B. Exam Conditions)
-  * Implement an "Explain (✨)" icon to replace the current "Explain" button.
-  * Remove the Timer ON/OFF feature because the Resume/Pause/Reset features handle the timer functionality

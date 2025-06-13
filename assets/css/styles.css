@@ -397,37 +397,6 @@ fieldset.answers { /* Use fieldset for semantic grouping */
     color: #555;
 }
 
-
-/* --- Timer Toggle Button --- */
-.timer-toggle-btn {
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-radius: var(--border-radius-sm);
-    border: 1px solid var(--button-border);
-    background-color: var(--primary-color); /* Default ON state */
-    color: white;
-    font-size: 0.8rem; /* Match nearby elements */
-    cursor: pointer;
-    transition: background-color 0.2s ease, opacity 0.2s ease;
-    margin-left: var(--spacing-sm); /* Space it from the input */
-    white-space: nowrap; /* Prevent text wrapping */
-}
-
-.timer-toggle-btn:hover {
-    opacity: 0.9;
-}
-
-.timer-toggle-btn.timer-off {
-    background-color: #aaa; /* Grey out when OFF */
-    border-color: #888;
-    color: #eee;
-}
-
-[data-theme="dark"] .timer-toggle-btn.timer-off {
-    background-color: #555;
-    border-color: #777;
-    color: #ccc;
-}
-
 /* --- Flag for Review Icon --- */
 .flag-container {
     margin-left: var(--spacing-sm); /* Space from the explain button */

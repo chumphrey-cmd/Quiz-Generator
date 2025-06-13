@@ -52,7 +52,6 @@ class ExamManager {
         this.timeRemaining = 0;
         const initialTimerInput = document.getElementById('timerDurationInput');
         this.timerDuration = (initialTimerInput ? parseInt(initialTimerInput.value, 10) : 10) * 60;
-        this.isTimerEnabled = true; // Timer is ON by default
         this.isTimeInfinite = false; // Tracks if the timer is set to no limit
         this.initialTimerDuration = 0; // Stores the duration set by user (in seconds)
         this.isTimerRunning = false;   // Tracks if countdown is active (running or paused)
@@ -68,7 +67,6 @@ class ExamManager {
         this.handleFileUploadBound = this.handleFileUpload.bind(this);
         this.handleSubmitClickBound = this.handleSubmitClick.bind(this);
         this.handleExplainClickBound = this.handleExplainClick.bind(this);
-        this.handleTimerToggleClickBound = this.handleTimerToggleClick.bind(this);
         this.handleSendChatMessageBound = this.handleSendChatMessage.bind(this);
         this.handleTimerStartPauseResumeClickBound = this.handleTimerStartPauseResumeClick.bind(this);
         this.handleTimerResetClickBound = this.handleTimerResetClick.bind(this);
@@ -93,8 +91,6 @@ class ExamManager {
     ==========================================================================
     */
 
-// In assets/js/exam.js
-
     /**
      * Sets up all persistent event listeners for the application.
      * This method is called only once when the ExamManager is created.
@@ -110,6 +106,7 @@ class ExamManager {
 
         const timerInput = document.getElementById('timerDurationInput');
         if (timerInput) {
+            // This logic remains unchanged. It validates the user's input in the timer field.
             timerInput.addEventListener('input', function() {
                 this.value = this.value.replace(/[^0-9]/g, '');
                 if (this.value.length > 1 && this.value.startsWith('0')) this.value = this.value.substring(1);
@@ -123,12 +120,6 @@ class ExamManager {
                 else if (currentValue > max) this.value = max;
             });
         } else { console.error("Timer duration input element not found!"); }
-
-        const timerToggleButton = document.getElementById('timerToggleButton');
-        if (timerToggleButton) {
-            timerToggleButton.addEventListener('click', this.handleTimerToggleClickBound);
-            this.updateTimerToggleButtonVisuals(timerToggleButton);
-        } else { console.error("Timer toggle button 'timerToggleButton' not found!");}
 
         const startPauseResumeButton = document.getElementById('timerStartPauseResumeButton');
         if (startPauseResumeButton) {
@@ -147,6 +138,7 @@ class ExamManager {
         }
 
         // --- Master Listener for Dynamic Quiz Content (Event Delegation) ---
+        // This logic remains unchanged.
         const quizContentElement = document.getElementById('quiz-content');
         if (quizContentElement) {
             this.handleQuizContentClickBound = this.handleQuizContentClick.bind(this);
@@ -157,6 +149,7 @@ class ExamManager {
         }
 
         // --- Listeners for Static Modal Buttons ---
+        // This logic remains unchanged.
         console.log("Attempting to find and attach listeners to modal buttons...");
         const retakeBtn = document.getElementById('retake-quiz-btn');
         if (retakeBtn) {
@@ -402,32 +395,6 @@ class ExamManager {
     }
 
     /**
-     * Handles clicks on the timer toggle button
-     */
-    handleTimerToggleClick() {
-        this.isTimerEnabled = !this.isTimerEnabled;
-        console.log("Timer global enabled state:", this.isTimerEnabled);
-
-        const timerToggleButton = document.getElementById('timerToggleButton');
-        if (timerToggleButton) {
-        this.updateTimerToggleButtonVisuals(timerToggleButton);
-        }
-
-        if (!this.isTimerEnabled) {
-            if (this.isTimerRunning && !this.isTimerPaused) {
-                // If it was running, effectively pause it internally when disabled globally
-                this.isTimerPaused = true; // Mark as paused so resume is possible if re-enabled
-                // The stopTimer() will clear the interval
-            }
-            this.stopTimer(); 
-        } else {
-            console.log("Timer globally enabled. Control button states will be updated.");
-        }
-        this.updateTimerDisplay();
-        this._updateTimerControlEventsUI(); // NEW: Update buttons based on master toggle
-    }
-
-    /**
      * Handles submit button clicks for a question.
      * Now determines input type (radio/checkbox) and processes accordingly.
      * @param {Event} event - Click event from the submit button.
@@ -439,7 +406,7 @@ class ExamManager {
         const feedbackElement = document.getElementById(`feedback-${questionNumber}`);
         const answerFieldset = document.getElementById(`answers-${questionNumber}`);
 
-        // << NEW >>: Determine input type from fieldset data attribute
+        // Determine input type from fieldset data attribute
         const inputType = answerFieldset.getAttribute('data-input-type');
         if (!inputType) {
             console.error(`Could not determine input type for question ${questionNumber}`);
@@ -495,10 +462,8 @@ class ExamManager {
         }
     }
 
-
     /**
      * Handles clicks on the "Explain (✨)" icon for a question.
-     * This function now correctly handles the icon's state without changing its text content.
      * @param {Event} event - The click event generated by the user's click on the icon.
      */
     async handleExplainClick(event) {
@@ -508,20 +473,24 @@ class ExamManager {
         const questionNumber = parseInt(icon.getAttribute('data-question-number'), 10);
         const responseArea = document.getElementById(`llm-response-${questionNumber}`);
 
+        // Prevent action if the icon is already processing a request.
         if (icon.classList.contains('disabled')) {
             return;
         }
+        // Add the 'disabled' class to provide visual feedback and prevent multiple clicks.
         icon.classList.add('disabled');
         
+        // Show a loading message in the response area.
         if (responseArea) {
             responseArea.innerHTML = '<em>Requesting explanation from LLM...</em>';
             responseArea.style.display = 'block';
         } else {
             console.error(`handleExplainClick: Response area for question ${questionNumber} not found!`);
-            icon.classList.remove('disabled');
+            icon.classList.remove('disabled'); // Re-enable icon on error
             return;
         }
 
+        // Get LLM configuration and question data.
         const llmConfig = {
             model: document.getElementById('llmModelSelect').value,
             apiKey: document.getElementById('llmApiKeyInput').value
@@ -529,81 +498,58 @@ class ExamManager {
         const questionData = this.questions.find(q => q.number === questionNumber);
         if (!questionData) {
             if (responseArea) responseArea.textContent = 'Error: Could not find question data.';
-            icon.classList.remove('disabled');
+            icon.classList.remove('disabled'); // Re-enable icon on error
             return;
         }
 
         let rawExplanationMarkdown = ''; 
         try {
+            // Fetch the explanation from the LLM.
             rawExplanationMarkdown = await this.getLlmExplanation(questionData.text, questionData.answers, llmConfig);
     
+            // Display the explanation, parsing it from Markdown to HTML.
             if (responseArea) {
                 responseArea.innerHTML = typeof marked !== 'undefined' ? marked.parse(rawExplanationMarkdown) : rawExplanationMarkdown;
             }
     
+            // --- "Continue Discussion" Button Logic ---
+            // This now correctly happens only on a successful response.
             const questionContainer = document.getElementById(`container-${questionNumber}`);
             if (questionContainer) {
+                // First, remove any old "Continue Discussion" button to prevent duplicates.
                 const existingContinueBtn = questionContainer.querySelector('.continue-discussion-btn');
                 if (existingContinueBtn) existingContinueBtn.remove();
     
+                // Create the new button.
                 const continueButton = document.createElement('button');
                 continueButton.classList.add('continue-discussion-btn');
                 continueButton.textContent = 'Continue Discussion';
                 
+                // Place it right after the LLM response area.
                 if (responseArea) {
                     responseArea.insertAdjacentElement('afterend', continueButton);
                 } 
                 
+                // Add the click listener to start the chat interface.
                 continueButton.addEventListener('click', () => {
                     this.initiateChatInterface(questionNumber, rawExplanationMarkdown);
                 });
             }
 
         } catch (error) {
+            // Handle any errors during the API call.
             console.error(`handleExplainClick: An error occurred while fetching explanation:`, error);
             if (responseArea) {
                 responseArea.innerHTML = `<p style="color:var(--error-color);">Sorry, an error occurred.</p>`;
             }
         } finally {
+            // This 'finally' block runs regardless of whether the try succeeded or failed.
+            // It's the perfect place to re-enable the icon.
             icon.classList.remove('disabled');
+            console.log(`handleExplainClick: LLM interaction complete for question ${questionNumber}. Icon re-enabled.`);
         }
-
-        // --- "Continue Discussion" Button Logic (Existing) ---
-        // Remove any existing "Continue Discussion" button first
-        const questionContainer = document.getElementById(`container-${questionNumber}`);
-        if (questionContainer) {
-            const existingContinueBtn = questionContainer.querySelector('.continue-discussion-btn');
-            if (existingContinueBtn) {
-                console.log(`handleExplainClick: Removing existing 'Continue Discussion' button for question ${questionNumber}.`);
-                existingContinueBtn.remove();
-            }
-        }
-
-        const continueButton = document.createElement('button');
-        continueButton.classList.add('continue-discussion-btn');
-        continueButton.textContent = 'Continue Discussion';
-        console.log(`handleExplainClick: Created 'Continue Discussion' button for question ${questionNumber}.`);
-
-        // Insert after the responseArea
-        if (responseArea) {
-            responseArea.insertAdjacentElement('afterend', continueButton);
-            console.log(`handleExplainClick: Inserted 'Continue Discussion' button after llm-response-${questionNumber}.`);
-        } else {
-            console.error(`handleExplainClick: Could not insert 'Continue Discussion' button as responseArea for ${questionNumber} is missing.`);
-        }
-        
-        // Add event listener using an arrow function.
-        // Crucially, pass the rawExplanationMarkdown to initiateChatInterface.
-        continueButton.addEventListener('click', () => {
-            console.log(`handleExplainClick: 'Continue Discussion' button clicked for question ${questionNumber}. Calling initiateChatInterface.`);
-            this.initiateChatInterface(questionNumber, rawExplanationMarkdown); // Pass RAW Markdown
-        });
-
-        // Re-enable the "Explain" button and reset text
-        icon.disabled = false;
-        icon.textContent = 'Explain';
-        console.log(`handleExplainClick: LLM interaction complete for question ${questionNumber}. 'Explain' button re-enabled.`);
     }
+
 
     /**
      * Handles sending a user's chat message.
@@ -1175,30 +1121,21 @@ class ExamManager {
         const timerElement = document.getElementById('timer-display');
         if (!timerElement) return;
 
-        // --- Handle disabled state ---
-        if (!this.isTimerEnabled) {
-            timerElement.textContent = 'Timer OFF';
-            return;
-        }
-
         // Ensure timeRemaining doesn't go below zero for display purposes
         const displayTime = Math.max(0, this.timeRemaining);
 
-        // Calculate hours, minutes, and seconds
+        // Calculate hours, minutes, and seconds from the total seconds
         const hours = Math.floor(displayTime / 3600);
         const minutes = Math.floor((displayTime % 3600) / 60);
         const seconds = displayTime % 60;
 
-        // Format each part to always have two digits using padStart
+        // Format each part to always have two digits (e.g., 7 becomes '07')
         const formattedHours = String(hours).padStart(2, '0');
         const formattedMinutes = String(minutes).padStart(2, '0');
         const formattedSeconds = String(seconds).padStart(2, '0');
 
-        // Update the text content with the new HH:MM:SS format
+        // Update the element's text content with the final formatted time string
         timerElement.textContent = `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
-
-        // Console log for debugging if needed
-        // console.log(">>> Updating timer display to:", timerElement.textContent);
     }
 
     /*
@@ -1306,20 +1243,6 @@ class ExamManager {
          });
         console.log("All remaining quiz inputs disabled.");
     }
-
-    /**
-     * --- Updates toggle button text and class based on state ---
-     * @param {HTMLElement} button - The toggle button element.
-     */
-     updateTimerToggleButtonVisuals(button) {
-         if (this.isTimerEnabled) {
-             button.textContent = 'ON';
-             button.classList.remove('timer-off');
-         } else {
-             button.textContent = 'OFF';
-             button.classList.add('timer-off');
-         }
-     }
 
 
     /* 
@@ -1886,31 +1809,37 @@ class ExamManager {
             return;
         }
 
-        // Are the controls globally enabled by the main timer toggle?
-        const controlsShouldBeEnabled = this.isTimerEnabled && !this.isTimeInfinite && this.totalQuestions > 0;
+        const controlsShouldBeEnabled = !this.isTimeInfinite && this.totalQuestions > 0;
 
+        // If the controls should NOT be enabled (e.g., no quiz loaded yet, or time is infinite)
         if (!controlsShouldBeEnabled) {
             startPauseResumeButton.disabled = true;
             resetButton.disabled = true;
-            startPauseResumeButton.textContent = 'Start'; // Default text when disabled
-            console.log("_updateTimerControlEventsUI: Timer controls disabled (timer off, infinite, or no quiz).");
-            return;
+            startPauseResumeButton.textContent = 'Start'; // Set default text
+            console.log("_updateTimerControlEventsUI: Timer controls disabled (infinite time or no quiz).");
+            return; // Exit the function early
         }
 
-        // If controls are generally allowed:
-        resetButton.disabled = false; // Reset is usually always available if timer is on and finite
+        // If controls are generally allowed, proceed with more specific logic:
+        resetButton.disabled = false; // The Reset button is always available in a valid quiz session.
 
+        // Logic for the Start/Pause/Resume button
         if (this.isTimerRunning) {
+            // If the timer is running...
             if (this.isTimerPaused) {
+                // ...and it's currently paused, the button should say "Resume".
                 startPauseResumeButton.textContent = 'Resume';
                 startPauseResumeButton.disabled = false;
             } else {
+                // ...and it's actively counting down, the button should say "Pause".
                 startPauseResumeButton.textContent = 'Pause';
                 startPauseResumeButton.disabled = false;
             }
-        } else { // Timer is not running (either ready to start or has been reset/finished)
+        } else {
+            // If the timer is NOT running (it's been reset or hasn't started yet)...
+            // ...the button should say "Start".
             startPauseResumeButton.textContent = 'Start';
-            // Enable Start button only if there's time set or time remaining
+            // The Start button should only be clickable if there is time on the clock.
             startPauseResumeButton.disabled = !(this.initialTimerDuration > 0 || this.timeRemaining > 0) ;
         }
         console.log(`_updateTimerControlEventsUI: Start/Pause/Resume button text: "${startPauseResumeButton.textContent}", disabled: ${startPauseResumeButton.disabled}. Reset button disabled: ${resetButton.disabled}`);
@@ -1920,19 +1849,16 @@ class ExamManager {
      * Handles clicks on the Start/Pause/Resume timer button.
      * This method determines the current state of the timer and calls the
      * appropriate internal method (_startCountdown, _pauseCountdown, or _resumeCountdown).
-     * @param {Event} event - The click event (not directly used but good practice for event handlers).
+     * @param {Event} event - The click event passed by the browser's event listener.
      */
     handleTimerStartPauseResumeClick(event) {
         console.log("handleTimerStartPauseResumeClick: Button clicked.");
 
-        // First, check if the timer is globally enabled via the main toggle button.
-        // Also, these controls are not applicable if the timer is set to "No Time Limit".
-        if (!this.isTimerEnabled) {
-            console.warn("handleTimerStartPauseResumeClick: Timer is globally disabled. No action.");
-            alert("The timer is currently OFF. Please turn it ON to use the timer controls.");
-            this._updateTimerControlEventsUI(); // Ensure button states are correct
-            return;
-        }
+        // The check for isTimerEnabled has been removed. The function now proceeds
+        // directly to the relevant logic for the timer controls.
+
+        // This check is still valid and important. The controls are not applicable
+        // if the user has set the timer to have no time limit.
         if (this.isTimeInfinite) {
             console.warn("handleTimerStartPauseResumeClick: Timer is set to 'No Time Limit'. Start/Pause/Resume controls are not applicable.");
             alert("Timer controls (Start/Pause/Resume) are not available when 'No Time Limit' is set.");
@@ -1940,7 +1866,7 @@ class ExamManager {
             return;
         }
 
-        // Logic to decide whether to start, pause, or resume:
+        // This logic correctly decides whether to start, pause, or resume the timer.
         if (!this.isTimerRunning) {
             // If the timer is not currently running (i.e., it's stopped or has been reset),
             // this button acts as a "Start" button.
@@ -1958,8 +1884,6 @@ class ExamManager {
                 this._pauseCountdown();
             }
         }
-        // Note: The _startCountdown, _pauseCountdown, and _resumeCountdown methods
-        // are responsible for calling _updateTimerControlEventsUI() to update the button's text and state.
     }
 
     /**
@@ -1971,14 +1895,9 @@ class ExamManager {
     handleTimerResetClick(event) {
         console.log("handleTimerResetClick: Button clicked.");
 
-        // Check if the timer is globally enabled. Resetting a disabled timer might be confusing,
-        // but generally, reset should work to set it back to its initial state regardless of running status.
-        // However, if it's infinite, reset also just sets it to a non-counting state.
-        if (!this.isTimerEnabled) {
-            console.warn("handleTimerResetClick: Timer is globally disabled. Reset will still set time but not run.");
-            // Allow reset even if globally disabled, to set it back to initial state.
-            // _resetCountdown will also update the button UI via _updateTimerControlEventsUI.
-        }
+        // The 'if (!this.isTimerEnabled)' block has been removed here to make
+        // the logic consistent with the removal of the ON/OFF feature.
+
         if (this.isTimeInfinite) {
             console.log("handleTimerResetClick: Timer is set to 'No Time Limit'. Resetting to 'No Time Limit' display and non-running state.");
             // _resetCountdown handles the isTimeInfinite case appropriately.
@@ -1995,32 +1914,23 @@ class ExamManager {
      * @private
      */
     _startCountdown() {
-        // Only proceed if timer is globally enabled and not already running (unless it was paused for a resume)
-        if (!this.isTimerEnabled || (this.isTimerRunning && !this.isTimerPaused)) {
-            if (!this.isTimerEnabled) {
-                 console.warn("_startCountdown: Cannot start, timer is globally disabled.");
-                 alert("The timer is currently OFF. Please turn it ON to start.");
-            }
-            if (this.isTimerRunning && !this.isTimerPaused) {
-                console.warn("_startCountdown: Timer is already running and not paused.");
-            }
+        if (this.isTimerRunning && !this.isTimerPaused) {
+            console.warn("_startCountdown: Timer is already running and not paused.");
             this._updateTimerControlEventsUI(); // Ensure UI is consistent
             return;
         }
 
         // If this is a fresh start (timer wasn't running), re-configure from input.
-        // This ensures any changes to the duration input before clicking "Start" are captured.
         if (!this.isTimerRunning) {
             console.log("_startCountdown: This is a fresh start. Re-configuring timer from input.");
             this._configureTimerFromInput();
         }
-        // After _configureTimerFromInput(), this.isTimeInfinite and this.timeRemaining are up-to-date.
 
         // If timer is set to "No Time Limit" after configuration, don't start countdown.
         if (this.isTimeInfinite) {
             console.log("_startCountdown: Timer is configured to 'No Time Limit'. No countdown will start.");
-            this.updateTimerDisplay(); // Ensure "No Time Limit" or "Timer OFF" is displayed
-            this._updateTimerControlEventsUI(); // Update buttons accordingly
+            this.updateTimerDisplay();
+            this._updateTimerControlEventsUI();
             return;
         }
 
@@ -2034,8 +1944,8 @@ class ExamManager {
         }
 
         // All checks passed, proceed to start/resume the countdown.
-        this.isTimerRunning = true;  // Mark timer as active
-        this.isTimerPaused = false;   // Ensure not paused
+        this.isTimerRunning = true;
+        this.isTimerPaused = false;
         console.log(`_startCountdown: Timer countdown initiated/resumed. Time remaining: ${this.timeRemaining}s`);
 
         // Clear any existing interval before starting a new one (safety for resume logic)
