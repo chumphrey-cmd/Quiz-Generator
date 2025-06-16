@@ -46,6 +46,7 @@ class ExamManager {
         this.totalQuestions = 0;
         this.answeredQuestions = 0;
         this.currentScore = 0;
+        this.examMode = 'study';
         this.questions = [];
         this.originalQuestions = []; // Used to store original imported Qs
         this.timerInterval = null;
@@ -120,6 +121,43 @@ class ExamManager {
                 else if (currentValue > max) this.value = max;
             });
         } else { console.error("Timer duration input element not found!"); }
+
+        const modeSelector = document.getElementById('modeSelector');
+        if (modeSelector) {
+            // We listen for the 'change' event, which fires when the user selects a new option.
+            modeSelector.addEventListener('change', (event) => {
+                // The new mode is the value of the selected option (e.g., 'study' or 'exam').
+                const selectedMode = event.target.value;
+                console.log(`Mode selector changed. New mode selected: ${selectedMode}`);
+
+                // If a quiz is currently active, changing the mode should reset it.
+                // It's critical to warn the user first, as this will erase their progress.
+                if (this.questions.length > 0) {
+                    const userConfirmed = confirm(
+                        'Changing the mode will restart your current session. Are you sure you want to continue?'
+                    );
+
+                    if (userConfirmed) {
+                        // If the user clicks "OK", update the mode and restart the quiz.
+                        console.log('User confirmed mode change. Resetting quiz.');
+                        this.examMode = selectedMode;
+                        // Restart the quiz from the beginning with the original set of questions.
+                        this.startNewQuiz(this.originalQuestions);
+                    } else {
+                        // If the user clicks "Cancel", do nothing and revert the dropdown
+                        // to its previous state to avoid confusion.
+                        console.log('User cancelled mode change. Reverting selector.');
+                        event.target.value = this.examMode;
+                    }
+                } else {
+                    // If no quiz is active, we can just update the mode without a warning.
+                    this.examMode = selectedMode;
+                }
+                console.log(`Current exam mode is now: '${this.examMode}'`);
+            });
+        } else {
+            console.error("Mode selector element 'modeSelector' not found!");
+        }
 
         const startPauseResumeButton = document.getElementById('timerStartPauseResumeButton');
         if (startPauseResumeButton) {

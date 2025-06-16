@@ -670,6 +670,36 @@ Controls (Header Inputs/Selects)
 ==========================================================================
 */
 
+/* --- Exam Mode Selector --- */
+.mode-selector-container {
+    display: flex;          /* Use flexbox for easy alignment */
+    align-items: center;    /* Vertically center the label and select box */
+    gap: var(--spacing-sm); /* Add a small gap between the label and select box */
+}
+
+.mode-selector-label {
+    font-size: 0.85rem;     /* Match the font size of other labels */
+    font-weight: 400;       /* Normal font weight */
+    color: var(--text-color);
+    opacity: 0.9;
+}
+
+.mode-selector-select {
+    padding: var(--spacing-xs) var(--spacing-sm); /* Standard padding */
+    border-radius: var(--border-radius-sm);
+    border: 1px solid #ccc; /* Standard border */
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-size: 0.85rem;
+    cursor: pointer;        /* Show a pointer on hover to indicate it's clickable */
+    min-width: 120px;       /* Give it a consistent width */
+}
+
+/* Add a specific style for dark mode */
+[data-theme="dark"] .mode-selector-select {
+    border: 1px solid #555;
+}
+
 /* --- Timer Configuration --- */
 .timer-config-container {
     display: flex;

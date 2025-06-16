@@ -23,6 +23,13 @@
             <label for="questionFile" class="file-label">Import Questions</label>
         </div>
 
+        <div class="mode-selector-container">
+            <label for="modeSelector" class="mode-selector-label">Mode</label>
+            <select id="modeSelector" class="mode-selector-select">
+                <option value="study" selected>Study Mode</option>
+                <option value="exam">Exam Mode</option>
+            </select>
+        </div>
         <div class="timer-config-container">
             <label for="timerDurationInput" class="timer-config-label">Time (min)</label>
             <input type="number" id="timerDurationInput" class="timer-config-input" value="10" min="1" max="999999">
