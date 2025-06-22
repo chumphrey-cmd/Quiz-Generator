@@ -47,6 +47,7 @@ class ExamManager {
         this.answeredQuestions = 0;
         this.currentScore = 0;
         this.examMode = 'study';
+        this.currentQuestionIndex = 0; // Used for the single-question display in Exam Mode. Initialized it to 0, representing the first question.
         this.questions = [];
         this.originalQuestions = []; // Used to store original imported Qs
         this.timerInterval = null;
@@ -377,30 +378,72 @@ class ExamManager {
         this.questions.forEach(question => {
             question.wasAnsweredIncorrectly = false;
             question.isFlaggedForReview = false;
+            // This array will store the user's answer(s) (e.g., ['A'] or ['B', 'D'])
+            // for later grading in Exam Mode.
+            question.userSelected = [];
         });
 
         // 4. Reset scores and progress trackers.
         this.totalQuestions = this.questions.length;
         this.answeredQuestions = 0;
         this.currentScore = 0;
+        this.currentQuestionIndex = 0; // Every time a new quiz starts, we must reset the current question index
         
         // 5. Reset and display all UI elements (progress bar, timer, etc.).
         resetDisplays(this.totalQuestions);
         this.resetTimer();
 
         // 6. Render the new questions to the page.
-        const htmlContent = displayQuestions(this.questions); 
-        const quizContentElement = document.getElementById('quiz-content');
-        if (quizContentElement) {
-            quizContentElement.innerHTML = htmlContent;
-            console.log("SUCCESS: Injected new HTML into #quiz-content.");
-        } else {
-            console.error("CRITICAL: Could not find #quiz-content div. Questions cannot be displayed.");
-        }
+        this._renderCurrentView();
 
         // 7. Configure and start the timer.
         this.startTimer();
         this._updateTimerControlEventsUI();
+    }
+
+    /**
+     * Renders the appropriate quiz view based on the current examMode.
+     * This acts as a "router" to decide whether to show the full list (Study Mode)
+     * or a single question (Exam Mode).
+     * @private
+     */
+    _renderCurrentView() {
+        console.log(`_renderCurrentView: Rendering view for mode '${this.examMode}'.`);
+        const quizContentElement = document.getElementById('quiz-content');
+        if (!quizContentElement) {
+            console.error("_renderCurrentView: Could not find #quiz-content div. Cannot render.");
+            return;
+        }
+
+        let htmlContent = '';
+
+        if (this.examMode === 'study') {
+            // --- Study Mode Logic ---
+            // If we are in study mode, we call the original displayQuestions function
+            // to get the HTML for the entire list of questions.
+            console.log("Rendering full question list for Study Mode.");
+            htmlContent = displayQuestions(this.questions);
+
+        } else {
+            // --- Exam Mode Logic ---
+            // If we are in exam mode, we use the currentQuestionIndex to find the
+            // specific question we need to display from our questions array.
+            const currentQuestion = this.questions[this.currentQuestionIndex];
+            console.log(`Rendering single question view for Exam Mode. Question #${currentQuestion.number}`);
+
+            // We then call our new displaySingleQuestion function to get the HTML
+            // for just that one question and its navigation controls.
+            htmlContent = displaySingleQuestion(currentQuestion, this.totalQuestions);
+        }
+        
+        // Inject the generated HTML into the main content area of the page.
+        quizContentElement.innerHTML = htmlContent;
+        console.log("SUCCESS: Injected new HTML into #quiz-content.");
+
+        // rendered and make them interactive by attaching their event listeners.
+        if (this.examMode === 'exam') {
+            this._attachExamNavListeners();
+        }
     }
 
     /**
@@ -423,8 +466,7 @@ class ExamManager {
             return; // Exit the function if there's nothing to review.
         }
 
-        // 3. The magic happens here. We hand off the filtered list of questions
-        //    to our powerful, reusable startNewQuiz function. It will handle everything:
+        // 3. We hand off the filtered list of questions to our powerful, reusable startNewQuiz function. It will handle everything:
         //    - Hiding the modal
         //    - Resetting the score and progress bars
         //    - Shuffling and re-rendering the UI with the review questions
@@ -434,7 +476,7 @@ class ExamManager {
 
     /**
      * Handles submit button clicks for a question.
-     * Now determines input type (radio/checkbox) and processes accordingly.
+     * Now behaves differently based on whether the application is in 'study' or 'exam' mode.
      * @param {Event} event - Click event from the submit button.
      */
     handleSubmitClick(event) {
@@ -443,60 +485,86 @@ class ExamManager {
         const container = document.getElementById(`container-${questionNumber}`);
         const feedbackElement = document.getElementById(`feedback-${questionNumber}`);
         const answerFieldset = document.getElementById(`answers-${questionNumber}`);
-
-        // Determine input type from fieldset data attribute
         const inputType = answerFieldset.getAttribute('data-input-type');
-        if (!inputType) {
-            console.error(`Could not determine input type for question ${questionNumber}`);
+
+        // Find the question object from our questions array.
+        const questionData = this.questions.find(q => q.number === questionNumber);
+        if (!questionData) { 
+            console.error(`handleSubmitClick: Could not find data for question #${questionNumber}`);
             return;
         }
 
-        // Find question data (unchanged)
-        const questionData = this.questions.find(q => q.number === questionNumber);
-        if (!questionData) { /* ... error handling ... */ return; }
-
-        // Get selected values based on input type
+        // Get the user's selected answer(s) from the radio buttons or checkboxes.
         let selectedLetters = [];
         if (inputType === 'radio') {
             const checkedRadio = answerFieldset.querySelector('input[type="radio"]:checked');
             if (checkedRadio) {
-                selectedLetters.push(checkedRadio.value); // Array with 0 or 1 item
+                selectedLetters.push(checkedRadio.value);
             }
         } else { // 'checkbox'
             const checkedCheckboxes = answerFieldset.querySelectorAll('input[type="checkbox"]:checked');
             selectedLetters = Array.from(checkedCheckboxes).map(cb => cb.value);
         }
+        
+        console.log(`Question ${questionNumber} submitted in '${this.examMode}' mode. Selected: ${selectedLetters.join(', ')}`);
 
-        console.log(`Question ${questionNumber} (${inputType}) submitted. Selected: ${selectedLetters.join(', ') || 'None'}. Correct: ${questionData.correct.join(', ')}`);
+        // --- Store the user's answer ---
+        // This is crucial for Exam Mode so we can grade it later.
+        questionData.userSelected = selectedLetters;
 
-        // --- Evaluation Logic (Unchanged - compares sorted arrays) ---
-        const sortedSelected = [...selectedLetters].sort();
-        const sortedCorrect = [...questionData.correct].sort();
-        const isCorrect = sortedSelected.length === sortedCorrect.length &&
-                          sortedSelected.every((value, index) => value === sortedCorrect[index]);
+        // --- Mode-Specific Logic ---
+        if (this.examMode === 'study') {
+            // --- STUDY MODE ---
+            // Provide immediate feedback and scoring.
 
-        // --- Disable Inputs & Show Feedback ---
-        this.disableQuestionInputs(answerFieldset, submitButton, inputType);
-        this.showFeedback(container, feedbackElement, isCorrect, questionData.correct, inputType);
+            console.log("Executing 'Study Mode' logic: immediate feedback and scoring.");
 
-        // --- Update Progress  ---
-        this.answeredQuestions++;
-        if (isCorrect) {
-            this.currentScore++;
+            // Evaluate if the answer is correct.
+            const sortedSelected = [...selectedLetters].sort();
+            const sortedCorrect = [...questionData.correct].sort();
+            const isCorrect = sortedSelected.length === sortedCorrect.length &&
+                              sortedSelected.every((value, index) => value === sortedCorrect[index]);
+
+            // Update score and mark if incorrect.
+            if (isCorrect) {
+                this.currentScore++;
+            } else {
+                questionData.wasAnsweredIncorrectly = true;
+            }
+            // Visually update the score display in the header.
+            updateScoreDisplay(this.currentScore, this.answeredQuestions + 1, this.totalQuestions);
+            
+            // Disable the inputs and show correct/incorrect feedback visually.
+            this.disableQuestionInputs(answerFieldset, submitButton, inputType);
+            this.showFeedback(container, feedbackElement, isCorrect, questionData.correct, inputType);
+
         } else {
-        // If the answer is incorrect, we set our new property to true.
-        // This allows us to easily find all incorrect questions later for the review session.
-        questionData.wasAnsweredIncorrectly = true;
-        console.log(`Question ${questionNumber} marked as incorrect.`); 
+            // --- EXAM MODE ---
+            // Withhold feedback and scoring. Just acknowledge the answer.
+            
+            console.log("Executing 'Exam Mode' logic: withholding feedback.");
+            
+            // Just disable the inputs so the user can't change their answer.
+            this.disableQuestionInputs(answerFieldset, submitButton, inputType);
         }
 
-        // Call UI update functions
-        updateScoreDisplay(this.currentScore, this.answeredQuestions, this.totalQuestions);
+        // --- Logic for BOTH modes ---
+        // An answer has been submitted, so we always update the progress bar.
+        this.answeredQuestions++;
         updateProgressBar(this.answeredQuestions, this.totalQuestions);
 
-        // Check for quiz completion
+        // Check if the quiz is complete
         if (this.answeredQuestions === this.totalQuestions) {
-            this.handleQuizCompletion();
+            // If all questions are answered, decide what to do based on the mode.
+            if (this.examMode === 'study') {
+                // In 'study' mode, the quiz ends immediately and shows the modal.
+                console.log("All questions answered in Study Mode. Ending quiz.");
+                this.handleQuizCompletion();
+            } else {
+                // In 'exam' mode, we don't end the quiz. Instead, we show the grade button.
+                console.log("All questions answered in Exam Mode. Displaying Grade Exam button.");
+                this.displayGradeExamButton(); // This is a new method we will create next.
+            }
         }
     }
 
@@ -1038,6 +1106,155 @@ class ExamManager {
 
         // Add the 'show' class to the container to trigger the fade-in animation.
         modalContainer.classList.add('show');
+    }
+
+    /**
+     * Dynamically creates and displays the "Grade Exam" button at the end of the quiz content.
+     * This is only called when in 'exam' mode after all questions have been answered.
+     */
+    displayGradeExamButton() {
+        // Find the main container where the quiz questions are displayed.
+        const quizContentElement = document.getElementById('quiz-content');
+        if (!quizContentElement) {
+            // Safety check: if the main container doesn't exist, we can't add the button.
+            console.error("displayGradeExamButton: Cannot find quiz content element to append button.");
+            return;
+        }
+
+        // Create a new <button> element in memory.
+        const gradeButton = document.createElement('button');
+        
+        // Assign an ID for potential future use and a class for styling.
+        gradeButton.id = 'grade-exam-btn';
+        gradeButton.className = 'grade-exam-btn';
+        
+        // Set the visible text on the button.
+        gradeButton.textContent = 'Grade Exam';
+
+        // Add a 'click' event listener to the button.
+        // When the button is clicked, it will call the `this.gradeExam` method.
+        // We use .bind(this) to ensure that inside the `gradeExam` method, the `this` keyword
+        // correctly refers to our ExamManager instance, so we can access properties like `this.questions`.
+        gradeButton.addEventListener('click', this.gradeExam.bind(this));
+
+        // Add the newly created and configured button to the end of the quiz-content div in the DOM.
+        quizContentElement.appendChild(gradeButton);
+        console.log("Grade Exam button has been created and displayed.");
+    }
+
+    /**
+     * Calculates the final score in Exam Mode by iterating through all questions and their stored answers.
+     * After scoring is complete, it calls handleQuizCompletion to show the results modal.
+     */
+    gradeExam() {
+        console.log("gradeExam: Grading process initiated by user click.");
+        
+        // Initialize a variable to hold the final score.
+        let finalScore = 0;
+
+        // Loop through each question object in our main `this.questions` array.
+        this.questions.forEach(question => {
+            // For each question, retrieve the user's stored answer and the correct answer(s).
+            const sortedSelected = [...question.userSelected].sort();
+            const sortedCorrect = [...question.correct].sort();
+
+            // Perform the same logic as study mode to check for correctness.
+            // We sort both arrays to ensure a consistent comparison for multi-answer questions.
+            const isCorrect = sortedSelected.length === sortedCorrect.length &&
+                              sortedSelected.every((value, index) => value === sortedCorrect[index]);
+
+            if (isCorrect) {
+                // If the answer is correct, increment the score.
+                finalScore++;
+            } else {
+                // If incorrect, we still mark it as such. This is important for our
+                // "Review Flagged & Incorrect" feature on the final modal screen.
+                question.wasAnsweredIncorrectly = true;
+            }
+        });
+
+        // After the loop finishes, update the main `this.currentScore` property with the calculated score.
+        this.currentScore = finalScore;
+        console.log(`Exam grading complete. Final score: ${this.currentScore} / ${this.totalQuestions}`);
+        
+        // Now that the final score is known, we can call the original completion handler
+        // to show the user the standard end-of-quiz results modal.
+        this.handleQuizCompletion();
+
+        // Finally, find the 'Grade Exam' button and disable it to prevent the user
+        // from re-submitting and running the grading logic multiple times.
+        const gradeButton = document.getElementById('grade-exam-btn');
+        if (gradeButton) {
+            gradeButton.disabled = true;
+            gradeButton.textContent = 'Exam Graded';
+        }
+    }
+
+    /**
+     * Handles clicks on the 'Next' button in Exam Mode.
+     * It increments the current question index and calls the render method
+     * to display the new question.
+     */
+    handleNextQuestionClick() {
+        // First, we check that we are not already on the last question.
+        if (this.currentQuestionIndex < this.questions.length - 1) {
+            // If not, we increment the index to move to the next question.
+            this.currentQuestionIndex++;
+            console.log(`Next button clicked. New index: ${this.currentQuestionIndex}`);
+            // Then, we call our main render method to update the screen with the new question.
+            this._renderCurrentView();
+        }
+    }
+
+    /**
+     * Handles clicks on the 'Previous' button in Exam Mode.
+     * It decrements the current question index and calls the render method
+     * to display the previous question.
+     */
+    handlePreviousQuestionClick() {
+        // First, we check that we are not already on the first question (index 0).
+        if (this.currentQuestionIndex > 0) {
+            // If not, we decrement the index to move to the previous question.
+            this.currentQuestionIndex--;
+            console.log(`Previous button clicked. New index: ${this.currentQuestionIndex}`);
+            // Then, we call our main render method to update the screen.
+            this._renderCurrentView();
+        }
+    }
+
+    /**
+     * Finds the navigation buttons in the DOM and attaches the appropriate click handlers.
+     * It also disables buttons when at the beginning or end of the quiz.
+     * This method is called only when in 'exam' mode.
+     * @private
+     */
+    _attachExamNavListeners() {
+        const prevButton = document.getElementById('prev-question-btn');
+        const nextButton = document.getElementById('next-question-btn');
+
+        // Safety check to ensure the buttons exist on the page before we try to use them.
+        if (prevButton && nextButton) {
+            // Attach the click event listeners to the buttons.
+            // We use .bind(this) to ensure the `this` context inside our handler
+            // methods correctly refers to the ExamManager instance.
+            prevButton.addEventListener('click', this.handlePreviousQuestionClick.bind(this));
+            nextButton.addEventListener('click', this.handleNextQuestionClick.bind(this));
+
+            // --- Disable buttons at boundaries ---
+            // If the user is on the first question (index 0), the 'Previous' button should be disabled.
+            if (this.currentQuestionIndex === 0) {
+                prevButton.disabled = true;
+                console.log("On the first question, 'Previous' button disabled.");
+            }
+
+            // If the user is on the last question, the 'Next' button should be disabled.
+            if (this.currentQuestionIndex === this.questions.length - 1) {
+                nextButton.disabled = true;
+                console.log("On the last question, 'Next' button disabled.");
+            }
+        } else {
+            console.error("_attachExamNavListeners: Could not find navigation buttons on the page.");
+        }
     }
 
     /**

@@ -89,11 +89,18 @@ Layout Components
     z-index: 1000;
 }
 
+.left-controls {
+    display: flex;            /* Activates flexbox for layout control. */
+    flex-direction: column;   /* Stacks the control groups vertically. */
+    align-items: flex-start;  /* Aligns all groups to the left for a clean line. */
+    gap: var(--spacing-sm);
+}
+
 .right-controls {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-sm);
+    align-items: end;
+    gap: var(--spacing-xs);
 }
 
 /* Main Content Area */
@@ -203,6 +210,7 @@ Interactive Elements (Buttons, Inputs)
     cursor: pointer;
     color: var(--text-color);
     font-size: 0.85rem; /* Smaller font */
+    gap: var(--spacing-xs);
     transition: all 0.2s ease;
 }
 
@@ -213,8 +221,8 @@ Interactive Elements (Buttons, Inputs)
 
 /* --- File Input --- */
 .file-input-container {
-    margin-bottom: var(--spacing-sm);
-    text-align: center;
+    margin-bottom: 0;
+    text-align: left;
 }
 
 .file-input {
@@ -657,11 +665,62 @@ Progress and Feedback
     background-color: #138496; /* A slightly darker shade for the hover effect. */
 }
 
-/* You might also want to adjust the gap if three buttons feel cramped */
 .modal-actions {
     display: flex;
     justify-content: center;
     gap: var(--spacing-sm); /* Using a smaller gap for three buttons */
+}
+
+/* --- Grade Exam Button --- */
+
+.grade-exam-btn {
+    /* 'display: block' makes the button take up its own line. */
+    display: block;
+    
+    /* Set a width and a max-width for responsiveness. */
+    width: 50%;
+    max-width: 300px;
+    
+    /* 'margin: auto' on the left/right centers the block-level button. */
+    /* var(--spacing-xl) adds significant space above and below it. */
+    margin: var(--spacing-xl) auto;
+    
+    /* Generous padding to make the button easy to click. */
+    padding: var(--spacing-md) var(--spacing-lg);
+    
+    /* Use the theme's success color (green) for a positive, final action. */
+    background-color: var(--success-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-md);
+    
+    /* Make the font large and bold to signify importance. */
+    font-size: 1.25rem;
+    font-weight: 600;
+    
+    /* Standard cursor and transition effects for a modern feel. */
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    text-align: center;
+}
+
+/* A subtle "lift" effect when the user hovers over the button. */
+.grade-exam-btn:hover:not(:disabled) {
+    background-color: #15803d; /* A darker shade of green on hover. */
+    transform: translateY(-2px);
+}
+
+/* Styling for the button after it has been clicked and disabled. */
+.grade-exam-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Specific disabled styles for dark mode. */
+[data-theme="dark"] .grade-exam-btn:disabled {
+    background-color: #555;
+    color: #999;
 }
 
 /*
@@ -672,9 +731,10 @@ Controls (Header Inputs/Selects)
 
 /* --- Exam Mode Selector --- */
 .mode-selector-container {
-    display: flex;          /* Use flexbox for easy alignment */
-    align-items: center;    /* Vertically center the label and select box */
-    gap: var(--spacing-sm); /* Add a small gap between the label and select box */
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-top: 0; 
 }
 
 .mode-selector-label {
@@ -764,7 +824,8 @@ Controls (Header Inputs/Selects)
 /* --- LLM Configuration --- */
 .llm-config-container {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-end;
     gap: var(--spacing-sm);
 }
 
@@ -1079,4 +1140,69 @@ Controls (Header Inputs/Selects)
 [data-theme="dark"] .send-chat-btn:disabled {
     background-color: #444;
     color: #888;
+}
+
+/*
+==========================================================================
+ Exam Mode Specific Styles
+==========================================================================
+*/
+
+/* Styling for the "Question X of Y" counter */
+.question-counter {
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-color);
+    opacity: 0.8;
+    margin-bottom: var(--spacing-lg); /* Adds space above the question box */
+}
+
+/* Container for the "Previous" and "Next" buttons */
+.exam-navigation {
+    display: flex;
+    justify-content: space-between; /* Pushes Previous to the left, Next to the right */
+    align-items: center;
+    margin-top: var(--spacing-xl); /* Adds significant space below the question box */
+    padding-top: var(--spacing-md);
+    border-top: 1px solid rgba(128, 128, 128, 0.2); /* A faint separator line */
+}
+
+/* Specific border color for dark mode */
+[data-theme="dark"] .exam-navigation {
+    border-top-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Styling for the navigation buttons themselves */
+.exam-nav-btn {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-md);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    min-width: 150px; /* Give the buttons a consistent size */
+    text-align: center;
+}
+
+/* Hover and disabled states, similar to the main submit button for consistency */
+.exam-nav-btn:hover:not(:disabled) {
+    background-color: var(--secondary-color);
+    transform: translateY(-1px);
+}
+
+.exam-nav-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    opacity: 0.7;
+    transform: none;
+}
+
+[data-theme="dark"] .exam-nav-btn:disabled {
+    background-color: #555;
+    color: #999;
+    opacity: 0.6;
 }

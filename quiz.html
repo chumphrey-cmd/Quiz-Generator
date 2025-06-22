@@ -60,18 +60,19 @@
 
         <div class="llm-config-container">
             <label for="llmApiKeyInput" class="llm-config-label"></label>
-            <input type="password" id="llmApiKeyInput" class="llm-config-input" placeholder="Optional API Key">
+
             <select id="llmModelSelect" class="llm-config-select">
                 <option value="none">Select Model</option>
                 <option value="ollama">Ollama (Local)</option>
                 <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                <option value="perplexity">Perplexity Sonar</option>
                 <!-- <option value="openai">OpenAI</option>
                 <option value="claude">Claude</option> -->
-                <option value="perplexity">Perplexity Sonar</option>
             </select>
-            </div>
+            <input type="password" id="llmApiKeyInput" class="llm-config-input" placeholder="Optional API Key">
+        </div>
     </div>
-
+                
 </header>
 
 <main class="main-content">
