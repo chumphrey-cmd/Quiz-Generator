@@ -440,9 +440,18 @@ class ExamManager {
         quizContentElement.innerHTML = htmlContent;
         console.log("SUCCESS: Injected new HTML into #quiz-content.");
 
-        // rendered and make them interactive by attaching their event listeners.
         if (this.examMode === 'exam') {
+            // This part attaches the listeners for the 'Previous' and 'Next' buttons.
             this._attachExamNavListeners();
+
+            const answerFieldset = quizContentElement.querySelector('.answers');
+            if (answerFieldset) {
+                // We attach a single 'change' event listener to the parent <fieldset>.
+                // This is more efficient than adding a listener to every single radio/checkbox.
+                // When any input inside it changes, this event will fire.
+                answerFieldset.addEventListener('change', this.handleAnswerSelection.bind(this));
+            }
+            this._updateProgress();
         }
     }
 
@@ -551,7 +560,8 @@ class ExamManager {
         // --- Logic for BOTH modes ---
         // An answer has been submitted, so we always update the progress bar.
         this.answeredQuestions++;
-        updateProgressBar(this.answeredQuestions, this.totalQuestions);
+        this._updateProgress();
+
 
         // Check if the quiz is complete
         if (this.answeredQuestions === this.totalQuestions) {
@@ -566,6 +576,51 @@ class ExamManager {
                 this.displayGradeExamButton(); // This is a new method we will create next.
             }
         }
+    }
+
+    /**
+     * Handles the 'change' event on any answer input when in Exam Mode.
+     * Its sole purpose is to update the 'userSelected' array for the
+     * current question, immediately saving the user's answer to our data state.
+     * @param {Event} event - The 'change' event object from the clicked radio or checkbox.
+     */
+    handleAnswerSelection(event) {
+        // The 'event.target' is the specific <input> element the user clicked.
+        const inputElement = event.target;
+        
+        // We can get the question number from the 'data-question' attribute on the input.
+        const questionNumber = parseInt(inputElement.dataset.question, 10);
+        const questionData = this.questions.find(q => q.number === questionNumber);
+
+        // Safety check to ensure we found the corresponding question data.
+        if (!questionData) {
+            console.error(`handleAnswerSelection: Could not find data for question #${questionNumber}`);
+            return;
+        }
+
+        // We need to find the parent <fieldset> to correctly get all selected
+        // values, which is especially important for multi-select (checkbox) questions.
+        const answerFieldset = document.getElementById(`answers-${questionNumber}`);
+        const inputType = answerFieldset.getAttribute('data-input-type');
+
+        let selectedLetters = [];
+        if (inputType === 'radio') {
+            // For radio buttons, the selection is simple: it's just the value of the clicked input.
+            selectedLetters.push(inputElement.value);
+        } else { // 'checkbox'
+            // For checkboxes, we need to find all inputs within the fieldset that are currently checked.
+            const checkedCheckboxes = answerFieldset.querySelectorAll('input[type="checkbox"]:checked');
+            // We then create an array of their values (e.g., ['A', 'C']).
+            selectedLetters = Array.from(checkedCheckboxes).map(cb => cb.value);
+        }
+
+        // Here is the core of this function: we update the 'userSelected' property on our
+        // question object with the new selection. This is our state-saving mechanism.
+        questionData.userSelected = selectedLetters;
+        console.log(`Answer for question #${questionNumber} saved. New selection: [${selectedLetters.join(', ')}]`);
+
+        // After saving the answer, we call our new method to ensure the progress bar accurately reflects the new state.
+        this._updateProgress();
     }
 
     /**
@@ -2365,6 +2420,32 @@ class ExamManager {
             this.timeRemaining = this.initialTimerDuration;   // Set remaining time
         }
         console.log(`_configureTimerFromInput: Configuration complete. isTimeInfinite: ${this.isTimeInfinite}, initialTimerDuration: ${this.initialTimerDuration}s, timeRemaining: ${this.timeRemaining}s`);
+    }
+
+    /**
+     * Calculates the number of answered questions based on the current mode and updates the progress bar UI.
+     * This state-driven approach ensures the progress bar is always accurate.
+     * @private
+     */
+    _updateProgress() {
+        let answeredCount = 0;
+        // The way we count "answered" questions is different for each mode.
+        if (this.examMode === 'exam') {
+            // In Exam Mode, a question is considered answered if the user has made a selection.
+            // We filter the questions array to get only those where the userSelected array is not empty.
+            const answeredQuestions = this.questions.filter(q => q.userSelected.length > 0);
+            answeredCount = answeredQuestions.length;
+        } else {
+            // In Study Mode, a question is only "answered" after the user clicks "Submit".
+            // We can therefore rely on our simple 'answeredQuestions' counter.
+            answeredCount = this.answeredQuestions;
+        }
+
+        // Log the calculation for debugging purposes.
+        console.log(`_updateProgress: Mode: '${this.examMode}'. Answered count: ${answeredCount}/${this.totalQuestions}`);
+
+        // Call the original UI function from ui.js to update the visual progress bar.
+        updateProgressBar(answeredCount, this.totalQuestions);
     }
 
 }

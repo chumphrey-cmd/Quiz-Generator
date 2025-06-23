@@ -135,6 +135,11 @@ function displaySingleQuestion(question, totalQuestions) {
         const inputName = `question_${question.number}`;
         const formattedAnswerText = typeof marked !== 'undefined' ? marked.parseInline(answer.text) : answer.text;
 
+        // This array holds the answers the user has already chosen for this question.
+        const isChecked = question.userSelected.includes(answer.letter);
+
+        // If 'isChecked' is true, we add the 'checked' attribute to the input tag.
+        // If false, we add an empty string. This makes the selection persist visually.
         htmlContent += `
             <div class="answer-option"> 
                 <input
@@ -144,29 +149,22 @@ function displaySingleQuestion(question, totalQuestions) {
                     name="${inputName}"
                     value="${answer.letter}"
                     data-question="${question.number}"
+                    ${isChecked ? 'checked' : ''}
                 />
                 <label for="${inputId}" class="answer-label"> 
                     ${answer.letter}. ${formattedAnswerText}
                 </label>
             </div>
         `;
+        // ====================================================================
     });
 
     htmlContent += '</fieldset>';
 
-    // --- 4. Create the Submit button for this question ---
-    // Note: The "Explain" and "Chat" features are part of the Study Mode experience,
-    // so we are intentionally leaving them out of the Exam Mode UI.
-    htmlContent += `
-        <button class="submit-btn" data-question="${question.number}">
-            Submit Answer
-        </button>
-    `;
-
     // Close the main question-container div.
     htmlContent += '</div>';
 
-    // --- 5. Create the Navigation Controls ---
+    // --- 4. Create the Navigation Controls ---
     // This section contains the "Previous" and "Next" buttons for moving between questions.
     htmlContent += `
         <div class="exam-navigation">
