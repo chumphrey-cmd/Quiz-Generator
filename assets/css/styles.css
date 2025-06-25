@@ -1206,3 +1206,89 @@ Controls (Header Inputs/Selects)
     color: #999;
     opacity: 0.6;
 }
+
+/*
+==========================================================================
+ Exam Review Screen Styles
+==========================================================================
+*/
+.review-screen-container {
+    padding: var(--spacing-lg);
+    text-align: center;
+}
+
+.review-header {
+    margin-bottom: var(--spacing-sm);
+}
+
+.review-instructions {
+    max-width: 600px;
+    margin: 0 auto var(--spacing-lg);
+    font-size: 0.95rem;
+    opacity: 0.9;
+}
+
+.review-filters {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
+}
+
+.filter-btn {
+    padding: var(--spacing-xs) var(--spacing-md);
+    border: 1px solid var(--button-border);
+    background-color: transparent;
+    color: var(--text-color);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-btn.active,
+.filter-btn:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.review-question-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--spacing-sm);
+    max-width: 800px;
+    margin: 0 auto var(--spacing-xl);
+}
+
+.review-question-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm);
+    border: 1px solid #ccc;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: var(--container-bg);
+}
+
+.review-question-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+[data-theme="dark"] .review-question-item {
+    border-color: #555;
+}
+
+.review-question-item.flagged {
+    border-left: 4px solid var(--error-color);
+}
+
+.review-question-item .fa-flag {
+    color: var(--error-color);
+}
+
+.review-q-status {
+    font-size: 0.8rem;
+    opacity: 0.7;
+}

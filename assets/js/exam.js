@@ -1164,37 +1164,32 @@ class ExamManager {
     }
 
     /**
-     * Dynamically creates and displays the "Grade Exam" button at the end of the quiz content.
-     * This is only called when in 'exam' mode after all questions have been answered.
+     * Renders the final review screen by calling the UI function and attaching listeners.
+     * @private
      */
-    displayGradeExamButton() {
-        // Find the main container where the quiz questions are displayed.
+    _displayReviewScreen() {
+        // Get the HTML for the review screen from our new ui.js function.
+        const reviewHtml = displayReviewScreen(this.questions);
+        
         const quizContentElement = document.getElementById('quiz-content');
-        if (!quizContentElement) {
-            // Safety check: if the main container doesn't exist, we can't add the button.
-            console.error("displayGradeExamButton: Cannot find quiz content element to append button.");
-            return;
+        if (quizContentElement) {
+            // Inject the HTML into the page.
+            quizContentElement.innerHTML = reviewHtml;
+            console.log("Review Screen has been displayed.");
+
+            // Find the new "Grade Exam" button inside the review screen.
+            const gradeButton = document.getElementById('grade-exam-btn');
+            if (gradeButton) {
+                // Attach the existing gradeExam method as its click handler.
+                gradeButton.addEventListener('click', this.gradeExam.bind(this));
+            }
+
+            // Find the container for the list of questions we just rendered.
+            const questionList = quizContentElement.querySelector('.review-question-list');
+            if (questionList) {
+                questionList.addEventListener('click', this.handleReviewItemClick.bind(this));
+            }
         }
-
-        // Create a new <button> element in memory.
-        const gradeButton = document.createElement('button');
-        
-        // Assign an ID for potential future use and a class for styling.
-        gradeButton.id = 'grade-exam-btn';
-        gradeButton.className = 'grade-exam-btn';
-        
-        // Set the visible text on the button.
-        gradeButton.textContent = 'Grade Exam';
-
-        // Add a 'click' event listener to the button.
-        // When the button is clicked, it will call the `this.gradeExam` method.
-        // We use .bind(this) to ensure that inside the `gradeExam` method, the `this` keyword
-        // correctly refers to our ExamManager instance, so we can access properties like `this.questions`.
-        gradeButton.addEventListener('click', this.gradeExam.bind(this));
-
-        // Add the newly created and configured button to the end of the quiz-content div in the DOM.
-        quizContentElement.appendChild(gradeButton);
-        console.log("Grade Exam button has been created and displayed.");
     }
 
     /**
@@ -1247,17 +1242,21 @@ class ExamManager {
 
     /**
      * Handles clicks on the 'Next' button in Exam Mode.
-     * It increments the current question index and calls the render method
-     * to display the new question.
+     * It increments the question index and re-renders the view, OR
+     * if on the last question, it triggers the review screen.
      */
     handleNextQuestionClick() {
-        // First, we check that we are not already on the last question.
+        // Check if there are more questions to navigate to.
         if (this.currentQuestionIndex < this.questions.length - 1) {
-            // If not, we increment the index to move to the next question.
+            // If we are NOT on the last question, simply increment the index and re-render the view to show the next question.
             this.currentQuestionIndex++;
             console.log(`Next button clicked. New index: ${this.currentQuestionIndex}`);
-            // Then, we call our main render method to update the screen with the new question.
             this._renderCurrentView();
+
+        } else {
+            console.log("Last question finished. Displaying Review Screen.");
+
+            this._displayReviewScreen();
         }
     }
 
@@ -1302,13 +1301,43 @@ class ExamManager {
                 console.log("On the first question, 'Previous' button disabled.");
             }
 
-            // If the user is on the last question, the 'Next' button should be disabled.
+            // If the user is on the last question, the 'Next' button should be disabled and a grade exam button should be present.
             if (this.currentQuestionIndex === this.questions.length - 1) {
-                nextButton.disabled = true;
-                console.log("On the last question, 'Next' button disabled.");
+                nextButton.textContent = 'Finish Exam';
+                console.log("On the last question, 'Next' button text changed to 'Finish Exam'.");
             }
+
         } else {
             console.error("_attachExamNavListeners: Could not find navigation buttons on the page.");
+        }
+    }
+
+    /**
+     * Handles a click on an item in the review question list.
+     * It navigates the user back to the corresponding single-question view.
+     * @param {Event} event - The click event from the review list.
+     */
+    handleReviewItemClick(event) {
+        // 'event.target' is the element that was clicked. .closest() travels up the DOM tree to find the nearest parent with the specified selector.
+        const questionItem = event.target.closest('.review-question-item');
+
+        // If a valid question item was clicked...
+        if (questionItem) {
+            // ...we retrieve the question index we stored in the 'data-question-index' attribute.
+            // We use parseInt because data attributes are always strings.
+            const questionIndex = parseInt(questionItem.dataset.questionIndex, 10);
+            
+            // Check if the retrieved index is a valid number.
+            if (!isNaN(questionIndex)) {
+                console.log(`User clicked review item. Jumping to question index: ${questionIndex}`);
+                
+                // Update the main 'currentQuestionIndex' to the one the user selected.
+                this.currentQuestionIndex = questionIndex;
+                
+                // Call our main render method. It will see we are in 'exam' mode
+                // and automatically display the single-question view for the new index.
+                this._renderCurrentView();
+            }
         }
     }
 

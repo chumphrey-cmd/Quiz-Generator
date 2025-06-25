@@ -80,6 +80,8 @@ function displayQuestions(questions) {
     return htmlContent;
 }
 
+// In assets/js/ui.js
+
 /**
  * Generates the HTML for a single question view, used for 'Exam Mode'.
  * This function creates the UI for one question at a time, including a counter
@@ -113,6 +115,7 @@ function displaySingleQuestion(question, totalQuestions) {
     const isMultipleChoice = question.correct.length > 1;
     const inputType = isMultipleChoice ? 'checkbox' : 'radio';
     const formattedQuestionText = typeof marked !== 'undefined' ? marked.parseInline(question.text) : question.text;
+    const isFlagged = question.isFlaggedForReview;
 
     htmlContent += `
         <div class="question-container" id="container-${question.number}" data-question-number="${question.number}">
@@ -122,7 +125,7 @@ function displaySingleQuestion(question, totalQuestions) {
                     ${isMultipleChoice ? '<span class="question-hint">(Select all that apply)</span>' : ''}
                 </div>
                 <div class="flag-container" title="Flag for Review">
-                    <i class="fa-regular fa-flag flag-icon" data-question-number="${question.number}"></i>
+                    <i class="${isFlagged ? 'fa-solid' : 'fa-regular'} fa-flag flag-icon ${isFlagged ? 'flagged' : ''}" data-question-number="${question.number}"></i>
                 </div>
             </div>
     `;
@@ -135,6 +138,8 @@ function displaySingleQuestion(question, totalQuestions) {
         const inputName = `question_${question.number}`;
         const formattedAnswerText = typeof marked !== 'undefined' ? marked.parseInline(answer.text) : answer.text;
 
+        // Before creating the HTML for this answer option, we check if its letter
+        // exists in the question's 'userSelected' array.
         // This array holds the answers the user has already chosen for this question.
         const isChecked = question.userSelected.includes(answer.letter);
 
@@ -156,7 +161,6 @@ function displaySingleQuestion(question, totalQuestions) {
                 </label>
             </div>
         `;
-        // ====================================================================
     });
 
     htmlContent += '</fieldset>';
@@ -245,4 +249,59 @@ function resetDisplays(totalQuestions) {
 function renderQuestions(htmlContent) {
     // Gets the main content area and injects the question HTML
     document.getElementById('quiz-content').innerHTML = htmlContent;
+}
+
+/**
+ * Generates the HTML for the pre-submission review screen in Exam Mode.
+ * This screen lists all questions, shows their status, and provides filter/grading controls.
+ * @param {Array<object>} questions - The array of all question objects for the current quiz.
+ * @returns {string} A string of HTML representing the review screen.
+ */
+function displayReviewScreen(questions) {
+    console.log("displayReviewScreen: Generating HTML for the review screen.");
+    
+    let htmlContent = `
+        <div class="review-screen-container">
+            <h2 class="review-header">Review Your Answers</h2>
+            <p class="review-instructions">
+                Below is a summary of your answers. Click on any question to review it. You can filter the list to show only Unanswered or Flagged questions. When you are finished, click "Grade Exam".
+            </p>
+
+            <div class="review-filters">
+                <button class="filter-btn active" data-filter="all">All (${questions.length})</button>
+                <button class="filter-btn" data-filter="unanswered">Unanswered</button>
+                <button class="filter-btn" data-filter="flagged">Flagged</button>
+            </div>
+
+            <div class="review-question-list">
+    `;
+
+    // Loop through each question to create a list item for it.
+    questions.forEach(question => {
+        // Determine the status of the question for styling and information.
+        let status = 'Answered';
+        if (question.userSelected.length === 0) {
+            status = 'Unanswered';
+        }
+        
+        // Add a 'flagged' class if the user has flagged this question.
+        const flaggedClass = question.isFlaggedForReview ? 'flagged' : '';
+
+        htmlContent += `
+            <div class="review-question-item ${flaggedClass}" data-question-index="${question.number - 1}">
+                <span class="review-q-number">Question ${question.number}</span>
+                <span class="review-q-status">${status}</span>
+                ${question.isFlaggedForReview ? '<i class="fa-solid fa-flag"></i>' : ''}
+            </div>
+        `;
+    });
+
+    // Close the list and container divs.
+    htmlContent += `
+            </div> 
+            <button id="grade-exam-btn" class="grade-exam-btn">Grade Exam</button>
+        </div>
+    `;
+
+    return htmlContent;
 }
