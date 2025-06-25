@@ -1207,6 +1207,14 @@ Controls (Header Inputs/Selects)
     opacity: 0.6;
 }
 
+.exam-nav-btn.secondary {
+    background-color: #6c757d;
+}
+
+.exam-nav-btn.secondary:hover:not(:disabled) {
+    background-color: #5a6268;
+}
+
 /*
 ==========================================================================
  Exam Review Screen Styles

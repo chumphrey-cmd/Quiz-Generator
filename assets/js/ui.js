@@ -80,17 +80,15 @@ function displayQuestions(questions) {
     return htmlContent;
 }
 
-// In assets/js/ui.js
-
 /**
  * Generates the HTML for a single question view, used for 'Exam Mode'.
- * This function creates the UI for one question at a time, including a counter
- * and navigation buttons, to simulate a real exam environment.
  * @param {object} question - The single question object to display.
  * @param {number} totalQuestions - The total number of questions in the quiz.
+ * @param {boolean} [isReviewingSet=false] - If true, displays a 'Return to Summary' button.
+ * @param {string} [reviewFilterType='all'] - The active filter ('all', 'flagged', 'unanswered').
  * @returns {string} A string of HTML representing the single question view.
  */
-function displaySingleQuestion(question, totalQuestions) {
+function displaySingleQuestion(question, totalQuestions, isReviewingSet = false, reviewFilterType = 'all') {
     // Safety check: If for some reason no question is passed, return an error message.
     if (!question) {
         console.error("displaySingleQuestion: No question was provided to display.");
@@ -101,17 +99,36 @@ function displaySingleQuestion(question, totalQuestions) {
     // This string will accumulate all the HTML we generate.
     let htmlContent = '';
 
+    // === LOGIC FOR CONTEXT-AWARE COUNTER ============================
+    // 1. Start with the basic counter text.
+    let counterText = `Question ${question.number} of ${totalQuestions}`;
+
+    // 2. Check if the user is in a filtered review set.
+    if (isReviewingSet) {
+        // If they are, create a more descriptive label based on the active filter.
+        let filterDescription = "Flagged Questions"; // Default description
+        if (reviewFilterType === 'unanswered') {
+            filterDescription = "Unanswered Questions";
+        }
+        // Combine the description with the basic counter.
+        // Example output: "Reviewing Flagged Questions (Question 15 of 82)"
+        counterText = `Reviewing ${filterDescription} (${counterText})`;
+    } else if (reviewFilterType === 'all') {
+        // If the user is navigating from the review screen but using the 'All' filter,
+        // we provide a slightly different description for clarity.
+        counterText = `Reviewing All Questions (${counterText})`;
+    }
+
     // --- 1. Create the Question Counter ---
-    // This provides context for the user, e.g., "Question 5 of 82".
+    // This now uses our new, more descriptive 'counterText'.
     htmlContent += `
         <div class="question-counter">
-            Question ${question.number} of ${totalQuestions}
+            ${counterText}
         </div>
     `;
 
-    // --- 2. Create the Question Block ---
-    // This logic is very similar to your original `displayQuestions` function,
-    // but it only runs for the single question that was passed in.
+    // --- 2. Create the Question Block (Unchanged) ---
+    // This part remains the same.
     const isMultipleChoice = question.correct.length > 1;
     const inputType = isMultipleChoice ? 'checkbox' : 'radio';
     const formattedQuestionText = typeof marked !== 'undefined' ? marked.parseInline(question.text) : question.text;
@@ -137,14 +154,8 @@ function displaySingleQuestion(question, totalQuestions) {
         const inputId = `q${question.number}-ans${answer.letter}`;
         const inputName = `question_${question.number}`;
         const formattedAnswerText = typeof marked !== 'undefined' ? marked.parseInline(answer.text) : answer.text;
-
-        // Before creating the HTML for this answer option, we check if its letter
-        // exists in the question's 'userSelected' array.
-        // This array holds the answers the user has already chosen for this question.
         const isChecked = question.userSelected.includes(answer.letter);
 
-        // If 'isChecked' is true, we add the 'checked' attribute to the input tag.
-        // If false, we add an empty string. This makes the selection persist visually.
         htmlContent += `
             <div class="answer-option"> 
                 <input
@@ -163,17 +174,19 @@ function displaySingleQuestion(question, totalQuestions) {
         `;
     });
 
-    htmlContent += '</fieldset>';
-
-    // Close the main question-container div.
-    htmlContent += '</div>';
-
     // --- 4. Create the Navigation Controls ---
-    // This section contains the "Previous" and "Next" buttons for moving between questions.
+    htmlContent += `<div class="exam-navigation">`;
+
+    // We assign a consistent ID, 'prev-return-btn', to this button. This makes
+    // it much easier to find and remove in our logic later to prevent duplicates.
+    if (isReviewingSet) {
+        htmlContent += `<button id="prev-return-btn" class="exam-nav-btn secondary">Return to Summary</button>`;
+    } else {
+        htmlContent += `<button id="prev-return-btn" class="exam-nav-btn">Previous</button>`;
+    }
+    
     htmlContent += `
-        <div class="exam-navigation">
-            <button id="prev-question-btn" class="exam-nav-btn">Previous</button>
-            <button id="next-question-btn" class="exam-nav-btn">Next</button>
+        <button id="next-question-btn" class="exam-nav-btn">Next</button>
         </div>
     `;
 
@@ -304,4 +317,45 @@ function displayReviewScreen(questions) {
     `;
 
     return htmlContent;
+}
+
+/**
+ * Generates only the HTML for the list of questions on the review screen.
+ * This is a helper function used to re-render just the list when filters are applied.
+ * @param {Array<object>} questions - The array of question objects to display in the list.
+ * @returns {string} An HTML string of the question items.
+ */
+function generateReviewListHTML(questions) {
+    let listHtml = '';
+
+    // If the filtered array of questions is empty, we should display a
+    // helpful message to the user instead of just showing a blank space.
+    if (questions.length === 0) {
+        return '<p class="review-no-items">No questions match this filter.</p>';
+    }
+
+    // We loop through the provided array of questions (which might be the full list,
+    // or a smaller filtered list) to create the HTML for each item.
+    questions.forEach(question => {
+        // Determine the question's current status for display.
+        let status = 'Answered';
+        if (question.userSelected.length === 0) {
+            status = 'Unanswered';
+        }
+        
+        // Check if the question is flagged to add the appropriate class and icon.
+        const flaggedClass = question.isFlaggedForReview ? 'flagged' : '';
+
+        // Generate the HTML for this single item in the list.
+        listHtml += `
+            <div class="review-question-item ${flaggedClass}" data-question-index="${question.number - 1}">
+                <span class="review-q-number">Question ${question.number}</span>
+                <span class="review-q-status">${status}</span>
+                ${question.isFlaggedForReview ? '<i class="fa-solid fa-flag"></i>' : ''}
+            </div>
+        `;
+    });
+    
+    // Return the completed string of HTML.
+    return listHtml;
 }

@@ -48,6 +48,8 @@ class ExamManager {
         this.currentScore = 0;
         this.examMode = 'study';
         this.currentQuestionIndex = 0; // Used for the single-question display in Exam Mode. Initialized it to 0, representing the first question.
+        this.reviewSet = []; // Array used to hold a subset of questions for focused review
+        this.reviewSetIndex = 0; // Index for navigating the temporary 'reviewSet' array
         this.questions = [];
         this.originalQuestions = []; // Used to store original imported Qs
         this.timerInterval = null;
@@ -420,37 +422,45 @@ class ExamManager {
         if (this.examMode === 'study') {
             // --- Study Mode Logic ---
             // If we are in study mode, we call the original displayQuestions function
-            // to get the HTML for the entire list of questions.
+            // to get the HTML for the entire list of questions. This part is unchanged.
             console.log("Rendering full question list for Study Mode.");
             htmlContent = displayQuestions(this.questions);
 
         } else {
             // --- Exam Mode Logic ---
-            // If we are in exam mode, we use the currentQuestionIndex to find the
-            // specific question we need to display from our questions array.
+            // Get the specific question object to display.
             const currentQuestion = this.questions[this.currentQuestionIndex];
             console.log(`Rendering single question view for Exam Mode. Question #${currentQuestion.number}`);
 
-            // We then call our new displaySingleQuestion function to get the HTML
-            // for just that one question and its navigation controls.
-            htmlContent = displaySingleQuestion(currentQuestion, this.totalQuestions);
+            // We check if a 'reviewSet' is active.
+            const isReviewing = this.reviewSet.length > 0;
+
+            // To get the text for our new descriptive counter (e.g., "Reviewing Flagged Questions"),
+            // we first need to know which filter button is currently active on the review screen.
+            const activeFilterButton = document.querySelector('.filter-btn.active');
+            
+            // We get the filter type (e.g., 'all', 'flagged') from the button's data attribute.
+            // If for some reason no button is active, we default to 'all'.
+            const reviewFilterType = activeFilterButton ? activeFilterButton.dataset.filter : 'all';
+
+            // We call our UI function and pass ALL the necessary context: the question itself,
+            // the total count, whether we're in a special review mode, and the type of filter active.
+            htmlContent = displaySingleQuestion(currentQuestion, this.totalQuestions, isReviewing, reviewFilterType);
         }
         
-        // Inject the generated HTML into the main content area of the page.
+        // Finally, we inject the generated HTML into the main content area of the page.
         quizContentElement.innerHTML = htmlContent;
         console.log("SUCCESS: Injected new HTML into #quiz-content.");
 
+        // This block handles attaching the necessary event listeners after rendering.
         if (this.examMode === 'exam') {
-            // This part attaches the listeners for the 'Previous' and 'Next' buttons.
             this._attachExamNavListeners();
 
             const answerFieldset = quizContentElement.querySelector('.answers');
             if (answerFieldset) {
-                // We attach a single 'change' event listener to the parent <fieldset>.
-                // This is more efficient than adding a listener to every single radio/checkbox.
-                // When any input inside it changes, this event will fire.
                 answerFieldset.addEventListener('change', this.handleAnswerSelection.bind(this));
             }
+            
             this._updateProgress();
         }
     }
@@ -1164,11 +1174,11 @@ class ExamManager {
     }
 
     /**
-     * Renders the final review screen by calling the UI function and attaching listeners.
+     * Renders the final review screen by calling the UI function and attaching all necessary listeners.
      * @private
      */
     _displayReviewScreen() {
-        // Get the HTML for the review screen from our new ui.js function.
+        // Get the HTML for the review screen from our ui.js function.
         const reviewHtml = displayReviewScreen(this.questions);
         
         const quizContentElement = document.getElementById('quiz-content');
@@ -1177,17 +1187,28 @@ class ExamManager {
             quizContentElement.innerHTML = reviewHtml;
             console.log("Review Screen has been displayed.");
 
-            // Find the new "Grade Exam" button inside the review screen.
+            // --- Attach Listener for the Grade Exam Button ---
             const gradeButton = document.getElementById('grade-exam-btn');
             if (gradeButton) {
                 // Attach the existing gradeExam method as its click handler.
                 gradeButton.addEventListener('click', this.gradeExam.bind(this));
             }
 
-            // Find the container for the list of questions we just rendered.
+            // --- Attach Listener for the Question List Items ---
             const questionList = quizContentElement.querySelector('.review-question-list');
             if (questionList) {
+                // Attach the handler for jumping to a specific question.
                 questionList.addEventListener('click', this.handleReviewItemClick.bind(this));
+            }
+
+            // Find the container for the filter buttons that we just rendered.
+            const filtersContainer = quizContentElement.querySelector('.review-filters');
+            if (filtersContainer) {
+                // Add a single click listener to the entire container. This uses event
+                // delegation, which is efficient. When a click occurs inside this
+                // container, it will call our handleFilterClick method.
+                filtersContainer.addEventListener('click', this.handleFilterClick.bind(this));
+                console.log("Event listener for filter buttons has been attached.");
             }
         }
     }
@@ -1242,103 +1263,269 @@ class ExamManager {
 
     /**
      * Handles clicks on the 'Next' button in Exam Mode.
-     * It increments the question index and re-renders the view, OR
-     * if on the last question, it triggers the review screen.
+     * This method is now "context-aware". It checks if a filtered 'reviewSet'
+     * is active and navigates through that set instead of the full question list.
      */
     handleNextQuestionClick() {
-        // Check if there are more questions to navigate to.
-        if (this.currentQuestionIndex < this.questions.length - 1) {
-            // If we are NOT on the last question, simply increment the index and re-render the view to show the next question.
-            this.currentQuestionIndex++;
-            console.log(`Next button clicked. New index: ${this.currentQuestionIndex}`);
-            this._renderCurrentView();
+        // First, determine if we are in the special filtered review sub-mode by
+        // checking if the 'reviewSet' array has any items in it.
+        const isReviewing = this.reviewSet.length > 0;
 
+        if (isReviewing) {
+            // --- Filtered Navigation Logic ---
+            // If a reviewSet is active, all our navigation logic is based on the
+            // 'reviewSet' array and its own index, 'reviewSetIndex'.
+
+            // Check if we are NOT on the last question of the filtered set.
+            if (this.reviewSetIndex < this.reviewSet.length - 1) {
+                // If there are more questions in our filtered set, we increment the reviewSetIndex.
+                this.reviewSetIndex++;
+                
+                // Now, we get the next question object from our filtered set.
+                const nextQuestionInSet = this.reviewSet[this.reviewSetIndex];
+                
+                // IMPORTANT: We still need to find this question's original position in the
+                // main 'this.questions' array. We update 'this.currentQuestionIndex' so that
+                // when we re-render, the application knows which question data to use.
+                this.currentQuestionIndex = this.questions.findIndex(q => q.number === nextQuestionInSet.number);
+                
+                console.log(`ReviewSet Next: Jumping to index ${this.reviewSetIndex} in the review set.`);
+                this._renderCurrentView();
+            } else {
+                // If we are already on the last question of the filtered set, clicking the
+                // "Next" (now "Return to Summary") button takes us back to the review screen.
+                console.log("Finished reviewing filtered set. Returning to summary.");
+                this._displayReviewScreen();
+            }
         } else {
-            console.log("Last question finished. Displaying Review Screen.");
+            // --- Standard Navigation Logic ---
+            // If no reviewSet is active, the logic works as it did before,
+            // using the main 'questions' array and 'currentQuestionIndex'.
 
-            this._displayReviewScreen();
+            // Check if we are NOT on the last question of the full quiz.
+            if (this.currentQuestionIndex < this.questions.length - 1) {
+                this.currentQuestionIndex++;
+                console.log(`Standard Next: New index: ${this.currentQuestionIndex}`);
+                this._renderCurrentView();
+            } else {
+                // If we are on the last question of the full quiz, clicking the
+                // "Next" (now "Summary") button takes us to the review screen.
+                console.log("Last question of full exam finished. Displaying Review Screen.");
+                this._displayReviewScreen();
+            }
         }
     }
 
     /**
      * Handles clicks on the 'Previous' button in Exam Mode.
-     * It decrements the current question index and calls the render method
-     * to display the previous question.
+     * This method is now "context-aware". It checks if a filtered 'reviewSet'
+     * is active and navigates backward through that set.
      */
     handlePreviousQuestionClick() {
-        // First, we check that we are not already on the first question (index 0).
-        if (this.currentQuestionIndex > 0) {
-            // If not, we decrement the index to move to the previous question.
-            this.currentQuestionIndex--;
-            console.log(`Previous button clicked. New index: ${this.currentQuestionIndex}`);
-            // Then, we call our main render method to update the screen.
-            this._renderCurrentView();
+        // First, determine if we are in the special filtered review sub-mode.
+        const isReviewing = this.reviewSet.length > 0;
+
+        if (isReviewing) {
+            // --- Filtered Navigation Logic ---
+            // If a reviewSet is active, our logic is based on the 'reviewSetIndex'.
+
+            // Check if we are NOT on the first question of the filtered set.
+            if (this.reviewSetIndex > 0) {
+                // If we can go back, we decrement the reviewSetIndex.
+                this.reviewSetIndex--;
+
+                // Now, we get the previous question object from our filtered set.
+                const prevQuestionInSet = this.reviewSet[this.reviewSetIndex];
+
+                // As before, we find this question's original position in the main
+                // 'this.questions' array to ensure the correct data is used for rendering.
+                this.currentQuestionIndex = this.questions.findIndex(q => q.number === prevQuestionInSet.number);
+                
+                console.log(`ReviewSet Previous: Jumping to index ${this.reviewSetIndex} in the review set.`);
+                this._renderCurrentView();
+            }
+        } else {
+            // --- Standard Navigation Logic ---
+            // If no reviewSet is active, the logic works as it did before.
+
+            // Check if we are NOT on the first question of the full quiz.
+            if (this.currentQuestionIndex > 0) {
+                this.currentQuestionIndex--;
+                console.log(`Standard Previous: New index: ${this.currentQuestionIndex}`);
+                this._renderCurrentView();
+            }
         }
     }
 
     /**
      * Finds the navigation buttons in the DOM and attaches the appropriate click handlers.
-     * It also disables buttons when at the beginning or end of the quiz.
-     * This method is called only when in 'exam' mode.
+     * It now also attaches a listener for the 'Return to Summary' button and has
+     * smarter logic for disabling buttons and updating text at the boundaries of a navigation set.
      * @private
      */
     _attachExamNavListeners() {
-        const prevButton = document.getElementById('prev-question-btn');
+        // Find all possible navigation buttons in the currently rendered view.
+        // We use the new, consistent ID for the first button.
+        const prevReturnButton = document.getElementById('prev-return-btn');
         const nextButton = document.getElementById('next-question-btn');
 
-        // Safety check to ensure the buttons exist on the page before we try to use them.
-        if (prevButton && nextButton) {
-            // Attach the click event listeners to the buttons.
-            // We use .bind(this) to ensure the `this` context inside our handler
-            // methods correctly refers to the ExamManager instance.
-            prevButton.addEventListener('click', this.handlePreviousQuestionClick.bind(this));
+        // Attach listeners if the buttons exist.
+        if (nextButton) {
             nextButton.addEventListener('click', this.handleNextQuestionClick.bind(this));
+        }
 
-            // --- Disable buttons at boundaries ---
-            // If the user is on the first question (index 0), the 'Previous' button should be disabled.
-            if (this.currentQuestionIndex === 0) {
-                prevButton.disabled = true;
-                console.log("On the first question, 'Previous' button disabled.");
+        if (prevReturnButton) {
+            // We check the button's text to determine if it's a 'Previous' button
+            // or a 'Return to Summary' button and attach the correct handler.
+            if (prevReturnButton.textContent.includes("Summary")) {
+                 prevReturnButton.addEventListener('click', this._displayReviewScreen.bind(this));
+            } else {
+                 prevReturnButton.addEventListener('click', this.handlePreviousQuestionClick.bind(this));
             }
+        }
 
-            // If the user is on the last question, the 'Next' button should be disabled and a grade exam button should be present.
-            if (this.currentQuestionIndex === this.questions.length - 1) {
-                nextButton.textContent = 'Finish Exam';
-                console.log("On the last question, 'Next' button text changed to 'Finish Exam'.");
+        // --- Smarter Boundary and Text Logic ---
+
+        // Determine if we are currently navigating a filtered reviewSet.
+        const isReviewing = this.reviewSet.length > 0;
+
+        // Based on the mode, determine the total number of items in the current navigation set
+        // and the user's current position within that set.
+        const totalInSet = isReviewing ? this.reviewSet.length : this.questions.length;
+        const currentIndexInSet = isReviewing ? this.reviewSetIndex : this.currentQuestionIndex;
+
+        // Disable the 'Previous' or 'Return' button only if we are at the very beginning (index 0) of the set.
+        if (currentIndexInSet === 0 && prevReturnButton) {
+            prevReturnButton.disabled = true;
+        }
+
+        // Now, we handle the 'Next' button's behavior at the end of a set.
+        if (currentIndexInSet === totalInSet - 1) {
+            // Check to make sure there actually is a 'Next' button to modify.
+            if (nextButton) {
+                // If we are on the last question of the initial pass...
+                if (!isReviewing) {
+                    // ...change the text to "Summary" as you requested.
+                    nextButton.textContent = 'Summary';
+                    console.log("On last question of full set. Button text changed to 'Summary'.");
+                } else {
+                    // If we are on the last question of a FILTERED set...
+                    nextButton.textContent = 'Return to Summary';
+                    console.log("On last question of filtered set. Button text changed to 'Return to Summary'.");
+                    // ...AND the other 'Return to Summary' button exists, we remove it to prevent the duplicate.
+                    if (prevReturnButton) {
+                        prevReturnButton.remove();
+                        console.log("Duplicate 'Return to Summary' button removed to prevent visual clutter.");
+                    }
+                }
             }
-
-        } else {
-            console.error("_attachExamNavListeners: Could not find navigation buttons on the page.");
         }
     }
 
     /**
      * Handles a click on an item in the review question list.
-     * It navigates the user back to the corresponding single-question view.
+     * It navigates the user back to the corresponding single-question view and
+     * correctly sets the index for filtered navigation if a review set is active.
      * @param {Event} event - The click event from the review list.
      */
     handleReviewItemClick(event) {
-        // 'event.target' is the element that was clicked. .closest() travels up the DOM tree to find the nearest parent with the specified selector.
+        // Find the parent .review-question-item element that was clicked.
         const questionItem = event.target.closest('.review-question-item');
 
-        // If a valid question item was clicked...
         if (questionItem) {
-            // ...we retrieve the question index we stored in the 'data-question-index' attribute.
-            // We use parseInt because data attributes are always strings.
+            // Retrieve the question's original index from its data attribute.
             const questionIndex = parseInt(questionItem.dataset.questionIndex, 10);
             
-            // Check if the retrieved index is a valid number.
             if (!isNaN(questionIndex)) {
-                console.log(`User clicked review item. Jumping to question index: ${questionIndex}`);
-                
-                // Update the main 'currentQuestionIndex' to the one the user selected.
+                // --- THIS IS THE CORE LOGIC OF THIS METHOD ---
+
+                // 1. Always update the main currentQuestionIndex. This tells the application
+                // which question data to load and display.
                 this.currentQuestionIndex = questionIndex;
-                
-                // Call our main render method. It will see we are in 'exam' mode
-                // and automatically display the single-question view for the new index.
+
+                // 2. Check if we are currently in a filtered review sub-mode.
+                if (this.reviewSet.length > 0) {
+                    // If we are, we need to sync our position within that filtered set.
+                    
+                    // Get the unique number of the question the user is jumping to.
+                    const questionNumber = this.questions[questionIndex].number;
+                    
+                    // Find the position (index) of that specific question within our
+                    // temporary 'reviewSet' array.
+                    this.reviewSetIndex = this.reviewSet.findIndex(q => q.number === questionNumber);
+                    
+                    console.log(`Jumping to question. Main index: ${this.currentQuestionIndex}, ReviewSet index: ${this.reviewSetIndex}`);
+                } else {
+                    // If not in a filtered review, just log the main index.
+                    console.log(`Jumping to question. Main index: ${this.currentQuestionIndex}`);
+                }
+
+                // 3. Finally, call our main render method to display the selected question.
                 this._renderCurrentView();
             }
         }
+    }
+
+    /**
+     * Handles clicks on the filter buttons ('All', 'Unanswered', 'Flagged') on the review screen.
+     * It filters the main question list and re-renders the list view.
+     * @param {Event} event - The click event from the filter buttons container.
+     */
+    handleFilterClick(event) {
+        // .closest() finds the nearest parent element that is a .filter-btn.
+        // This ensures the code works even if the user clicks an icon inside the button.
+        const filterButton = event.target.closest('.filter-btn');
+        if (!filterButton) return; // If the click was not on a button, do nothing.
+
+        // Get the type of filter from the button's 'data-filter' attribute.
+        const filterType = filterButton.dataset.filter;
+        console.log(`Filter button clicked. Filtering by: '${filterType}'`);
+
+        let filteredQuestions = [];
+
+        // Use a switch statement to create a new array based on the filter type.
+        switch (filterType) {
+            case 'unanswered':
+                // Filter for questions where the user has not made a selection.
+                filteredQuestions = this.questions.filter(q => q.userSelected.length === 0);
+                break;
+            case 'flagged':
+                // Filter for questions that the user has flagged for review.
+                filteredQuestions = this.questions.filter(q => q.isFlaggedForReview);
+                break;
+            case 'all':
+            default:
+                // For 'all' or any other case, use the original, complete list of questions.
+                filteredQuestions = this.questions;
+                break;
+        }
+
+        if (filterType === 'all') {
+            // If the user clicks 'All', we clear the reviewSet to signal that
+            // we are exiting the special filtered navigation mode.
+            this.reviewSet = [];
+            console.log("Exiting filtered review mode. Navigation will now cycle through all questions.");
+        } else {
+            // If they click 'Unanswered' or 'Flagged', we create our review set.
+            this.reviewSet = filteredQuestions;
+            // We must also reset the index for this new set to the beginning.
+            this.reviewSetIndex = 0;
+            console.log(`Entering filtered review mode with ${this.reviewSet.length} questions.`);
+        }
+
+        // Find the container element for the question list in the DOM.
+        const questionListContainer = document.querySelector('.review-question-list');
+        if (questionListContainer) {
+            // Use our UI helper function to generate the new HTML for the list.
+            const newListHtml = generateReviewListHTML(filteredQuestions);
+            // Replace the old list with the new, filtered list.
+            questionListContainer.innerHTML = newListHtml;
+        }
+
+        // Used to update the visual "active" state of the filter buttons. by removing the 'active' class from all filter buttons.
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        // Then, add the 'active' class to the specific button that was just clicked.
+        filterButton.classList.add('active');
     }
 
     /**
