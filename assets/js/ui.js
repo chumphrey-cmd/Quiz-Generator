@@ -177,18 +177,13 @@ function displaySingleQuestion(question, totalQuestions, isReviewingSet = false,
     // --- 4. Create the Navigation Controls ---
     htmlContent += `<div class="exam-navigation">`;
 
-    // We assign a consistent ID, 'prev-return-btn', to this button. This makes
-    // it much easier to find and remove in our logic later to prevent duplicates.
-    if (isReviewingSet) {
-        htmlContent += `<button id="prev-return-btn" class="exam-nav-btn secondary">Return to Summary</button>`;
-    } else {
-        htmlContent += `<button id="prev-return-btn" class="exam-nav-btn">Previous</button>`;
-    }
-    
-    htmlContent += `
-        <button id="next-question-btn" class="exam-nav-btn">Next</button>
-        </div>
-    `;
+    // This function will now always generate a standard "Previous" button.
+    htmlContent += `<button id="prev-return-btn" class="exam-nav-btn">Previous</button>`;
+
+    // Always generate a standard "Next" button. The logic to change its text
+    htmlContent += `<button id="next-question-btn" class="exam-nav-btn">Next</button>`;
+
+    htmlContent += `</div>`;
 
     // Return the complete HTML string to be injected into the DOM.
     return htmlContent;

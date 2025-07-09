@@ -65,3 +65,6 @@ git clone https://github.com/chumphrey-cmd/QA-Generator.git
   * Ensure that the entire quiz header is pinned while we scroll down the MC Qs.
   * Have the "submit button" for each question take you to the next question, similar to exam like conditions. 
   * Have the ability to specify two settings for the exam that you are going to take (e.g., A. Study Session and B. Exam Conditions)
+
+* **Backend**
+  * Add additional API logic for more models (e.g., Claude, Gemini 2.5, etc.)
