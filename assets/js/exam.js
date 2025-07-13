@@ -178,8 +178,17 @@ class ExamManager {
             console.error("Timer Reset button 'timerResetButton' not found!");
         }
 
+
+        // --- Listener for API Provider Dropdown ---
+        const providerSelect = document.getElementById('apiProviderSelect');
+        if (providerSelect) {
+            this.handleProviderChangeBound = this.handleProviderChange.bind(this);
+            providerSelect.addEventListener('change', this.handleProviderChangeBound);
+        } else {
+            console.error("API Provider select element 'apiProviderSelect' not found!");
+        }
+
         // --- Master Listener for Dynamic Quiz Content (Event Delegation) ---
-        // This logic remains unchanged.
         const quizContentElement = document.getElementById('quiz-content');
         if (quizContentElement) {
             this.handleQuizContentClickBound = this.handleQuizContentClick.bind(this);
@@ -247,6 +256,32 @@ class ExamManager {
         if (target.matches('.explain-icon')) {
             console.log("Delegated click detected on an explain icon.");
             this.handleExplainClick(event);
+        }
+    }
+
+    /**
+     * Handles the change event for the main API provider dropdown.
+     * It shows the settings for the selected provider and hides all others.
+     * @param {Event} event - The change event from the select element.
+     */
+    handleProviderChange(event) {
+        const selectedProvider = event.target.value;
+        console.log(`Provider changed to: ${selectedProvider}`);
+
+        // First, hide all provider-specific settings containers.
+        const allSettings = document.querySelectorAll('.provider-settings');
+        allSettings.forEach(setting => {
+            setting.style.display = 'none';
+        });
+
+        // If a provider is selected (i.e., not 'none'), show its corresponding settings panel.
+        if (selectedProvider !== 'none') {
+            const settingsToShow = document.getElementById(`${selectedProvider}-settings`);
+            if (settingsToShow) {
+                // We use 'flex' because the child elements are laid out with flexbox.
+                settingsToShow.style.display = 'flex';
+                console.log(`Displaying settings for: #${settingsToShow.id}`);
+            }
         }
     }
     
@@ -666,10 +701,8 @@ class ExamManager {
         }
 
         // Get LLM configuration and question data.
-        const llmConfig = {
-            model: document.getElementById('llmModelSelect').value,
-            apiKey: document.getElementById('llmApiKeyInput').value
-        };
+        const llmConfig = this._getCurrentLlmConfig();
+
         const questionData = this.questions.find(q => q.number === questionNumber);
         if (!questionData) {
             if (responseArea) responseArea.textContent = 'Error: Could not find question data.';
@@ -741,10 +774,8 @@ class ExamManager {
         console.log(`handleSendChatMessage: Called for question ${questionNumber}.`);
 
         // Retrieve LLM configuration (existing)
-        const llmConfig = {
-            model: document.getElementById('llmModelSelect').value,
-            apiKey: document.getElementById('llmApiKeyInput').value
-        };
+        const llmConfig = this._getCurrentLlmConfig();
+
         console.log(`handleSendChatMessage: LLM Config - Model: ${llmConfig.model}, API Key Entered: ${llmConfig.apiKey ? "[Key Entered]" : "[No Key Entered]"}`);
 
         if (!chatInput || !chatInput.value.trim()) {
@@ -1787,12 +1818,14 @@ class ExamManager {
         }
 
 // --- Determine the provider from the model string for cleaner logic ---
-// This allows us to handle all 'ollama/' or 'gemini-' models with a single case.
+// This allows us to handle all 'ollama/' or 'gemini-' or 'gpt-' models with a single 'case' each, making the code much easier to read and maintain.
 let provider = 'unknown';
 if (llmConfig.model.startsWith('ollama/')) {
     provider = 'ollama';
 } else if (llmConfig.model.startsWith('gemini-')) {
     provider = 'gemini';
+} else if (llmConfig.model.startsWith('gpt-')) {
+    provider = 'openai';
 } else if (llmConfig.model === 'perplexity') {
     provider = 'perplexity';
 } else if (llmConfig.model === 'none') {
@@ -1888,6 +1921,44 @@ switch (provider) {
         break;
     }
 
+        case 'openai': {
+            // --- OPENAI API LOGIC (Chat History) ---
+            if (!llmConfig.apiKey) {
+                throw new Error("API Key required for OpenAI model.");
+            }
+            const openAIEndpoint = 'https://api.openai.com/v1/chat/completions';
+
+            // --- THIS IS THE FIX ---
+            // The request payload for a chat history call must use the `messagesArray` variable, which contains the entire conversation history.
+            const requestPayload = {
+                model: llmConfig.model,
+                messages: messagesArray,
+            };
+
+            const response = await fetch(openAIEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${llmConfig.apiKey}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestPayload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                const errorMsg = errorData?.error?.message || `OpenAI API request failed: ${response.status}`;
+                throw new Error(errorMsg);
+            }
+            
+            const data = await response.json();
+            if (data.choices?.[0]?.message?.content) {
+                textResponse = data.choices[0].message.content.trim();
+            } else {
+                throw new Error('Error: Unexpected response format from OpenAI.');
+            }
+            break;
+        }
+
     case 'perplexity': {
         // --- PERPLEXITY API LOGIC (Chat History) ---
         if (!llmConfig.apiKey) {
@@ -1935,6 +2006,54 @@ switch (provider) {
     }
     
     /**
+     * Gets the current LLM configuration from the active UI provider settings.
+     * This is the central point for retrieving the model and API key, adapting
+     * to the new dynamic UI.
+     * @returns {object} An object containing the model and apiKey.
+     * @private
+     */
+    _getCurrentLlmConfig() {
+        const provider = document.getElementById('apiProviderSelect').value;
+        const config = {
+            model: 'none',
+            apiKey: ''
+        };
+
+        if (provider === 'none') {
+            return config; // Return default if no provider is selected
+        }
+
+        const settingsPanel = document.getElementById(`${provider}-settings`);
+        if (!settingsPanel) {
+            console.error(`_getCurrentLlmConfig: Could not find settings panel for provider: ${provider}`);
+            return config; // Return default if panel is missing
+        }
+
+        const apiKeyInput = settingsPanel.querySelector('.api-key-input');
+        const modelSelect = settingsPanel.querySelector('select');
+
+        if (apiKeyInput) {
+            config.apiKey = apiKeyInput.value;
+        }
+
+        if (modelSelect) {
+            config.model = modelSelect.value;
+        } else if (provider === 'perplexity') {
+            // Perplexity doesn't have a model dropdown, so we hardcode its identifier.
+            config.model = 'perplexity';
+        }
+
+        // --- IMPORTANT: Re-add the 'ollama/' prefix for Ollama models ---
+        // Our fetch logic still uses this prefix to identify Ollama calls.
+        if (provider === 'ollama') {
+            config.model = `ollama/${config.model}`;
+        }
+
+        console.log('_getCurrentLlmConfig: Final resolved config:', { ...config, apiKey: config.apiKey ? '[Key Entered]' : '[No Key]' });
+        return config;
+    }
+    
+    /**
      * Private helper method to make API calls to the selected LLM provider for a single prompt.
      * This method now dynamically handles Ollama models selected from the UI.
      * @param {object} llmConfig - Configuration for the LLM.
@@ -1951,20 +2070,20 @@ switch (provider) {
         // and a snippet of the prompt for debugging.
         console.log(`_fetchLlmSinglePromptResponse: Attempting response from provider/model: ${llmConfig.model}. Prompt snippet: "${promptString.substring(0, 100)}..."`);
 
-    // --- Determine the provider from the model string for cleaner logic ---
-    // This approach allows us to handle variations (like 'gemini-2.0' vs 'gemini-2.5')
-    // without adding a new 'case' for every single model.
-    let provider = 'unknown';
-    if (llmConfig.model.startsWith('ollama/')) {
-        provider = 'ollama';
-    } else if (llmConfig.model.startsWith('gemini-')) {
-        // Correctly identifies any Gemini model.
-        provider = 'gemini';
-    } else if (llmConfig.model === 'perplexity') {
-        provider = 'perplexity';
-    } else if (llmConfig.model === 'none') {
-        provider = 'none';
-    }
+        // --- Determine the provider from the model string for cleaner logic ---
+        // This allows us to handle all 'ollama/' or 'gemini-' or 'gpt-' models with a single 'case' each, making the code much easier to read and maintain.
+        let provider = 'unknown';
+        if (llmConfig.model.startsWith('ollama/')) {
+            provider = 'ollama';
+        } else if (llmConfig.model.startsWith('gemini-')) {
+            provider = 'gemini';
+        } else if (llmConfig.model.startsWith('gpt-')) {
+            provider = 'openai';
+        } else if (llmConfig.model === 'perplexity') {
+            provider = 'perplexity';
+        } else if (llmConfig.model === 'none') {
+            provider = 'none';
+        }
 
     // This switch statement routes the request to the correct API logic
     // based on the 'provider' we determined above.
@@ -2042,35 +2161,43 @@ switch (provider) {
             break; 
         }
 
-        case 'perplexity': {
-            // --- PERPLEXITY API LOGIC (Single Prompt) ---
+            case 'openai': {
+            // --- OPENAI API LOGIC (Single Prompt) ---
             if (!llmConfig.apiKey) {
-                throw new Error("API Key required for Perplexity model.");
+                throw new Error("API Key required for OpenAI model.");
             }
-            const perplexityEndpoint = 'https://api.perplexity.ai/chat/completions';
-            // Note: Perplexity uses a specific model name for their API endpoint.
-            const perplexityModelName = "sonar-small-chat";
-            // Their API requires the prompt to be inside a 'messages' array.
-            const messagesForSinglePrompt = [{ role: "user", content: promptString }];
-            const requestPayload = { model: perplexityModelName, messages: messagesForSinglePrompt };
+            const openAIEndpoint = 'https://api.openai.com/v1/chat/completions';
             
-            const response = await fetch(perplexityEndpoint, {
+            // OpenAI's API requires the prompt to be inside a 'messages' array, even for a single turn.
+            const messagesForSinglePrompt = [{ role: "user", content: promptString }];
+            
+            const requestPayload = {
+                model: llmConfig.model, // Use the dynamically selected model ID (e.g., "gpt-4o")
+                messages: messagesForSinglePrompt,
+            };
+
+            const response = await fetch(openAIEndpoint, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${llmConfig.apiKey}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                headers: {
+                    'Authorization': `Bearer ${llmConfig.apiKey}`,
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify(requestPayload)
             });
 
             if (!response.ok) {
-                let errorDetail = await response.text();
-                throw new Error(`Perplexity API request failed: ${response.status} - ${errorDetail}`);
+                const errorData = await response.json();
+                const errorMsg = errorData?.error?.message || `OpenAI API request failed: ${response.status}`;
+                throw new Error(errorMsg);
             }
+            
             const data = await response.json();
             if (data.choices?.[0]?.message?.content) {
                 textResponse = data.choices[0].message.content.trim();
             } else {
-                throw new Error('Error: Unexpected response format from Perplexity.');
+                throw new Error('Error: Unexpected response format from OpenAI.');
             }
-            break; 
+            break;
         }
 
         case 'none':
@@ -2125,38 +2252,37 @@ switch (provider) {
      */
     async populateOllamaModelsDropdown() {
         console.log("populateOllamaModelsDropdown: Starting to populate Ollama models.");
-        const llmModelSelect = document.getElementById('llmModelSelect');
-        if (!llmModelSelect) {
-            console.error("populateOllamaModelsDropdown: Could not find the #llmModelSelect dropdown element.");
+        // Target the new, correct ID for the Ollama-specific dropdown
+        const ollamaModelSelect = document.getElementById('ollamaModelSelect');
+        if (!ollamaModelSelect) {
+            // This error might appear temporarily before the user selects "Ollama" as a provider, which is okay.
+            console.warn("populateOllamaModelsDropdown: Ollama model select element not found or not visible yet.");
             return;
         }
+
+        // Clear any existing options before fetching new ones
+        ollamaModelSelect.innerHTML = '';
 
         const ollamaModels = await this._fetchAvailableOllamaModels();
 
         if (ollamaModels.length === 0) {
-            console.log("populateOllamaModelsDropdown: No Ollama models fetched or Ollama not available. No new options will be added.");
-            const existingOllamaOption = llmModelSelect.querySelector('option[value="ollama"]');
-            if (existingOllamaOption) {
-                console.log("populateOllamaModelsDropdown: Removing static 'Ollama (Local)' option as no specific models were found or Ollama is unavailable.");
-                existingOllamaOption.remove();
-            }
+            console.log("populateOllamaModelsDropdown: No Ollama models fetched or Ollama not available.");
+            // Add a disabled option to inform the user
+            const option = document.createElement('option');
+            option.value = "none";
+            option.textContent = "Ollama not found";
+            option.disabled = true;
+            ollamaModelSelect.appendChild(option);
             return;
-        }
-
-        // Remove the generic "Ollama (Local)" option if it exists, as we'll add specific ones.
-        const existingOllamaOption = llmModelSelect.querySelector('option[value="ollama"]');
-        if (existingOllamaOption) {
-            console.log("populateOllamaModelsDropdown: Removing static 'Ollama (Local)' option to replace with specific models.");
-            existingOllamaOption.remove();
         }
 
         // Add new options for each fetched Ollama model
         ollamaModels.forEach(modelName => {
             const option = document.createElement('option');
-            // Store the value with a prefix to identify it as an Ollama model and include the actual model name.
-            option.value = `ollama/${modelName}`; 
-            option.textContent = `Ollama | ${modelName}`; // User-friendly display text
-            llmModelSelect.appendChild(option);
+            // The value no longer needs the "ollama/" prefix, as we know the provider by context.
+            option.value = modelName; 
+            option.textContent = modelName; // Display the model name directly
+            ollamaModelSelect.appendChild(option);
             console.log(`populateOllamaModelsDropdown: Added option - Value: "${option.value}", Text: "${option.textContent}"`);
         });
 

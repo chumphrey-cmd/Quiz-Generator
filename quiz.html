@@ -58,22 +58,52 @@
             🌙 Dark Mode
         </button>
 
-        <div class="llm-config-container">
-            <label for="llmApiKeyInput" class="llm-config-label"></label>
-
-            <select id="llmModelSelect" class="llm-config-select">
-                <option value="none">Select Model</option>
+        <div class="provider-selector-container">
+            <label for="apiProviderSelect" class="provider-label">API Provider</label>
+            <select id="apiProviderSelect" class="provider-select">
+                <option value="none" selected>Select Provider</option>
+                <option value="google-gemini">Google Gemini</option>
+                <option value="openai">OpenAI</option>
                 <option value="ollama">Ollama (Local)</option>
-
-                <option value="gemini-2.5-pro">Gemini 2.5 Pro (Slow &amp High Quality)</option>
-                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Balanced)</option>
-                <option value="gemini-2.0-flash">Gemini 2.0 Flash (Fast &amp; Affordable)</option>
-                
-                <option value="perplexity">Perplexity Sonar</option>
-                <!-- <option value="openai">OpenAI</option>
-                <option value="claude">Claude</option> -->
+                <option value="perplexity">Perplexity</option>
             </select>
-            <input type="password" id="llmApiKeyInput" class="llm-config-input" placeholder="Optional API Key">
+        </div>
+
+        <div id="provider-settings-container">
+
+            <div id="google-gemini-settings" class="provider-settings" style="display: none;">
+                <label for="geminiApiKeyInput">Gemini API Key</label>
+                <input type="password" id="geminiApiKeyInput" class="api-key-input" placeholder="Enter Gemini API Key...">
+                <label for="geminiModelSelect">Model</label>
+                <select id="geminiModelSelect">
+                    <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                    <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                </select>
+            </div>
+
+            <div id="openai-settings" class="provider-settings" style="display: none;">
+                <label for="openaiApiKeyInput">OpenAI API Key</label>
+                <input type="password" id="openaiApiKeyInput" class="api-key-input" placeholder="Enter OpenAI API Key...">
+                <label for="openaiModelSelect">Model</label>
+                <select id="openaiModelSelect">
+                    <option value="gpt-4o">GPT-4o</option>
+                    <option value="gpt-4o-mini">GPT-4o mini</option>
+                    <option value="gpt-4.1-nano">GPT-4.1 nano</option>
+                </select>
+            </div>
+
+            <div id="ollama-settings" class="provider-settings" style="display: none;">
+                <label for="ollamaModelSelect">Model</option>
+                <select id="ollamaModelSelect">
+                    </select>
+            </div>
+
+            <div id="perplexity-settings" class="provider-settings" style="display: none;">
+                <label for="perplexityApiKeyInput">Perplexity API Key</label>
+                <input type="password" id="perplexityApiKeyInput" class="api-key-input" placeholder="Enter Perplexity API Key...">
+                </div>
+
         </div>
     </div>
                 

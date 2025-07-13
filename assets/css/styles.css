@@ -1300,3 +1300,70 @@ Controls (Header Inputs/Selects)
     font-size: 0.8rem;
     opacity: 0.7;
 }
+
+/*
+==========================================================================
+New API Provider UI Styles
+==========================================================================
+*/
+
+.provider-selector-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Aligns items to the left */
+    width: 100%;
+    margin-top: var(--spacing-sm);
+}
+
+.provider-label {
+    font-size: 0.9rem;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 500;
+}
+
+.provider-select {
+    width: 100%;
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid #ccc;
+    background-color: var(--container-bg);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .provider-select {
+    border-color: #555;
+}
+
+#provider-settings-container {
+    margin-top: var(--spacing-md);
+    width: 100%;
+}
+
+.provider-settings {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-md);
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    border-radius: var(--border-radius-md);
+}
+
+.provider-settings label {
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.provider-settings select,
+.provider-settings .api-key-input {
+    width: 100%;
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid #ccc;
+    background-color: var(--container-bg);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .provider-settings select,
+[data-theme="dark"] .provider-settings .api-key-input {
+    border-color: #555;
+}
