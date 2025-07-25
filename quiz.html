@@ -64,8 +64,8 @@
                 <option value="none" selected>Select Provider</option>
                 <option value="google-gemini">Google Gemini</option>
                 <option value="openai">OpenAI</option>
-                <option value="ollama">Ollama (Local)</option>
                 <option value="perplexity">Perplexity</option>
+                <option value="ollama">Ollama (Local)</option>
             </select>
         </div>
 
@@ -74,38 +74,90 @@
             <div id="google-gemini-settings" class="provider-settings" style="display: none;">
                 <label for="geminiApiKeyInput">Gemini API Key</label>
                 <input type="password" id="geminiApiKeyInput" class="api-key-input" placeholder="Enter Gemini API Key...">
-                <label for="geminiModelSelect">Model</label>
-                <select id="geminiModelSelect">
-                    <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
-                    <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-                </select>
+                <label class="model-label">Model</label>
+                <div class="model-selection-group">
+                    <div class="model-option" data-description="Highest quality and reasoning, use for detailed explanations.">
+                        <input type="radio" id="gemini-2.5-pro" name="gemini-model" value="gemini-2.5-pro" checked>
+                        <label for="gemini-2.5-pro">Gemini 2.5 Pro</label>
+                        <i class="fas fa-info-circle model-info-icon"></i>
+                    </div>
+
+                    <div class="model-option" data-description="Balance between performance and cost, great for general use.">
+                        <input type="radio" id="gemini-2.5-flash" name="gemini-model" value="gemini-2.5-flash">
+                        <label for="gemini-2.5-flash">Gemini 2.5 Flash</label>
+                        <i class="fas fa-info-circle model-info-icon"></i>
+                    </div>
+
+                    <div class="model-option" data-description="Fast and very cost-effective.">
+                        <input type="radio" id="gemini-2.0-flash" name="gemini-model" value="gemini-2.0-flash">
+                        <label for="gemini-2.0-flash">Gemini 2.0 Flash</label>
+                        <i class="fas fa-info-circle model-info-icon"></i>
+                    </div>
+                </div>
             </div>
 
             <div id="openai-settings" class="provider-settings" style="display: none;">
                 <label for="openaiApiKeyInput">OpenAI API Key</label>
                 <input type="password" id="openaiApiKeyInput" class="api-key-input" placeholder="Enter OpenAI API Key...">
-                <label for="openaiModelSelect">Model</label>
-                <select id="openaiModelSelect">
-                    <option value="gpt-4o">GPT-4o</option>
-                    <option value="gpt-4o-mini">GPT-4o mini</option>
-                    <option value="gpt-4.1-nano">GPT-4.1 nano</option>
-                </select>
+                <label class="model-label">Model</label>
+
+                <div class="model-selection-group">
+                    <div class="model-option" data-description="Highest quality and reasoning, use for detailed explanations.">
+                        <input type="radio" id="gpt-4o" name="openai-model" value="gpt-4o" checked>
+                        <label for="gpt-4o">GPT-4o</label>
+                        <i class="fas fa-info-circle model-info-icon"></i>
+                    </div>
+
+                    <div class="model-option" data-description="Balance between performance and cost, great for general use.">
+                        <input type="radio" id="gpt-4o-mini" name="openai-model" value="gpt-4o-mini">
+                        <label for="gpt-4o-mini">GPT-4o mini</label>
+                        <i class="fas fa-info-circle model-info-icon"></i>
+                    </div>
+
+                    <div class="model-option" data-description="Fast and very cost-effective.">
+                        <input type="radio" id="gpt-4.1-nano" name="openai-model" value="gpt-4.1-nano">
+                        <label for="gpt-4.1-nano">GPT-4.1 nano</label>
+                        <i class="fas fa-info-circle model-info-icon"></i>
+                    </div>
+
+                </div>
             </div>
 
             <div id="ollama-settings" class="provider-settings" style="display: none;">
-                <label for="ollamaModelSelect">Model</option>
+                <label for="ollamaModelSelect">Model</label>
                 <select id="ollamaModelSelect">
                     </select>
             </div>
-
+            
             <div id="perplexity-settings" class="provider-settings" style="display: none;">
                 <label for="perplexityApiKeyInput">Perplexity API Key</label>
                 <input type="password" id="perplexityApiKeyInput" class="api-key-input" placeholder="Enter Perplexity API Key...">
+                <label class="model-label">Model</label>
+                <div class="model-selection-group">
+                    <div class="model-option" data-description="Fast and conversational, for quick chat-based interactions.">
+                        <input type="radio" id="sonar" name="perplexity-model" value="sonar" checked>
+                        <label for="sonar">Sonar</label>
+                        <i class="fas fa-info-circle model-info-icon"></i>
+                    </div>
+                    <div class="model-option" data-description="More capable chat model with balanced performance.">
+                        <input type="radio" id="sonar-pro" name="perplexity-model" value="sonar-pro">
+                        <label for="sonar-pro">Sonar Pro</label>
+                        <i class="fas fa-info-circle model-info-icon"></i>
+                    </div>
+                    <div class="model-option" data-description="Fast conversational model with real-time web access.">
+                        <input type="radio" id="sonar-reasoning" name="perplexity-model" value="sonar-reasoning">
+                        <label for="sonar-reasoning">Sonar Reasoning</label>
+                        <i class="fas fa-info-circle model-info-icon"></i>
+                    </div>
+                    <div class="model-option" data-description="Most capable model with real-time web access for complex reasoning.">
+                        <input type="radio" id="sonar-reasoning-pro" name="perplexity-model" value="sonar-reasoning-pro">
+                        <label for="sonar-reasoning-pro">Sonar Reasoning Pro</label>
+                        <i class="fas fa-info-circle model-info-icon"></i>
+                    </div>
                 </div>
+            </div>
 
         </div>
-    </div>
                 
 </header>
 

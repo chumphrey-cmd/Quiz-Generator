@@ -37,17 +37,3 @@ git clone https://github.com/chumphrey-cmd/QA-Generator.git
 2. Open `quiz.html` in a modern web browser
 3. Import a properly formatted `.txt` file
 4. Start taking the quiz
-
-## To-Do List:
-
-### In Progress... ⏳
-
-* **Local Database:** 
-  * Be able to store and save your quiz questions into a backend/quiz bank using a local database for reference later...
-  * Implement the ability to specify the number of questions that you want to display at a time (e.g., 90/120 total questions)
-  * Have the ability to pause, save, or reset your current session while you are reviewing. 
-  * Have the ability to re-initiate your current saved session to restart your progress.
-
-* **UI/UX:** 
-  * Create a nice splash/introduction page/logo for the tool when the user first opens up the quiz.html file.
-  * Ensure that the entire quiz header is pinned while we scroll down the MC Qs.
