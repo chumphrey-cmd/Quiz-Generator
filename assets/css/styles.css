@@ -5,42 +5,52 @@ Theme Variables
 */
 
 :root {
-    /* Colors */
-    --primary-color: #2563eb;
-    --secondary-color: #1e40af;
-    --background-color: #f8fafc;
-    --text-color: #1e293b;
+    --primary-color: #d8ff43; 
+    --primary-color-rgb: 216, 255, 67;
+
+    /* Secondary/Hover Color (A slightly darker shade for interaction) */
+    --secondary-color: #c4e63c;
+
+    /* Backgrounds */
+    --background-color: #f1f1f1; /* Soft light grey background */
+    --container-bg: #ffffff;     /* Crisp white for all content containers/cards */
+
+    /* Text Colors */
+    --text-color: #1a1a1a;       /* Dark, readable off-black for body text */
+    --text-on-primary: #1a1a1a;  /* Text color for on top of the yellow accent (e.g., buttons) */
+
+    /* Feedback Colors (Unchanged but still important) */
     --error-color: #dc2626;
     --success-color: #16a34a;
-    --container-bg: #ffffff;
-    --button-border: #2563eb;
-
-    /* RGB Colors for rgba() */
-    --primary-color-rgb: 37, 99, 235;
     --success-color-rgb: 22, 163, 74;
     --error-color-rgb: 220, 38, 38;
 
-    /* Spacing */
+    /* Spacing (Unchanged) */
     --spacing-xs: 0.25rem;    /* 4px */
     --spacing-sm: 0.5rem;     /* 8px */
     --spacing-md: 1rem;       /* 16px */
     --spacing-lg: 1.5rem;     /* 24px */
     --spacing-xl: 2rem;       /* 32px */
 
-    /* Borders */
+    /* Borders (Unchanged) */
     --border-radius-sm: 0.25rem;  /* 4px */
     --border-radius-md: 0.5rem;   /* 8px */
     --border-radius-lg: 1rem;     /* 16px */
     --border-width: 2px;
 }
 
-/* Dark theme */
+/* === UPDATED: Dark Theme variables to complement the new palette === */
 [data-theme="dark"] {
-    --background-color: #1a1a1a;
-    --text-color: #ffffff;
-    --container-bg: #2d2d2d;
-    --button-border: #3b82f6;
-    /* Note: Consider adding dark theme specific RGB values if needed */
+    --primary-color: #d8ff43;
+    --primary-color-rgb: 216, 255, 67;
+    --secondary-color: #c4e63c;
+
+    --background-color: #1a1a1a;  /* Dark background */
+    --container-bg: #2d2d2d;      /* Slightly lighter dark for containers */
+    --text-color: #f1f1f1;        /* Light text for dark backgrounds */
+    --text-on-primary: #1a1a1a;
+
+    --button-border: var(--primary-color); /* Use accent color for borders in dark mode */
 }
 
 /*
@@ -49,14 +59,12 @@ Theme Variables
 ==========================================================================
 */
 
-/* Modern CSS reset */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* Basic body styling */
 body {
     font-family: system-ui, -apple-system, sans-serif;
     line-height: 1.6;
@@ -85,23 +93,19 @@ Layout Components
     align-items: center;
     padding: var(--spacing-md);
     background: var(--container-bg);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Softer shadow */
     z-index: 1000;
 }
 
-.left-controls {
-    display: flex;            /* Activates flexbox for layout control. */
-    flex-direction: column;   /* Stacks the control groups vertically. */
-    align-items: flex-start;  /* Aligns all groups to the left for a clean line. */
-    gap: var(--spacing-sm);
-}
-
+.left-controls,
 .right-controls {
     display: flex;
     flex-direction: column;
-    align-items: end;
-    gap: var(--spacing-xs);
+    gap: var(--spacing-sm);
 }
+.left-controls { align-items: flex-start; }
+.right-controls { align-items: flex-end; }
+
 
 /* Main Content Area */
 .main-content {
@@ -1335,7 +1339,7 @@ New API Provider UI Styles
 }
 
 #provider-settings-container {
-    margin-top: var(--spacing-md);
+    margin-top: var(--spacing-sm);
     width: 100%;
 }
 
@@ -1366,4 +1370,129 @@ New API Provider UI Styles
 [data-theme="dark"] .provider-settings select,
 [data-theme="dark"] .provider-settings .api-key-input {
     border-color: #555;
+}
+
+/*
+==========================================================================
+New Model Selection UI Styles
+==========================================================================
+*/
+
+/* General label for the model selection section */
+.provider-settings .model-label {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    margin-top: var(--spacing-sm); /* Add some space above the model list */
+    margin-bottom: var(--spacing-xs);
+}
+
+/* Container for the whole group of radio button options */
+.model-selection-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    width: 100%;
+}
+
+/* Container for a single model option (radio, label, icon) */
+.model-option {
+    position: relative; /* Needed for tooltip positioning */
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-sm);
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--background-color);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+[data-theme="dark"] .model-option {
+    border-color: #555;
+    background-color: #3a3f44;
+}
+
+.model-option:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(var(--primary-color-rgb), 0.05);
+}
+
+[data-theme="dark"] .model-option:hover {
+    background-color: rgba(var(--primary-color-rgb), 0.15);
+}
+
+/* Hide the default radio button */
+.model-option input[type="radio"] {
+    display: none;
+}
+
+/* Style the label for the model name */
+.model-option label {
+    flex-grow: 1; /* Take up available space */
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+/* Style for the (i) icon */
+.model-info-icon {
+    margin-left: var(--spacing-sm);
+    color: #888;
+    cursor: help; /* Change cursor to indicate help is available */
+    font-size: 1rem;
+    transition: color 0.2s ease;
+}
+
+[data-theme="dark"] .model-info-icon {
+    color: #aaa;
+}
+
+.model-option:hover .model-info-icon {
+    color: var(--primary-color);
+}
+
+/* The tooltip container */
+.model-option .tooltip-text {
+    visibility: hidden;
+    width: 200px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm);
+    position: absolute;
+    z-index: 1;
+    bottom: 125%; /* Position above the icon */
+    left: 50%;
+    margin-left: -100px; /* Use half of the width to center */
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.85rem;
+}
+
+/* Arrow for the tooltip */
+.model-option .tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%; /* At the bottom of the tooltip */
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+}
+
+/* Show the tooltip on hover */
+.model-option .model-info-icon:hover + .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Visual indication for the selected (checked) model */
+.model-option input[type="radio"]:checked + label {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.model-option input[type="radio"]:checked ~ .model-info-icon {
+    color: var(--primary-color);
 }
