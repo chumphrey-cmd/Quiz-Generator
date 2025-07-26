@@ -1,286 +1,352 @@
 /*
 ==========================================================================
-Theme Variables
+    MODERN UI/UX - Inspired by worklouder.cc (Complete & Merged)
 ==========================================================================
 */
 
 :root {
+    /* Core Palette */
     --primary-color: #d8ff43; 
     --primary-color-rgb: 216, 255, 67;
+    --secondary-color: #c4e63c; /* For hover states */
+    --accent-color: #0055ff; /* A vibrant blue for contrast */
+    --accent-color-rgb: 0, 85, 255;
 
-    /* Secondary/Hover Color (A slightly darker shade for interaction) */
-    --secondary-color: #c4e63c;
+    /* Backgrounds & Surfaces */
+    --page-bg: #121212;
+    --container-bg: #1a1a1a;
+    --glass-bg: rgba(38, 38, 38, 0.5);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    
+    /* Text */
+    --text-primary: #f0f0f0;
+    --text-secondary: #a0a0a0;
+    --text-on-primary: #121212;
 
-    /* Backgrounds */
-    --background-color: #f1f1f1; /* Soft light grey background */
-    --container-bg: #ffffff;     /* Crisp white for all content containers/cards */
+    /* Feedback Colors */
+    --error-color: #ef4444; /* A brighter red for dark mode */
+    --error-color-rgb: 239, 68, 68;
+    --success-color: #22c55e; /* A brighter green for dark mode */
+    --success-color-rgb: 34, 197, 94;
 
-    /* Text Colors */
-    --text-color: #1a1a1a;       /* Dark, readable off-black for body text */
-    --text-on-primary: #1a1a1a;  /* Text color for on top of the yellow accent (e.g., buttons) */
-
-    /* Feedback Colors (Unchanged but still important) */
-    --error-color: #dc2626;
-    --success-color: #16a34a;
-    --success-color-rgb: 22, 163, 74;
-    --error-color-rgb: 220, 38, 38;
-
-    /* Spacing (Unchanged) */
-    --spacing-xs: 0.25rem;    /* 4px */
-    --spacing-sm: 0.5rem;     /* 8px */
-    --spacing-md: 1rem;       /* 16px */
-    --spacing-lg: 1.5rem;     /* 24px */
-    --spacing-xl: 2rem;       /* 32px */
-
-    /* Borders (Unchanged) */
-    --border-radius-sm: 0.25rem;  /* 4px */
-    --border-radius-md: 0.5rem;   /* 8px */
-    --border-radius-lg: 1rem;     /* 16px */
-    --border-width: 2px;
+    /* Borders & Spacing */
+    --border-radius-pill: 50px;
+    --border-radius-card: 16px; 
+    --border-radius-sm: 8px;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    
+    /* Effects */
+    --backdrop-blur: 15px;
+    --shadow-soft: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
 }
 
-/* === UPDATED: Dark Theme variables to complement the new palette === */
-[data-theme="dark"] {
-    --primary-color: #d8ff43;
-    --primary-color-rgb: 216, 255, 67;
-    --secondary-color: #c4e63c;
-
-    --background-color: #1a1a1a;  /* Dark background */
-    --container-bg: #2d2d2d;      /* Slightly lighter dark for containers */
-    --text-color: #f1f1f1;        /* Light text for dark backgrounds */
-    --text-on-primary: #1a1a1a;
-
-    --button-border: var(--primary-color); /* Use accent color for borders in dark mode */
-}
-
-/*
-==========================================================================
- Base Styles & Reset
-==========================================================================
-*/
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
+/* Base Styles */
 body {
-    font-family: system-ui, -apple-system, sans-serif;
+    background-color: var(--page-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    display: block;
+    padding-top: 120px;
     line-height: 1.6;
-    background-color: var(--background-color);
-    color: var(--text-color);
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
 
 /*
 ==========================================================================
-Layout Components
+    Floating Navigation Bar & Dropdowns
 ==========================================================================
 */
-
-/* Header */
-.header-controls {
+.floating-nav {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    width: 90%;
+    max-width: 900px;
+}
+
+.nav-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--spacing-md);
-    background: var(--container-bg);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Softer shadow */
-    z-index: 1000;
+    padding: 0.75rem 1.5rem;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--backdrop-blur));
+    -webkit-backdrop-filter: blur(var(--backdrop-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-pill);
+    box-shadow: var(--shadow-soft);
 }
 
-.left-controls,
-.right-controls {
+.nav-left, .nav-right {
     display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
+    align-items: center;
+    gap: 1.5rem;
 }
-.left-controls { align-items: flex-start; }
-.right-controls { align-items: flex-end; }
 
+.nav-logo a {
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    text-decoration: none;
+}
 
-/* Main Content Area */
-.main-content {
+.nav-menu {
+    list-style: none;
+    display: flex;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-menu > li {
+    position: relative;
+}
+
+.nav-menu > li > a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius-pill);
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.nav-menu > li:hover > a, .nav-menu > li > a.active {
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
+}
+
+.dropdown-menu {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    top: 130%; 
+    left: 0;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--backdrop-blur));
+    -webkit-backdrop-filter: blur(var(--backdrop-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-card);
+    padding: 0.75rem;
+    min-width: 250px;
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s ease;
+    transform: translateY(10px);
+}
+
+.nav-menu > li:hover .dropdown-menu {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.dropdown-menu li {
+    list-style: none;
+    margin-bottom: 0.5rem;
+}
+.dropdown-menu li:last-child {
+    margin-bottom: 0;
+}
+
+.dropdown-item-complex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem;
+}
+
+.dropdown-item-complex label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.file-label-nav {
+    display: block;
+    padding: 0.75rem 1rem;
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
+    border-radius: var(--border-radius-pill);
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.2s ease;
+}
+.file-label-nav:hover {
+    background-color: var(--secondary-color);
+}
+.file-input { display: none; }
+
+.nav-select, .nav-input {
     width: 100%;
-    min-height: 100vh;
-    padding-top: 120px; /* Height of header plus spacing */
+    padding: 0.5rem;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    border-radius: 8px;
+}
+
+.timer-controls-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nav-btn-icon {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: var(--text-primary);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.nav-btn-icon:hover {
+    background: var(--primary-color);
+    color: var(--text-on-primary);
+}
+
+.nav-right { gap: 1rem; }
+.nav-timer {
+    font-weight: 500;
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    min-width: 80px;
+    text-align: right;
+}
+.nav-progress-container {
+    width: 150px;
+    position: relative;
+    height: 20px;
+}
+.nav-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--border-radius-pill);
+    overflow: hidden;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+}
+#progress-fill {
+    height: 100%;
+    width: 0;
+    background: var(--primary-color);
+    border-radius: var(--border-radius-pill);
+    transition: width 0.3s ease;
+}
+#progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+.theme-btn-nav {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: var(--text-primary);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+}
+.theme-btn-nav:hover {
+    background: var(--primary-color);
+    color: var(--text-on-primary);
+    transform: rotate(15deg) scale(1.1);
+}
+
+/*
+==========================================================================
+    Main Content & Quiz Container
+==========================================================================
+*/
+.main-content {
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    padding: 0 1rem;
 }
 
-/* Overall Quiz Container */
 .quiz-container {
     background: var(--container-bg);
-    border-radius: var(--border-radius-lg);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); /* Original shadow */
-    padding: var(--spacing-xl);
-    width: 90%;
-    max-width: 800; /* Adjust as needed */
-    margin-top: 80px; /* Spacing below fixed header */
-}
-
-/* Individual Question Block */
-.question-container {
-    background: var(--container-bg); /* Re-apply if needed, or remove if quiz-container bg is enough */
-    border-radius: var(--border-radius-lg); /* Match quiz container or use smaller radius */
+    border-radius: var(--border-radius-card);
+    border: 1px solid var(--glass-border);
     padding: var(--spacing-lg);
-    margin-bottom: var(--spacing-lg); /* Increased spacing */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08); /* Softer shadow */
-    /* border: none; */ /* Ensure no accidental border */
+    width: 100%;
+    max-width: 800px;
+    margin-top: 2rem;
 }
 
-/* Header within a Question Block (Question Text + Explain Button) */
+.question-container {
+    background: var(--container-bg);
+    border-radius: var(--border-radius-card);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 .question-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start; /* Align items to the top */
+    align-items: flex-start;
     gap: var(--spacing-md);
-    margin-bottom: var(--spacing-md); /* Space between header and answers */
+    margin-bottom: var(--spacing-md);
 }
 
-/* Question Text Styling */
 .question {
     font-size: 1.15rem;
     font-weight: 500;
     line-height: 1.5;
-    flex-grow: 1; /* Allow question text to take available space */
-    /* margin-bottom: 0; */ /* Removed as question-header handles bottom margin */
+    flex-grow: 1;
 }
 
-/* Hint for multi-select */
 .question-hint {
     display: block;
     font-size: 0.85rem;
     font-style: italic;
-    color: #888;
-    margin-top: var(--spacing-xs);
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
     font-weight: 400;
 }
-[data-theme="dark"] .question-hint {
-    color: #aaa;
-}
-
-.exam-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: var(--spacing-md);
-    padding: var(--spacing-sm);
-    background: var(--container-bg);
-    border-radius: var(--border-radius-md);
-}
-
-/* Header Stats Row (Score, Timer) */
-.stats-row {
-    display: flex;
-    justify-content: center;
-    gap: var(--spacing-lg);
-    font-size: 1.25rem; /* Adjusted size */
-    font-weight: 500;
-    margin-bottom: var(--spacing-sm); /* Space below stats */
-}
-/* Ensure timer display has consistent width */
-#timer-display {
-    min-width: 70px; /* Example width */
-    text-align: right;
-}
-
 
 /*
 ==========================================================================
-Interactive Elements (Buttons, Inputs)
+    MERGED & ADAPTED: Interactive & Feedback Styles
 ==========================================================================
 */
 
-/* --- Theme Toggle --- */
-.theme-toggle { /* Position this if needed, maybe within header controls? */
-    display: flex;
-    justify-content: flex-end;
-}
-
-.theme-btn {
-    background: none;
-    border: 1px solid var(--button-border); /* Thinner border */
-    padding: var(--spacing-xs) var(--spacing-sm); /* Smaller padding */
-    border-radius: var(--border-radius-md);
-    cursor: pointer;
-    color: var(--text-color);
-    font-size: 0.85rem; /* Smaller font */
-    gap: var(--spacing-xs);
-    transition: all 0.2s ease;
-}
-
-.theme-btn:hover {
-    background-color: var(--button-border);
-    color: white;
-}
-
-/* --- File Input --- */
-.file-input-container {
-    margin-bottom: 0;
-    text-align: left;
-}
-
-.file-input {
-    display: none; /* Hidden */
-}
-
-.file-label { /* Styled as a button */
-    display: inline-block; /* Allow padding */
-    background: var(--primary-color);
-    color: white;
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-radius: var(--border-radius-md);
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    font-size: 0.9rem;
-}
-
-.file-label:hover {
-    background: var(--secondary-color);
-}
-
 /* --- Answer Options --- */
-/* Container for all answers */
-fieldset.answers { /* Use fieldset for semantic grouping */
+fieldset.answers {
     border: none;
     padding: 0;
-    margin: 0 0 var(--spacing-md) 0; /* Space below answers, before submit */
+    margin: 0 0 var(--spacing-md) 0;
 }
 
-/* Container for each individual answer option (input + label) */
 .answer-option {
     display: flex;
     align-items: center;
-    margin-bottom: var(--spacing-sm);
-    border: none; /* Explicitly no border */
-    padding: var(--spacing-md); /* Increased padding */
-    border-radius: var(--border-radius-md);
+    margin-bottom: 0.5rem;
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-sm);
     cursor: pointer;
     transition: background-color 0.15s ease;
+    border: 1px solid transparent;
 }
 
-/* Subtle hover effect */
 .answer-option:hover {
-    background-color: rgba(var(--primary-color-rgb), 0.1);
-}
-[data-theme="dark"] .answer-option:hover {
     background-color: rgba(255, 255, 255, 0.08);
 }
-/* Keep text color consistent on hover for subtle background */
-.answer-option:hover .answer-label {
-    color: inherit;
-}
 
-/* Radio / Checkbox input element */
 .answer-input {
     margin-right: var(--spacing-md);
     transform: scale(1.2);
@@ -289,1184 +355,365 @@ fieldset.answers { /* Use fieldset for semantic grouping */
     flex-shrink: 0;
 }
 
-/* Answer Label Text */
 .answer-label {
     flex-grow: 1;
     font-size: 0.95rem;
-    color: var(--text-color);
+    color: var(--text-primary);
     cursor: pointer;
     user-select: none;
-    transition: color 0.15s ease;
-    line-height: 1.5;
 }
 
-/* Disabled state after submission */
+/* --- Disabled State for Answers --- */
 .answer-input:disabled {
     cursor: not-allowed;
-    accent-color: #ccc;
+    accent-color: #555;
 }
 .answer-input:disabled + .answer-label {
     cursor: not-allowed;
-    opacity: 0.7;
+    opacity: 0.6;
 }
 .answer-option:has(.answer-input:disabled) {
     cursor: not-allowed;
-    background-color: transparent; /* Remove hover effect */
-    opacity: 0.7;
+    background-color: transparent;
+    opacity: 0.6;
 }
 .answer-option:has(.answer-input:disabled):hover {
     background-color: transparent;
 }
-.answer-option:has(.answer-input:disabled) .answer-label {
-    color: var(--text-color);
-    opacity: 0.7;
-}
-/* Dark theme disabled */
-[data-theme="dark"] .answer-input:disabled {
-    accent-color: #555;
-}
-[data-theme="dark"] .answer-option:has(.answer-input:disabled) {
-    opacity: 0.6;
-}
-[data-theme="dark"] .answer-option:has(.answer-input:disabled) .answer-label {
-    color: var(--text-color);
-    opacity: 0.6;
-}
 
-/* --- Submit Button --- */
-.submit-btn {
-    display: block;
-    width: auto; /* Auto width */
-    min-width: 150px;
-    margin: var(--spacing-md) auto 0 auto; /* Center */
-    padding: var(--spacing-sm) var(--spacing-lg);
-    background-color: var(--primary-color);
-    color: white;
+/* --- Submit & General Purpose Buttons --- */
+.submit-btn, .modal-btn, .exam-nav-btn, .grade-exam-btn {
+    border-radius: var(--border-radius-pill);
     border: none;
-    border-radius: var(--border-radius-md);
-    font-size: 0.95rem;
-    font-weight: 500;
+    padding: 0.8rem 2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-    text-align: center;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
 }
-
-.submit-btn:hover:not(:disabled) {
+.submit-btn:hover:not(:disabled), .modal-btn:hover:not(:disabled), .exam-nav-btn:hover:not(:disabled), .grade-exam-btn:hover:not(:disabled) {
     background-color: var(--secondary-color);
-    transform: translateY(-1px);
+    transform: translateY(-3px);
 }
-.submit-btn:active:not(:disabled) {
-    transform: translateY(0px);
-}
-.submit-btn:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-    opacity: 0.7;
-    transform: none;
-}
-[data-theme="dark"] .submit-btn:disabled {
+.submit-btn:disabled, .modal-btn:disabled, .exam-nav-btn:disabled, .grade-exam-btn:disabled {
     background-color: #555;
     color: #999;
-    opacity: 0.6;
-}
-
-/* --- Explain Icon --- */
-.explain-container {
-    margin-left: var(--spacing-sm); /* A little less space for a cleaner look */
-    cursor: pointer;
-    padding: var(--spacing-xs);
-    /* This container holds the icon. */
-}
-
-.explain-icon {
-    font-size: 1.1rem;
-    color: #888;
-    transition: color 0.2s ease, transform 0.2s ease;
-    /* This is just the icon itself (the 'i' element). */
-}
-
-.explain-icon:hover {
-    transform: scale(1.2); /* "Lift" effect on hover */
-    color: var(--primary-color);
-}
-
-/* This class is added by JS to show a disabled state. */
-.explain-icon.disabled {
-    color: #ccc;
     cursor: not-allowed;
-    transform: none; /* No hover effect when disabled. */
+    opacity: 0.6;
+    transform: none;
 }
+.exam-nav-btn.secondary { background-color: #6c757d; }
+.exam-nav-btn.secondary:hover:not(:disabled) { background-color: #5a6268; }
+.grade-exam-btn { background-color: var(--success-color); }
+.grade-exam-btn:hover:not(:disabled) { background-color: #16a34a; }
 
-[data-theme="dark"] .explain-icon {
-    color: #aaa;
+
+/* --- Explain & Flag Icons --- */
+.explain-container, .flag-container {
+    cursor: pointer;
+    padding: 0.25rem;
 }
-
-[data-theme="dark"] .explain-icon:hover {
+.explain-icon, .flag-icon {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+.explain-icon:hover, .flag-icon:hover {
+    transform: scale(1.2);
     color: var(--primary-color);
 }
-
-[data-theme="dark"] .explain-icon.disabled {
+.explain-icon.disabled {
     color: #555;
+    cursor: not-allowed;
+    transform: none;
 }
-
-/* --- Flag for Review Icon --- */
-.flag-container {
-    margin-left: var(--spacing-sm); /* Space from the explain button */
-    cursor: pointer;
-    padding: var(--spacing-xs); /* Makes the click area slightly larger */
-}
-
-.flag-icon {
-    font-size: 1.1rem; /* Adjust icon size */
-    color: #888; /* Default color for an un-flagged icon */
-    transition: color 0.2s ease-in-out, transform 0.2s ease-in-out;
-}
-
-.flag-icon:hover {
-    transform: scale(1.2); /* Slightly enlarge on hover */
-    color: #ef4444;
-}
-
-/* This is the style for a flagged (active) icon */
 .flag-icon.flagged {
-    color: var(--error-color); /* Use your theme's error color (red) */
+    color: var(--error-color);
+}
+.flag-icon.flagged:hover {
+    color: #f87171; /* Lighter red on hover when flagged */
 }
 
-[data-theme="dark"] .flag-icon {
-    color: #aaa;
-}
 
-[data-theme="dark"] .flag-icon:hover {
-    color: #ef4444;
+/* --- Feedback Text & Answer Labels --- */
+.feedback {
+    margin-top: var(--spacing-md);
+    font-weight: 500;
+    text-align: center;
+    color: var(--text-on-primary);
+    min-height: 24px;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.9rem;
 }
+.feedback.correct { background-color: var(--success-color); }
+.feedback.incorrect { background-color: var(--error-color); }
 
-[data-theme="dark"] .flag-icon.flagged {
-    color: #ef4444;
+.answer-label.correct {
+    font-weight: 600;
+    color: var(--success-color) !important;
 }
-
+.answer-label.incorrect {
+    color: var(--error-color) !important;
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+.answer-label.missed {
+    font-weight: normal;
+    background-color: rgba(var(--success-color-rgb), 0.15);
+    border: 1px solid rgba(var(--success-color-rgb), 0.4);
+    border-radius: var(--border-radius-sm);
+    padding: 2px 4px;
+    margin: -2px -4px;
+}
 
 /*
 ==========================================================================
-Progress and Feedback
+    MERGED & ADAPTED: Modal & Review Screen Styles
 ==========================================================================
 */
-
-/* --- Progress Bar --- */
-.progress-container {
-    width: 100%;
-    max-width: 400px; /* Or adjust as needed */
-    margin: 0 auto var(--spacing-sm) auto; /* Center horizontally, space below */
-    padding: var(--spacing-xs); /* Minimal padding */
-    background: transparent; /* No background needed */
-    /* border-radius: var(--border-radius-md); */
-}
-
-.progress-bar {
-    width: 100%;
-    height: 20px; /* Thinner bar */
-    background: rgba(0, 0, 0, 0.08); /* Lighter background */
-    border-radius: var(--border-radius-lg);
-    overflow: hidden;
-}
-[data-theme="dark"] .progress-bar {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-#progress-fill {
-    height: 100%;
-    width: 0;
-    background: var(--primary-color); /* Simpler background */
-    /* background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); */
-    transition: width 0.3s ease;
-    border-radius: var(--border-radius-lg); /* Match parent */
-}
-
-#progress-text {
-    text-align: center;
-    margin-top: var(--spacing-xs);
-    font-size: 1.25rem; /* Smaller text */
-    color: var(--text-color);
-    opacity: 0.8; /* Slightly faded */
-}
-
-/* --- General Feedback Text (Below Submit Button) --- */
-.feedback {
-    margin-top: var(--spacing-md); /* Space above feedback */
-    font-weight: 500; /* Less bold */
-    text-align: center;
-    color: white; /* Text color on feedback background */
-    min-height: 24px; /* Reserve space */
-    padding: var(--spacing-xs) var(--spacing-sm); /* Adjust padding */
-    border-radius: var(--border-radius-sm);
-    font-size: 0.9rem;
-    /* border: none; */ /* Remove border if previously set */
-}
-
-.feedback.correct {
-    background-color: var(--success-color);
-}
-
-.feedback.incorrect {
-    background-color: var(--error-color);
-}
-
-/* Style for correctly selected answers (even if overall answer wrong) */
-.answer-label.correct {
-    font-weight: bold;
-    color: var(--success-color) !important;
-    /* Add a very subtle green background indicator */
-    background-color: rgba(var(--success-color-rgb), 0.08); /* Very light green bg */
-    border-radius: var(--border-radius-sm); /* Optional: round the bg */
-    padding: 2px 4px; /* Add slight padding if using background */
-    margin: -2px -4px; /* Counteract padding to maintain layout */
-    border: 1px solid rgba(var(--success-color-rgb), 0.3); /* Faint border */
-}
-
-/* Ensure incorrect style doesn't use background/border that conflicts */
-.answer-label.incorrect {
-    font-weight: normal; /* Maybe don't bold incorrect */
-    color: var(--error-color) !important;
-    text-decoration: line-through; /* Make incorrect obvious via strikethrough */
-    background-color: transparent !important; /* Remove any conflicting background */
-    border: none !important; /* Remove any conflicting border */
-    padding: 0; /* Reset padding if added */
-    margin: 0; /* Reset margin */
-}
-
-/* Style for correct answers the user missed */
-.answer-label.missed {
-    font-weight: normal; /* Keep normal weight */
-    color: var(--text-color) !important; /* Keep standard text color */
-    background-color: rgba(var(--success-color-rgb), 0.12); /* Slightly more visible green bg */
-    border: 1px solid rgba(var(--success-color-rgb), 0.4); /* Faint green border */
-    border-radius: var(--border-radius-sm); /* Apply border-radius */
-    opacity: 0.9; /* Add a slight faded effect */
-    padding: 2px 4px; /* Add slight padding */
-    margin: -2px -4px; /* Counteract padding */
-}
-
-/* Dark theme adjustments */
-[data-theme="dark"] .answer-label.correct {
-    color: var(--text-color) !important; /* Keep light text */
-    font-weight: 500;
-    background-color: rgba(74, 222, 128, 0.1); /* Subtle dark theme green bg */
-    border-color: rgba(74, 222, 128, 0.4);
-}
-
-[data-theme="dark"] .answer-label.incorrect {
-    color: #f87171 !important;
-    /* background-color: rgba(248, 113, 113, 0.15); */ /* Optional subtle bg */
-    text-decoration: line-through;
-}
-[data-theme="dark"] .answer-label.missed {
-    color: var(--text-color) !important; /* Keep light text */
-    background-color: rgba(74, 222, 128, 0.15); /* Brighter green bg */
-    border-left-color: #4ade80; /* Brighter green border */
-}
-
-/* --- End of Quiz Modal --- */
-
-/* The full-screen, semi-transparent background. */
 .modal-container {
-    position: fixed; /* Sits on top of all other content. */
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.6); /* Black with 60% opacity. */
-    display: flex; /* Uses flexbox to easily center the content. */
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
     justify-content: center;
     align-items: center;
-    opacity: 0; /* Starts fully transparent. */
-    visibility: hidden; /* Starts completely hidden and un-interactable. */
-    transition: opacity 0.3s ease, visibility 0.3s ease; /* Smooth fade-in transition. */
-    z-index: 2000; /* Ensures it's on top of all other elements. */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    z-index: 2000;
 }
-
-/* This class will be added by JavaScript to show the modal. */
 .modal-container.show {
     opacity: 1;
     visibility: visible;
 }
-
-/* The white content box in the middle of the screen. */
 .modal-content {
     background: var(--container-bg);
-    padding: var(--spacing-xl);
-    border-radius: var(--border-radius-lg);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-card);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-soft);
     text-align: center;
     width: 90%;
     max-width: 450px;
-    transform: scale(0.9); /* Starts slightly scaled down. */
-    transition: transform 0.3s ease; /* Smooth pop-in animation. */
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
 }
-
-/* When the modal is shown, the content box scales to its normal size. */
 .modal-container.show .modal-content {
     transform: scale(1);
 }
-
 #modal-title {
     margin-top: 0;
     color: var(--primary-color);
 }
-
 #modal-score {
     font-size: 1.2rem;
-    line-height: 1.5; /* Improves readability for multi-line scores. */
-    white-space: pre-wrap; /* Ensures the line breaks from the score function are respected. */
+    white-space: pre-wrap;
     margin-bottom: var(--spacing-lg);
-    display: inline-block;
     text-align: center;
 }
-
 .modal-actions {
     display: flex;
     justify-content: center;
     gap: var(--spacing-md);
 }
-
-.modal-btn {
-    padding: var(--spacing-sm) var(--spacing-lg);
-    border: none;
-    border-radius: var(--border-radius-md);
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-}
-
-.modal-btn:hover {
-    transform: translateY(-2px); /* Slight lift effect on hover. */
-}
-
-/* Style for the less prominent "Retake" button. */
-#retake-quiz-btn {
-    background-color: #6c757d; /* A neutral grey. */
-    color: white;
-}
-#retake-quiz-btn:hover {
-    background-color: #5a6268;
-}
-
-/* Style for the primary "Review" button. */
-.modal-btn.review {
-    background-color: var(--primary-color);
-    color: white;
-}
-.modal-btn.review:hover {
-    background-color: var(--secondary-color);
-}
-
-/* This rule targets our new button using the 'import' class. */
-.modal-btn.import {
-    background-color: #17a2b8; /* A distinct teal/cyan color. */
-    color: white;
-}
-
-.modal-btn.import:hover {
-    background-color: #138496; /* A slightly darker shade for the hover effect. */
-}
-
-.modal-actions {
-    display: flex;
-    justify-content: center;
-    gap: var(--spacing-sm); /* Using a smaller gap for three buttons */
-}
-
-/* --- Grade Exam Button --- */
-
-.grade-exam-btn {
-    /* 'display: block' makes the button take up its own line. */
-    display: block;
-    
-    /* Set a width and a max-width for responsiveness. */
-    width: 50%;
-    max-width: 300px;
-    
-    /* 'margin: auto' on the left/right centers the block-level button. */
-    /* var(--spacing-xl) adds significant space above and below it. */
-    margin: var(--spacing-xl) auto;
-    
-    /* Generous padding to make the button easy to click. */
-    padding: var(--spacing-md) var(--spacing-lg);
-    
-    /* Use the theme's success color (green) for a positive, final action. */
-    background-color: var(--success-color);
-    color: white;
-    border: none;
-    border-radius: var(--border-radius-md);
-    
-    /* Make the font large and bold to signify importance. */
-    font-size: 1.25rem;
-    font-weight: 600;
-    
-    /* Standard cursor and transition effects for a modern feel. */
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-    text-align: center;
-}
-
-/* A subtle "lift" effect when the user hovers over the button. */
-.grade-exam-btn:hover:not(:disabled) {
-    background-color: #15803d; /* A darker shade of green on hover. */
-    transform: translateY(-2px);
-}
-
-/* Styling for the button after it has been clicked and disabled. */
-.grade-exam-btn:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-    transform: none;
-}
-
-/* Specific disabled styles for dark mode. */
-[data-theme="dark"] .grade-exam-btn:disabled {
-    background-color: #555;
-    color: #999;
-}
-
-/*
-==========================================================================
-Controls (Header Inputs/Selects)
-==========================================================================
-*/
-
-/* --- Exam Mode Selector --- */
-.mode-selector-container {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    margin-top: 0; 
-}
-
-.mode-selector-label {
-    font-size: 0.85rem;     /* Match the font size of other labels */
-    font-weight: 400;       /* Normal font weight */
-    color: var(--text-color);
-    opacity: 0.9;
-}
-
-.mode-selector-select {
-    padding: var(--spacing-xs) var(--spacing-sm); /* Standard padding */
-    border-radius: var(--border-radius-sm);
-    border: 1px solid #ccc; /* Standard border */
-    background-color: var(--background-color);
-    color: var(--text-color);
-    font-size: 0.85rem;
-    cursor: pointer;        /* Show a pointer on hover to indicate it's clickable */
-    min-width: 120px;       /* Give it a consistent width */
-}
-
-/* Add a specific style for dark mode */
-[data-theme="dark"] .mode-selector-select {
-    border: 1px solid #555;
-}
-
-/* --- Timer Configuration --- */
-.timer-config-container {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    /* margin-left: var(--spacing-md); */ /* Positioned by header layout */
-}
-
-.timer-config-label {
-    font-size: 0.85rem; /* Smaller */
-    font-weight: 400; /* Normal */
-    color: var(--text-color);
-    opacity: 0.9;
-}
-
-.timer-config-input {
-    padding: var(--spacing-xs) var(--spacing-sm); /* Adjust padding */
-    border-radius: var(--border-radius-sm);
-    border: 1px solid #ccc; /* Lighter border */
-    background-color: var(--background-color);
-    color: var(--text-color);
-    width: 65px; /* Slightly narrower */
-    font-size: 0.85rem;
-    text-align: center;
-}
-[data-theme="dark"] .timer-config-input {
-    border: 1px solid #555;
-}
-
-
-.timer-control-btn {
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-radius: var(--border-radius-sm);
-    border: 1px solid var(--button-border);
-    background-color: var(--primary-color);
-    color: white;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: background-color 0.2s ease, opacity 0.2s ease;
-    margin-left: var(--spacing-xs);
-}
-
-.timer-control-btn:hover:not(:disabled) {
-    opacity: 0.9;
-}
-
-.timer-control-btn:disabled {
-    background-color: #ccc;
-    border-color: #bbb;
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-
-/* Dark theme disabled */
-[data-theme="dark"] .timer-control-btn:disabled {
-    background-color: #555;
-    border-color: #777;
-    color: #999;
-}
-
-
-/* --- LLM Configuration --- */
-.llm-config-container {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: var(--spacing-sm);
-}
-
-.llm-config-label {
-    font-size: 0.85rem;
-    font-weight: 400;
-    color: var(--text-color);
-    opacity: 0.9;
-}
-
-.llm-config-input,
-.llm-config-select {
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-radius: var(--border-radius-sm);
-    border: 1px solid #ccc; /* Lighter border */
-    background-color: var(--background-color);
-    color: var(--text-color);
-    font-size: 0.85rem;
-}
-[data-theme="dark"] .llm-config-input,
-[data-theme="dark"] .llm-config-select {
-    border: 1px solid #555;
-}
-
-.llm-config-input { /* Specific input for API key */
-     width: 130px; /* Adjust */
-}
-
-.llm-config-select { /* Model dropdown */
-     min-width: 90px; /* Adjust */
-     cursor: pointer;
-}
-
-/*
-==========================================================================
- LLM Integration Specific Styles
-==========================================================================
-*/
-
-/* Container for LLM response below each question */
-.llm-response {
-    margin-top: var(--spacing-md);
-    margin-bottom: var(--spacing-md);
-    padding: var(--spacing-sm);
-    border: 1px solid #eee; /* Lighter border */
-    border-radius: var(--border-radius-sm);
-    display: none; /* Initially hidden */
-    background-color: rgba(128, 128, 128, 0.03); /* Very subtle tint */
-    font-size: 0.9rem;
-    color: var(--text-color);
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    line-height: 1.5; /* Improve readability */
-    opacity: 0.9; /* Slightly less prominent */
-}
-
-[data-theme="dark"] .llm-response {
-    border: 1px solid #444; /* Darker border */
-    background-color: rgba(200, 200, 200, 0.05);
-    color: var(--text-color);
-    padding: var(--spacing-sm);
-    opacity: 0.9;
-}
-
-/* --- Reduce internal spacing within LLM response box --- */
-
-/* Target common block elements generated by Markdown inside .llm-response */
-.llm-response p,
-.llm-response ul,
-.llm-response ol,
-.llm-response li,
-.llm-response blockquote {
-    /* Reduce top and bottom margins significantly */
-    /* Experiment with these values (0, 0.25rem, 0.5rem etc.) */
-    margin-top: 0.25rem;
-    margin-bottom: 0.25rem;
-}
-
-/* Optional: Remove margin from the very last element inside the box */
-/* This prevents extra space at the very bottom */
-.llm-response > *:last-child {
-    margin-bottom: 0;
-}
-
-/* Optional: Reduce space specifically above lists if needed */
-.llm-response ul,
-.llm-response ol {
-     margin-top: 0.25rem; /* Or even 0 */
-     /* You might also want some left padding for indented lists */
-     padding-left: 1.5rem; /* Adjust as needed */
-}
-
-/* Optional: Adjust list item spacing */
-.llm-response li {
-    margin-bottom: 0.1rem; /* Reduce space between list items */
-}
-
-.llm-response h1,
-.llm-response h2,
-.llm-response h3,
-.llm-response h4,
-.llm-response h5,
-.llm-response h6{
-    margin-top: 0.1rem;
-    margin-bottom: 0.1rem;
-}
-
-/*
-==========================================================================
- LLM Chat Interface Specific Styles
-==========================================================================
-*/
-
-.continue-discussion-btn {
-    display: block; /* Or inline-block if you prefer it next to other elements if space allows */
-    margin-top: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    font-size: 0.85rem;
-    font-weight: 500;
-    background-color: var(--secondary-color); /* A distinct color */
-    color: white;
-    border: none;
-    border-radius: var(--border-radius-md);
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-    text-align: center;
-}
-
-.continue-discussion-btn:hover {
-    background-color: var(--primary-color);
-    transform: translateY(-1px);
-}
-
-.llm-chat-interface-container {
-    margin-top: var(--spacing-md);
-    border: 1px solid #ccc;
-    border-radius: var(--border-radius-md); /* Slightly larger radius for the container */
-    background-color: var(--background-color);
-    display: flex; /* Use flexbox for layout */
-    flex-direction: column; /* Stack messages and input area vertically */
-    /* max-height: 450px; */ /* Optional: constrain overall height */
-    /* You might want to remove style="display: none;" from ui.js and control visibility with a class + CSS if preferred */
-}
-
-[data-theme="dark"] .llm-chat-interface-container {
-    border-color: #444; /* Darker border for dark theme */
-    background-color: #2d2d2d; /* Match other dark theme container backgrounds */
-}
-
-.chat-messages {
-    flex-grow: 1; /* Allow message area to take available vertical space */
-    height: 250px; /* Fixed initial height, adjust as needed */
-    /* Consider using max-height if you want it to grow with content up to a point */
-    overflow-y: auto; /* Crucial for scrolling messages */
-    padding: var(--spacing-md); /* More padding inside message area */
-    border-bottom: 1px solid #ddd; /* Separator line above input area */
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm); /* Space between individual messages */
-}
-
-[data-theme="dark"] .chat-messages {
-    border-bottom-color: #444;
-}
-
-.chat-message {
-    padding: var(--spacing-sm) var(--spacing-md); /* More padding within messages */
-    border-radius: var(--border-radius-lg); /* More rounded bubbles */
-    max-width: 85%; /* Messages don't always take full width */
-    word-wrap: break-word;
-    line-height: 1.5;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-
-.chat-message-user {
-    background-color: var(--primary-color);
-    color: white;
-    align-self: flex-end; /* Align user messages to the right */
-    margin-left: auto; /* Push to right */
-    border-bottom-right-radius: var(--border-radius-xs); /* Common chat bubble styling */
-}
-
-.chat-message-llm {
-    background-color: #e9ecef; /* A light grey for LLM */
-    color: var(--text-color);
-    align-self: flex-start; /* Align LLM messages to the left */
-    margin-right: auto; /* Push to left */
-    border-bottom-left-radius: var(--border-radius-xs); /* Common chat bubble styling */
-}
-
-[data-theme="dark"] .chat-message-llm {
-    background-color: #3a3f44; /* Darker grey for LLM in dark mode */
-    color: var(--text-color); /* Should be light text in dark mode */
-    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
-}
-
-/* Markdown content within LLM messages in chat */
-.chat-message-llm p,
-.chat-message-llm ul,
-.chat-message-llm ol,
-.chat-message-llm blockquote {
-    margin-top: var(--spacing-xs); /* Slightly reduced margins for chat */
-    margin-bottom: var(--spacing-xs);
-    white-space: pre-line;
-}
-
-.chat-message-llm ul,
-.chat-message-llm ol {
-    padding-left: 1.5rem; /* Indent lists properly */
-}
-
-.chat-message-llm li {
-    margin-bottom: 0.1rem;
-}
-
-.chat-message-llm pre {
-    background-color: rgba(0,0,0,0.04); /* Subtle background for code blocks */
-    padding: var(--spacing-sm);
-    border-radius: var(--border-radius-sm);
-    overflow-x: auto; /* Allow horizontal scrolling for long code lines */
-    font-size: 0.875em; /* Slightly smaller font for code */
-    margin: var(--spacing-xs) 0;
-    border: 1px solid rgba(0,0,0,0.06);
-}
-
-[data-theme="dark"] .chat-message-llm pre {
-    background-color: rgba(255,255,255,0.06);
-    border-color: rgba(255,255,255,0.1);
-}
-
-.chat-message-llm code { /* For inline code snippets */
-    background-color: rgba(0,0,0,0.04);
-    padding: 0.1em 0.3em;
-    border-radius: var(--border-radius-sm);
-    font-size: 0.9em;
-}
-
-[data-theme="dark"] .chat-message-llm code {
-    background-color: rgba(255,255,255,0.08);
-}
-
-
-.chat-input-area {
-    display: flex;
-    padding: var(--spacing-sm);
-    gap: var(--spacing-sm); /* Space between textarea and button */
-    background-color: var(--background-color); /* Match container or slightly different */
-    border-top: 1px solid #ddd; /* If chat-messages doesn't have border-bottom */
-}
-
-[data-theme="dark"] .chat-input-area {
-    background-color: #2d2d2d; /* Match dark theme container */
-    border-top-color: #444;
-}
-
-.chat-input { /* Targets the textarea with class="chat-input" */
-    flex-grow: 1; /* Textarea takes available space */
-    padding: var(--spacing-sm); /* Good padding */
-    border: 1px solid #ccc;
-    border-radius: var(--border-radius-md);
-    resize: vertical; /* Allow vertical resize, disable horizontal by default */
-    min-height: 44px; /* Minimum height for the textarea, good for 1-2 lines */
-    max-height: 120px; /* Prevent it from getting too tall */
-    font-family: inherit;
-    font-size: 0.9rem;
-    line-height: 1.4;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.chat-input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
-}
-
-[data-theme="dark"] .chat-input {
-    background-color: #3a3f44; /* Darker input field */
-    color: var(--text-color);
-    border-color: #555;
-}
-[data-theme="dark"] .chat-input:focus {
-    border-color: var(--button-border); /* Use a dark theme focus color */
-    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.3); /* Adjust alpha for dark */
-}
-
-
-.send-chat-btn {
-    padding: var(--spacing-xs) var(--spacing-md); /* Balanced padding */
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: var(--border-radius-md);
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-    align-self: flex-end; /* Align with bottom of textarea if textarea grows */
-    height: 44px; /* Match min-height of textarea for alignment */
-}
-
-.send-chat-btn:hover:not(:disabled) {
-    background-color: var(--secondary-color);
-    transform: translateY(-1px);
-}
-.send-chat-btn:disabled {
-    background-color: #cccccc;
-    color: #666666;
-    cursor: not-allowed;
-    transform: none;
-}
-[data-theme="dark"] .send-chat-btn:disabled {
-    background-color: #444;
-    color: #888;
-}
-
-/*
-==========================================================================
- Exam Mode Specific Styles
-==========================================================================
-*/
-
-/* Styling for the "Question X of Y" counter */
+#retake-quiz-btn { background-color: #6c757d; }
+#retake-quiz-btn:hover { background-color: #5a6268; }
+.modal-btn.review { background-color: var(--primary-color); }
+.modal-btn.review:hover { background-color: var(--secondary-color); }
+.modal-btn.import { background-color: #17a2b8; }
+.modal-btn.import:hover { background-color: #138496; }
+
+/* --- Exam Mode & Review --- */
 .question-counter {
     text-align: center;
     font-size: 1.1rem;
     font-weight: 500;
-    color: var(--text-color);
-    opacity: 0.8;
-    margin-bottom: var(--spacing-lg); /* Adds space above the question box */
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-lg);
 }
-
-/* Container for the "Previous" and "Next" buttons */
 .exam-navigation {
     display: flex;
-    justify-content: space-between; /* Pushes Previous to the left, Next to the right */
+    justify-content: space-between;
     align-items: center;
-    margin-top: var(--spacing-xl); /* Adds significant space below the question box */
+    margin-top: var(--spacing-lg);
     padding-top: var(--spacing-md);
-    border-top: 1px solid rgba(128, 128, 128, 0.2); /* A faint separator line */
+    border-top: 1px solid var(--glass-border);
 }
-
-/* Specific border color for dark mode */
-[data-theme="dark"] .exam-navigation {
-    border-top-color: rgba(255, 255, 255, 0.2);
-}
-
-/* Styling for the navigation buttons themselves */
-.exam-nav-btn {
-    padding: var(--spacing-sm) var(--spacing-lg);
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: var(--border-radius-md);
-    font-size: 0.95rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-    min-width: 150px; /* Give the buttons a consistent size */
-    text-align: center;
-}
-
-/* Hover and disabled states, similar to the main submit button for consistency */
-.exam-nav-btn:hover:not(:disabled) {
-    background-color: var(--secondary-color);
-    transform: translateY(-1px);
-}
-
-.exam-nav-btn:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-    opacity: 0.7;
-    transform: none;
-}
-
-[data-theme="dark"] .exam-nav-btn:disabled {
-    background-color: #555;
-    color: #999;
-    opacity: 0.6;
-}
-
-.exam-nav-btn.secondary {
-    background-color: #6c757d;
-}
-
-.exam-nav-btn.secondary:hover:not(:disabled) {
-    background-color: #5a6268;
-}
-
-/*
-==========================================================================
- Exam Review Screen Styles
-==========================================================================
-*/
 .review-screen-container {
     padding: var(--spacing-lg);
     text-align: center;
 }
-
-.review-header {
-    margin-bottom: var(--spacing-sm);
-}
-
 .review-instructions {
     max-width: 600px;
     margin: 0 auto var(--spacing-lg);
-    font-size: 0.95rem;
-    opacity: 0.9;
+    color: var(--text-secondary);
 }
-
 .review-filters {
     display: flex;
     justify-content: center;
-    gap: var(--spacing-sm);
+    gap: 0.5rem;
     margin-bottom: var(--spacing-lg);
 }
-
 .filter-btn {
-    padding: var(--spacing-xs) var(--spacing-md);
-    border: 1px solid var(--button-border);
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--glass-border);
     background-color: transparent;
-    color: var(--text-color);
-    border-radius: var(--border-radius-md);
+    color: var(--text-secondary);
+    border-radius: var(--border-radius-pill);
     cursor: pointer;
     transition: all 0.2s ease;
 }
-
-.filter-btn.active,
-.filter-btn:hover {
+.filter-btn.active, .filter-btn:hover {
     background-color: var(--primary-color);
-    color: white;
+    color: var(--text-on-primary);
+    border-color: var(--primary-color);
 }
-
 .review-question-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: var(--spacing-sm);
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--spacing-md);
     max-width: 800px;
-    margin: 0 auto var(--spacing-xl);
+    margin: 0 auto var(--spacing-lg);
 }
-
 .review-question-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--spacing-sm);
-    border: 1px solid #ccc;
+    padding: var(--spacing-md);
+    border: 1px solid var(--glass-border);
     border-radius: var(--border-radius-sm);
     cursor: pointer;
     transition: all 0.2s ease;
-    background-color: var(--container-bg);
+    background-color: rgba(255,255,255,0.03);
 }
-
 .review-question-item:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    border-color: var(--primary-color);
 }
-
-[data-theme="dark"] .review-question-item {
-    border-color: #555;
-}
-
 .review-question-item.flagged {
     border-left: 4px solid var(--error-color);
 }
-
 .review-question-item .fa-flag {
     color: var(--error-color);
 }
 
-.review-q-status {
-    font-size: 0.8rem;
-    opacity: 0.7;
-}
-
 /*
 ==========================================================================
-New API Provider UI Styles
+    Provider & Model Selection in Dropdown
 ==========================================================================
 */
-
-.provider-selector-container {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start; /* Aligns items to the left */
-    width: 100%;
-    margin-top: var(--spacing-sm);
+.dropdown-item-full {
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    border-top: 1px solid var(--glass-border);
 }
-
-.provider-label {
-    font-size: 0.9rem;
-    margin-bottom: var(--spacing-xs);
-    font-weight: 500;
-}
-
-.provider-select {
-    width: 100%;
-    padding: var(--spacing-sm);
-    border-radius: var(--border-radius-sm);
-    border: 1px solid #ccc;
-    background-color: var(--container-bg);
-    color: var(--text-color);
-}
-
-[data-theme="dark"] .provider-select {
-    border-color: #555;
-}
-
-#provider-settings-container {
-    margin-top: var(--spacing-sm);
-    width: 100%;
-}
-
+#provider-settings-container { margin-top: 0; }
 .provider-settings {
-    display: flex;
     flex-direction: column;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-md);
-    border: 1px solid rgba(128, 128, 128, 0.2);
-    border-radius: var(--border-radius-md);
+    gap: 0.75rem;
+    padding: 0;
+    border: none;
 }
-
-.provider-settings label {
-    font-size: 0.85rem;
-    opacity: 0.9;
+.provider-settings > label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: -0.25rem;
 }
-
-.provider-settings select,
 .provider-settings .api-key-input {
     width: 100%;
-    padding: var(--spacing-sm);
-    border-radius: var(--border-radius-sm);
-    border: 1px solid #ccc;
-    background-color: var(--container-bg);
-    color: var(--text-color);
+    padding: 0.6rem;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    box-sizing: border-box;
 }
-
-[data-theme="dark"] .provider-settings select,
-[data-theme="dark"] .provider-settings .api-key-input {
-    border-color: #555;
+.provider-settings .api-key-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.3);
 }
-
-/*
-==========================================================================
-New Model Selection UI Styles
-==========================================================================
-*/
-
-/* General label for the model selection section */
-.provider-settings .model-label {
-    font-size: 0.85rem;
-    opacity: 0.9;
-    margin-top: var(--spacing-sm); /* Add some space above the model list */
-    margin-bottom: var(--spacing-xs);
+.model-label {
+    margin-top: 0.5rem;
+    border-top: 1px solid var(--glass-border);
+    padding-top: 0.75rem;
 }
-
-/* Container for the whole group of radio button options */
 .model-selection-group {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xs);
-    width: 100%;
+    gap: 0.5rem;
 }
-
-/* Container for a single model option (radio, label, icon) */
 .model-option {
-    position: relative; /* Needed for tooltip positioning */
     display: flex;
     align-items: center;
-    padding: var(--spacing-sm);
-    border: 1px solid rgba(128, 128, 128, 0.2);
-    border-radius: var(--border-radius-sm);
-    background-color: var(--background-color);
+    padding: 0.6rem;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background-color: rgba(0,0,0,0.15);
     cursor: pointer;
-    transition: border-color 0.2s ease, background-color 0.2s ease;
+    transition: all 0.2s ease;
+    position: relative;
 }
-
-[data-theme="dark"] .model-option {
-    border-color: #555;
-    background-color: #3a3f44;
-}
-
 .model-option:hover {
     border-color: var(--primary-color);
-    background-color: rgba(var(--primary-color-rgb), 0.05);
+    background-color: rgba(var(--primary-color-rgb), 0.1);
 }
-
-[data-theme="dark"] .model-option:hover {
-    background-color: rgba(var(--primary-color-rgb), 0.15);
-}
-
-/* Hide the default radio button */
-.model-option input[type="radio"] {
-    display: none;
-}
-
-/* Style the label for the model name */
+.model-option input[type="radio"] { display: none; }
 .model-option label {
-    flex-grow: 1; /* Take up available space */
-    font-size: 0.9rem;
+    flex-grow: 1;
+    color: var(--text-primary);
     cursor: pointer;
+    font-weight: 400;
+    font-size: 0.9rem;
 }
-
-/* Style for the (i) icon */
+.model-option input[type="radio"]:checked + label {
+    color: var(--primary-color);
+    font-weight: 600;
+}
 .model-info-icon {
-    margin-left: var(--spacing-sm);
-    color: #888;
-    cursor: help; /* Change cursor to indicate help is available */
-    font-size: 1rem;
+    color: var(--text-secondary);
     transition: color 0.2s ease;
 }
-
-[data-theme="dark"] .model-info-icon {
-    color: #aaa;
-}
-
-.model-option:hover .model-info-icon {
+.model-option:hover .model-info-icon,
+.model-option input[type="radio"]:checked ~ .model-info-icon {
     color: var(--primary-color);
 }
+
+/*
+==========================================================================
+    MERGED: Tooltip for Model Selection
+==========================================================================
+*/
 
 /* The tooltip container */
 .model-option .tooltip-text {
     visibility: hidden;
-    width: 200px;
+    width: 220px;
     background-color: #333;
     color: #fff;
     text-align: center;
     border-radius: var(--border-radius-sm);
-    padding: var(--spacing-sm);
+    padding: var(--spacing-md);
     position: absolute;
-    z-index: 1;
+    z-index: 10;
     bottom: 125%; /* Position above the icon */
     left: 50%;
-    margin-left: -100px; /* Use half of the width to center */
+    margin-left: -110px; /* Use half of the width to center */
     opacity: 0;
-    transition: opacity 0.3s;
+    transition: opacity 0.3s ease;
     font-size: 0.85rem;
+    pointer-events: none; /* Prevents tooltip from interfering with mouse */
 }
 
 /* Arrow for the tooltip */
@@ -1481,18 +728,147 @@ New Model Selection UI Styles
     border-color: #333 transparent transparent transparent;
 }
 
-/* Show the tooltip on hover */
+/* Show the tooltip on hover over the info icon */
 .model-option .model-info-icon:hover + .tooltip-text {
     visibility: visible;
     opacity: 1;
 }
 
-/* Visual indication for the selected (checked) model */
-.model-option input[type="radio"]:checked + label {
-    font-weight: 600;
-    color: var(--primary-color);
+/*
+==========================================================================
+    Custom Styling for Ollama Dropdown
+==========================================================================
+*/
+
+/* Targets the <select> element specifically for Ollama settings */
+#ollama-settings select {
+    /* Step 1: Remove the default browser appearance */
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+
+    /* Step 2: Apply custom theme styles */
+    width: 100%;
+    padding: 0.6rem;
+    background-color: rgba(0,0,0,0.2);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.9rem;
+    font-family: inherit;
+    cursor: pointer;
+
+    /* Step 3: Add a custom dropdown arrow using an SVG */
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23a0a0a0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    background-size: 1em;
 }
 
-.model-option input[type="radio"]:checked ~ .model-info-icon {
-    color: var(--primary-color);
+/*
+==========================================================================
+    Fully Custom Dropdown Styles (for all select menus)
+==========================================================================
+*/
+
+.custom-select-container {
+    width: 100%; /* Ensure the container takes up available space */
+}
+
+.custom-select-wrapper {
+  position: relative;
+  width: 100%;
+  font-family: inherit;
+}
+
+.custom-select-trigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem;
+  background-color: rgba(0,0,0,0.2);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.custom-select-wrapper.open .custom-select-trigger {
+  border-color: var(--primary-color);
+}
+
+.custom-select-trigger .arrow {
+  border: solid var(--text-secondary);
+  border-width: 0 2px 2px 0;
+  display: inline-block;
+  padding: 3px;
+  transform: rotate(45deg);
+  transition: transform 0.3s ease;
+}
+
+.custom-select-wrapper.open .arrow {
+  transform: rotate(-135deg);
+}
+
+.custom-options {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  background-color: #2a2a2a;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-sm);
+  z-index: 10;
+  max-height: 200px;
+  overflow-y: auto;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.custom-select-wrapper.open .custom-options {
+  visibility: visible;
+  opacity: 1;
+}
+
+.custom-option {
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  color: var(--text-primary);
+}
+
+.custom-option:hover,
+.custom-option.selected {
+  background-color: var(--primary-color);
+  color: var(--text-on-primary);
+}
+
+/*
+==========================================================================
+Opaque Background for Active Dropdowns
+==========================================================================
+*/
+
+:root {
+    /* Define a new, more opaque background color specifically for open dropdowns. */
+    --dropdown-bg-opaque: rgba(40, 40, 40, 1); /* A dark grey with 95% opacity */
+}
+
+/* --- For the main navigation dropdowns (File, Settings, API) --- */
+/* This rule applies the opaque background only when you are hovering over a main menu item. */
+.nav-menu > li:hover > .dropdown-menu {
+    background: var(--dropdown-bg-opaque);
+    backdrop-filter: blur(10px); /* You can adjust blur for the more opaque background */
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* --- For the custom select dropdowns (Mode, Provider, Ollama) --- */
+/* This rule applies the opaque background only when the dropdown has been clicked open. */
+.custom-select-wrapper.open .custom-options {
+    background-color: var(--dropdown-bg-opaque);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
