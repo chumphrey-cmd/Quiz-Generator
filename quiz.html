@@ -39,13 +39,18 @@
                         </li>
 
                         <li class="dropdown-item-complex">
-                             <label for="timerDurationInput">Time (min)</label>
-                             <div class="timer-controls-group">
-                                <input type="number" id="timerDurationInput" class="nav-input" value="10" min="1">
-                                <button id="timerStartPauseResumeButton" class="nav-btn-icon" disabled><i class="fas fa-play"></i></button>
-                                <button id="timerResetButton" class="nav-btn-icon" disabled><i class="fas fa-redo"></i></button>
-                             </div>
+                            <label for="timerDurationInput">Time (min)</label>
+                            <div class="timer-controls-group">
+                                <div class="modern-timer-input">
+                                    <button class="time-adjust-btn" id="decrement-time-btn">-</button>
+                                    <input type="text" id="timerDurationInput" class="time-display-input" value="10">
+                                    <button class="time-adjust-btn" id="increment-time-btn">+</button>
+                                </div>
+                                <button id="timerStartPauseResumeButton" class="nav-btn-icon" disabled></button>
+                                <button id="timerResetButton" class="nav-btn-icon" disabled>⟳</button>
+                            </div>
                         </li>
+                        
                     </ul>
                 </li>
                 <li>

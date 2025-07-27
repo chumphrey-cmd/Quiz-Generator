@@ -872,3 +872,278 @@ Opaque Background for Active Dropdowns
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 }
+
+/*
+==========================================================================
+ LLM Chat Interface Specific Styles
+==========================================================================
+*/
+
+.continue-discussion-btn {
+    display: block; /* Or inline-block if you prefer it next to other elements if space allows */
+    margin-top: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
+    background-color: var(--secondary-color); /* A distinct color */
+    color: rgb(5, 5, 5);
+    border: none;
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    text-align: center;
+}
+
+.continue-discussion-btn:hover {
+    background-color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.llm-chat-interface-container {
+    margin-top: var(--spacing-md);
+    border: 1px solid #ccc;
+    border-radius: var(--border-radius-md); /* Slightly larger radius for the container */
+    background-color: var(--background-color);
+    display: flex; /* Use flexbox for layout */
+    flex-direction: column; /* Stack messages and input area vertically */
+    /* max-height: 450px; */ /* Optional: constrain overall height */
+    /* You might want to remove style="display: none;" from ui.js and control visibility with a class + CSS if preferred */
+}
+
+[data-theme="dark"] .llm-chat-interface-container {
+    border-color: #444; /* Darker border for dark theme */
+    background-color: #2d2d2d; /* Match other dark theme container backgrounds */
+}
+
+.chat-messages {
+    flex-grow: 1; /* Allow message area to take available vertical space */
+    height: 250px; /* Fixed initial height, adjust as needed */
+    /* Consider using max-height if you want it to grow with content up to a point */
+    overflow-y: auto; /* Crucial for scrolling messages */
+    padding: var(--spacing-md); /* More padding inside message area */
+    border-bottom: 1px solid #ddd; /* Separator line above input area */
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm); /* Space between individual messages */
+}
+
+[data-theme="dark"] .chat-messages {
+    border-bottom-color: #444;
+}
+
+.chat-message {
+    padding: var(--spacing-sm) var(--spacing-md); /* More padding within messages */
+    border-radius: var(--border-radius-lg); /* More rounded bubbles */
+    max-width: 85%; /* Messages don't always take full width */
+    word-wrap: break-word;
+    line-height: 1.5;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.chat-message-user {
+    background-color: var(--primary-color);
+    color: white;
+    align-self: flex-end; /* Align user messages to the right */
+    margin-left: auto; /* Push to right */
+    border-bottom-right-radius: var(--border-radius-xs); /* Common chat bubble styling */
+}
+
+.chat-message-llm {
+    background-color: #e9ecef; /* A light grey for LLM */
+    color: var(--text-color);
+    align-self: flex-start; /* Align LLM messages to the left */
+    margin-right: auto; /* Push to left */
+    border-bottom-left-radius: var(--border-radius-xs); /* Common chat bubble styling */
+}
+
+[data-theme="dark"] .chat-message-llm {
+    background-color: #3a3f44; /* Darker grey for LLM in dark mode */
+    color: var(--text-color); /* Should be light text in dark mode */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+
+/* Markdown content within LLM messages in chat */
+.chat-message-llm p,
+.chat-message-llm ul,
+.chat-message-llm ol,
+.chat-message-llm blockquote {
+    margin-top: var(--spacing-xs); /* Slightly reduced margins for chat */
+    margin-bottom: var(--spacing-xs);
+    white-space: pre-line;
+}
+
+.chat-message-llm ul,
+.chat-message-llm ol {
+    padding-left: 1.5rem; /* Indent lists properly */
+}
+
+.chat-message-llm li {
+    margin-bottom: 0.1rem;
+}
+
+.chat-message-llm pre {
+    background-color: rgba(0,0,0,0.04); /* Subtle background for code blocks */
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    overflow-x: auto; /* Allow horizontal scrolling for long code lines */
+    font-size: 0.875em; /* Slightly smaller font for code */
+    margin: var(--spacing-xs) 0;
+    border: 1px solid rgba(0,0,0,0.06);
+}
+
+[data-theme="dark"] .chat-message-llm pre {
+    background-color: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.1);
+}
+
+.chat-message-llm code { /* For inline code snippets */
+    background-color: rgba(0,0,0,0.04);
+    padding: 0.1em 0.3em;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.9em;
+}
+
+[data-theme="dark"] .chat-message-llm code {
+    background-color: rgba(255,255,255,0.08);
+}
+
+
+.chat-input-area {
+    display: flex;
+    padding: var(--spacing-sm);
+    gap: var(--spacing-sm); /* Space between textarea and button */
+    background-color: var(--background-color); /* Match container or slightly different */
+    border-top: 1px solid #ddd; /* If chat-messages doesn't have border-bottom */
+}
+
+[data-theme="dark"] .chat-input-area {
+    background-color: #2d2d2d; /* Match dark theme container */
+    border-top-color: #444;
+}
+
+.chat-input { /* Targets the textarea with class="chat-input" */
+    flex-grow: 1; /* Textarea takes available space */
+    padding: var(--spacing-sm); /* Good padding */
+    border: 1px solid #ccc;
+    border-radius: var(--border-radius-md);
+    resize: vertical; /* Allow vertical resize, disable horizontal by default */
+    min-height: 44px; /* Minimum height for the textarea, good for 1-2 lines */
+    max-height: 120px; /* Prevent it from getting too tall */
+    font-family: inherit;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chat-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+}
+
+[data-theme="dark"] .chat-input {
+    background-color: #3a3f44; /* Darker input field */
+    color: var(--text-color);
+    border-color: #555;
+}
+[data-theme="dark"] .chat-input:focus {
+    border-color: var(--button-border); /* Use a dark theme focus color */
+    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.3); /* Adjust alpha for dark */
+}
+
+
+.send-chat-btn {
+    padding: var(--spacing-xs) var(--spacing-md); /* Balanced padding */
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    align-self: flex-end; /* Align with bottom of textarea if textarea grows */
+    height: 44px; /* Match min-height of textarea for alignment */
+}
+
+.send-chat-btn:hover:not(:disabled) {
+    background-color: var(--secondary-color);
+    transform: translateY(-1px);
+}
+.send-chat-btn:disabled {
+    background-color: #cccccc;
+    color: #666666;
+    cursor: not-allowed;
+    transform: none;
+}
+[data-theme="dark"] .send-chat-btn:disabled {
+    background-color: #444;
+    color: #888;
+}
+
+/*
+==========================================================================
+    IMPROVEMENT: Modern Timer Input Controls
+==========================================================================
+*/
+
+/* Main container for the new timer input */
+.modern-timer-input {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem; /* Small gap between buttons and input */
+}
+
+/* The text field that displays the time */
+.time-display-input {
+    width: 50px; /* Set a fixed width */
+    padding: 0.4rem;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    border-radius: var(--border-radius-sm);
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    -moz-appearance: textfield; /* Hides number spinners in Firefox */
+}
+
+/* Hide number input spinners in Chrome, Safari, etc. */
+.time-display-input::-webkit-outer-spin-button,
+.time-display-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Styling for the new '+' and '-' buttons */
+.time-adjust-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%; /* Make them circular */
+    border: 1px solid var(--glass-border);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 2px; /* Optical alignment for symbols */
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.time-adjust-btn:hover {
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
+}
+
+/*
+Widen Settings Dropdown for Timer Controls
+*/
+
+/* This targets the dropdown menu specifically when it's a child of the "Settings" link by count (e.g., 0, 1, 2) */
+.nav-menu > li:nth-child(2) > .dropdown-menu {
+    min-width: 350px; /* Increase the minimum width of the container */
+}

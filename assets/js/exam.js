@@ -138,28 +138,65 @@ class ExamManager {
     initializeEventListeners() {
         console.log("Initializing all persistent event listeners...");
 
-        // --- Listeners for Static Header Controls ---
+        // --- Listener for File Import Functionality ---
         const fileInput = document.getElementById('questionFile');
         if (fileInput) {
             fileInput.addEventListener('change', this.handleFileUploadBound);
-        } else { console.error("File input element 'questionFile' not found!"); }
+            console.log("File import functionality initialized.");
+        } else {
+            console.error("Could not initialize file import: 'questionFile' input element not found!");
+        }
 
+        // --- Listeners for Modern Timer Controls ---
         const timerInput = document.getElementById('timerDurationInput');
-        if (timerInput) {
-            // This logic remains unchanged. It validates the user's input in the timer field.
-            timerInput.addEventListener('input', function() {
-                this.value = this.value.replace(/[^0-9]/g, '');
-                if (this.value.length > 1 && this.value.startsWith('0')) this.value = this.value.substring(1);
-                if (this.value === '') this.value = '1';
+        const decrementBtn = document.getElementById('decrement-time-btn');
+        const incrementBtn = document.getElementById('increment-time-btn');
+
+        if (timerInput && decrementBtn && incrementBtn) {
+            const maxTime = 99999; // Define the max value
+
+            // A helper function to validate and trigger updates
+            const validateAndUpdate = () => {
+                let currentValue = parseInt(timerInput.value, 10);
+                if (isNaN(currentValue) || currentValue < 1) {
+                    timerInput.value = '1';
+                } else if (currentValue > maxTime) {
+                    timerInput.value = maxTime;
+                }
+                // CRUCIAL: Notify the rest of the application that the time has changed.
+                timerInput.dispatchEvent(new Event('change'));
+            };
+
+            // --- Listener for Direct Keyboard Input ---
+            timerInput.addEventListener('input', () => {
+                // Allow only numbers and enforce max length
+                timerInput.value = timerInput.value.replace(/[^0-9]/g, '').substring(0, 5);
             });
-            timerInput.addEventListener('blur', function() {
-                const min = parseInt(this.min, 10) || 1;
-                const max = parseInt(this.max, 10) || 999999;
-                let currentValue = parseInt(this.value, 10);
-                if (isNaN(currentValue) || currentValue < min) this.value = min;
-                else if (currentValue > max) this.value = max;
+
+            // --- Listener for When User Clicks Away (Blur) ---
+            timerInput.addEventListener('blur', validateAndUpdate);
+
+            // --- Listener for the '-' Button ---
+            decrementBtn.addEventListener('click', () => {
+                let currentValue = parseInt(timerInput.value, 10);
+                if (currentValue > 1) {
+                    timerInput.value = currentValue - 1;
+                    validateAndUpdate(); // Validate and update state
+                }
             });
-        } else { console.error("Timer duration input element not found!"); }
+
+            // --- Listener for the '+' Button ---
+            incrementBtn.addEventListener('click', () => {
+                let currentValue = parseInt(timerInput.value, 10);
+                if (currentValue < maxTime) {
+                    timerInput.value = currentValue + 1;
+                    validateAndUpdate(); // Validate and update state
+                }
+            });
+
+        } else {
+            console.error("Timer control elements not found!");
+        }
 
         const modeSelector = document.getElementById('modeSelector');
         if (modeSelector) {
@@ -2404,7 +2441,7 @@ class ExamManager {
         if (!controlsShouldBeEnabled) {
             startPauseResumeButton.disabled = true;
             resetButton.disabled = true;
-            startPauseResumeButton.textContent = 'Start'; // Set default text
+            startPauseResumeButton.innerHTML = '&#9654;'; // Set default symbol to ▶
             console.log("_updateTimerControlEventsUI: Timer controls disabled (infinite time or no quiz).");
             return; // Exit the function early
         }
@@ -2416,22 +2453,23 @@ class ExamManager {
         if (this.isTimerRunning) {
             // If the timer is running...
             if (this.isTimerPaused) {
-                // ...and it's currently paused, the button should say "Resume".
-                startPauseResumeButton.textContent = 'Resume';
+                // ...and it's currently paused, the button should show the "Start/Resume" symbol (▶).
+                startPauseResumeButton.innerHTML = '&#9654;'; // HTML entity for ▶
                 startPauseResumeButton.disabled = false;
             } else {
-                // ...and it's actively counting down, the button should say "Pause".
-                startPauseResumeButton.textContent = 'Pause';
+                // ...and it's actively counting down, the button should show the "Pause" symbol (⏸).
+                startPauseResumeButton.innerHTML = '&#9208;'; // HTML entity for ⏸
                 startPauseResumeButton.disabled = false;
             }
         } else {
-            // If the timer is NOT running (it's been reset or hasn't started yet)...
-            // ...the button should say "Start".
-            startPauseResumeButton.textContent = 'Start';
+            // If the timer is NOT running at all (it's been reset or hasn't started yet),
+            // it should also show the "Start" symbol (▶).
+            startPauseResumeButton.innerHTML = '&#9654;'; // HTML entity for ▶
             // The Start button should only be clickable if there is time on the clock.
-            startPauseResumeButton.disabled = !(this.initialTimerDuration > 0 || this.timeRemaining > 0) ;
+            startPauseResumeButton.disabled = !(this.initialTimerDuration > 0 || this.timeRemaining > 0);
         }
-        console.log(`_updateTimerControlEventsUI: Start/Pause/Resume button text: "${startPauseResumeButton.textContent}", disabled: ${startPauseResumeButton.disabled}. Reset button disabled: ${resetButton.disabled}`);
+        // This console log helps in debugging the button's state.
+        console.log(`_updateTimerControlEventsUI: Start/Pause/Resume button content: "${startPauseResumeButton.innerHTML}", disabled: ${startPauseResumeButton.disabled}. Reset button disabled: ${resetButton.disabled}`);
     }
     
     /**
