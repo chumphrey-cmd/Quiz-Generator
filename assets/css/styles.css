@@ -1,32 +1,22 @@
 /*
 ==========================================================================
-    MODERN UI/UX - Inspired by worklouder.cc (Complete & Merged)
+Universal & Themed Variables
 ==========================================================================
 */
 
+/* --- Universal Variables (Do NOT change between themes) --- */
 :root {
     /* Core Palette */
     --primary-color: #d8ff43; 
     --primary-color-rgb: 216, 255, 67;
     --secondary-color: #c4e63c; /* For hover states */
-    --accent-color: #0055ff; /* A vibrant blue for contrast */
-    --accent-color-rgb: 0, 85, 255;
-
-    /* Backgrounds & Surfaces */
-    --page-bg: #121212;
-    --container-bg: #1a1a1a;
-    --glass-bg: rgba(38, 38, 38, 0.5);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    
-    /* Text */
-    --text-primary: #f0f0f0;
-    --text-secondary: #a0a0a0;
-    --text-on-primary: #121212;
+    --text-on-primary: #121212; /* Text on yellow buttons, always dark */
+    --message-color: #65a30d; /*continue discussion background message color */
 
     /* Feedback Colors */
-    --error-color: #ef4444; /* A brighter red for dark mode */
+    --error-color: #ef4444;
     --error-color-rgb: 239, 68, 68;
-    --success-color: #22c55e; /* A brighter green for dark mode */
+    --success-color: #22c55e;
     --success-color-rgb: 34, 197, 94;
 
     /* Borders & Spacing */
@@ -39,6 +29,58 @@
     /* Effects */
     --backdrop-blur: 15px;
     --shadow-soft: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* --- Light Theme (Default) --- */
+/* These variables apply by default or when data-theme="light" */
+:root,
+html[data-theme="light"] {
+
+    --primary-color: #84cc16; /* A richer, more contrasted lime green for light mode */
+    --secondary-color: #65a30d; /* A matching darker hover color */
+
+    --page-bg: #f1f1f1;
+    --container-bg: #ffffff;
+    --glass-bg: rgba(255, 255, 255, 0.5);
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --text-primary: #1a1a1a;
+    --text-secondary: #555555;
+    --dropdown-bg-opaque: rgba(245, 245, 245, 0.95); /* Opaque dropdown for light mode */
+
+/* --- High-Contrast Answer Feedback for Light Mode --- */
+.answer-label.correct {
+    background-color: rgba(var(--success-color-rgb), 0.5); /* A more visible light green background */
+    border: 1px solid rgba(var(--success-color-rgb), 0.5);
+    border-radius: var(--border-radius-sm);
+    padding: 2px 4px;
+    margin: -2px -4px; /* Prevents layout shift from padding */
+}
+
+.answer-label.incorrect {
+    background-color: rgba(var(--error-color-rgb), 0.5); /* A subtle light red background */
+    border-radius: var(--border-radius-sm);
+    padding: 2px 4px;
+    margin: -2px -4px;
+}
+
+.answer-label.missed {
+    background-color: rgba(var(--success-color-rgb), 0.5); /* Make the missed answer background even more visible */
+    border-color: rgba(var(--success-color-rgb), 0.5);
+}
+
+
+}
+
+/* --- Dark Theme (Overrides) --- */
+/* These variables apply ONLY when data-theme="dark" */
+html[data-theme="dark"] {
+    --page-bg: #121212;
+    --container-bg: #1a1a1a;
+    --glass-bg: rgba(38, 38, 38, 0.85); /* The more opaque dark glass */
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --text-primary: #f0f0f0;
+    --text-secondary: #a0a0a0;
+    --dropdown-bg-opaque: rgba(40, 40, 40, 0.95); /* Opaque dropdown for dark mode */
 }
 
 /* Base Styles */
@@ -136,6 +178,15 @@ body {
     transform: translateY(10px);
 }
 
+/*
+Widen Settings Dropdown for Timer Controls
+*/
+
+/* This targets the dropdown menu width specifically when it's a child of the "Settings" link by count (e.g., 0, 1, 2) */
+.nav-menu > li:nth-child(2) > .dropdown-menu {
+    min-width: 350px; /* Increase the minimum width of the container */
+}
+
 .nav-menu > li:hover .dropdown-menu {
     visibility: visible;
     opacity: 1;
@@ -217,6 +268,70 @@ body {
     min-width: 80px;
     text-align: right;
 }
+
+
+/*
+==========================================================================
+Modern Theme Toggle Switch
+==========================================================================
+*/
+
+/* --- Main Container for the entire toggle component --- */
+.theme-toggle-container {
+    display: flex; /* Aligns the text and the switch side-by-side */
+    align-items: center; /* Vertically centers the items */
+    gap: 0.75rem; /* Adds a small space between the text and the switch */
+}
+
+/* --- The "Dark Mode" / "Light Mode" text label --- */
+.theme-toggle-text {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary); /* Uses the secondary text color from your theme */
+    transition: color 0.3s ease;
+}
+
+/* --- The main body of the switch (the "track") --- */
+.theme-toggle-switch {
+    position: relative; /* Establishes a positioning context for the thumb and icons */
+    display: flex;
+    align-items: center;
+    justify-content: space-around; /* Spreads the sun and moon icons out */
+    width: 60px; /* Width of the switch */
+    height: 30px; /* Height of the switch */
+    background-color: rgba(0,0,0,0.3); /* A dark, semi-transparent background */
+    border-radius: var(--border-radius-pill); /* Makes it pill-shaped */
+    border: 1px solid var(--glass-border); /* A subtle border to match your theme */
+    cursor: pointer;
+}
+
+/* --- Styling for the Sun and Moon Icons --- */
+.theme-toggle-switch .fa-sun,
+.theme-toggle-switch .fa-moon {
+    font-size: 0.8rem;
+    color: var(--text-secondary); /* Default color for the icons */
+}
+
+/* --- The circular part that slides back and forth --- */
+.toggle-thumb {
+    position: absolute; /* Allows us to move it precisely within the switch */
+    top: 2px; /* Small offset from the top */
+    left: 3px; /* Starts on the left side */
+    width: 24px; /* Diameter of the circle */
+    height: 24px; /* Diameter of the circle */
+    background-color: var(--primary-color); /* Uses your bright yellow accent color */
+    border-radius: 50%; /* Makes it a perfect circle */
+    transition: transform 0.3s ease-in-out; /* This creates the smooth sliding animation */
+}
+
+/* --- "Dark Mode" Active State --- */
+/* This is a special rule that applies when the body has the data-theme="dark" attribute */
+html[data-theme="dark"] .toggle-thumb {
+    /* When in dark mode, move the thumb 29px to the right */
+    transform: translateX(29px);
+}
+
+
 .nav-progress-container {
     width: 150px;
     position: relative;
@@ -861,225 +976,173 @@ Opaque Background for Active Dropdowns
 /* This rule applies the opaque background only when you are hovering over a main menu item. */
 .nav-menu > li:hover > .dropdown-menu {
     background: var(--dropdown-bg-opaque);
-    backdrop-filter: blur(10px); /* You can adjust blur for the more opaque background */
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(30px); /* You can adjust blur for the more opaque background */
+    -webkit-backdrop-filter: blur(30px);
 }
 
 /* --- For the custom select dropdowns (Mode, Provider, Ollama) --- */
 /* This rule applies the opaque background only when the dropdown has been clicked open. */
 .custom-select-wrapper.open .custom-options {
     background-color: var(--dropdown-bg-opaque);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
 }
 
 /*
 ==========================================================================
- LLM Chat Interface Specific Styles
+    MODERNIZED: LLM Chat Interface Styles
 ==========================================================================
 */
 
+/* --- "Continue Discussion" Button --- */
+/* A more subtle "ghost button" style that becomes solid on hover. */
 .continue-discussion-btn {
-    display: block; /* Or inline-block if you prefer it next to other elements if space allows */
-    margin-top: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    font-size: 0.85rem;
-    font-weight: 500;
-    background-color: var(--secondary-color); /* A distinct color */
-    color: rgb(5, 5, 5);
-    border: none;
-    border-radius: var(--border-radius-md);
+    display: inline-block; /* Allows for better alignment */
+    margin-top: var(--spacing-md);
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    /* Uses the secondary text color for a less prominent look */
+    color: var(--text-secondary); 
+    background-color: transparent;
+    border: 1px solid var(--glass-border); /* A subtle border */
+    border-radius: var(--border-radius-pill); /* Consistent pill shape */
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
+    transition: all 0.2s ease;
     text-align: center;
 }
 
 .continue-discussion-btn:hover {
     background-color: var(--primary-color);
-    transform: translateY(-1px);
+    color: var(--text-on-primary); /* Use dark text on the yellow background */
+    border-color: var(--primary-color);
+    transform: translateY(-2px); /* A slight lift effect */
 }
 
+
+/* --- Main Chat Container --- */
+/* Applying the glassmorphism effect for consistency with the nav bar. */
 .llm-chat-interface-container {
     margin-top: var(--spacing-md);
-    border: 1px solid #ccc;
-    border-radius: var(--border-radius-md); /* Slightly larger radius for the container */
-    background-color: var(--background-color);
-    display: flex; /* Use flexbox for layout */
-    flex-direction: column; /* Stack messages and input area vertically */
-    /* max-height: 450px; */ /* Optional: constrain overall height */
-    /* You might want to remove style="display: none;" from ui.js and control visibility with a class + CSS if preferred */
-}
-
-[data-theme="dark"] .llm-chat-interface-container {
-    border-color: #444; /* Darker border for dark theme */
-    background-color: #2d2d2d; /* Match other dark theme container backgrounds */
-}
-
-.chat-messages {
-    flex-grow: 1; /* Allow message area to take available vertical space */
-    height: 250px; /* Fixed initial height, adjust as needed */
-    /* Consider using max-height if you want it to grow with content up to a point */
-    overflow-y: auto; /* Crucial for scrolling messages */
-    padding: var(--spacing-md); /* More padding inside message area */
-    border-bottom: 1px solid #ddd; /* Separator line above input area */
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-card); /* Softer, rounded container */
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--backdrop-blur));
+    -webkit-backdrop-filter: blur(var(--backdrop-blur));
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm); /* Space between individual messages */
+    overflow: hidden; /* Important for containing the rounded corners */
 }
 
-[data-theme="dark"] .chat-messages {
-    border-bottom-color: #444;
+/* --- Message History Area --- */
+.chat-messages {
+    flex-grow: 1;
+    height: 300px; /* A bit taller for more context */
+    overflow-y: auto; /* For scrolling */
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md); /* More space between messages */
 }
 
+/* --- General Message Bubble Style --- */
 .chat-message {
-    padding: var(--spacing-sm) var(--spacing-md); /* More padding within messages */
-    border-radius: var(--border-radius-lg); /* More rounded bubbles */
-    max-width: 85%; /* Messages don't always take full width */
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius-card);
+    max-width: 85%;
     word-wrap: break-word;
     line-height: 1.5;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    box-shadow: none; /* Removed shadow for a flatter, more modern look */
 }
 
+/* --- User's Message Bubble --- */
+/* Using a distinct blue accent color for high contrast in BOTH light and dark modes. */
 .chat-message-user {
-    background-color: var(--primary-color);
-    color: white;
-    align-self: flex-end; /* Align user messages to the right */
-    margin-left: auto; /* Push to right */
-    border-bottom-right-radius: var(--border-radius-xs); /* Common chat bubble styling */
+    background-color: var(--message-color);
+    color: #ffffff; /* White text on the blue background */
+    align-self: flex-end;
+    margin-left: auto;
 }
 
+/* --- LLM's Message Bubble --- */
+/* Using a subtle background that blends with the container. */
 .chat-message-llm {
-    background-color: #e9ecef; /* A light grey for LLM */
-    color: var(--text-color);
-    align-self: flex-start; /* Align LLM messages to the left */
-    margin-right: auto; /* Push to left */
-    border-bottom-left-radius: var(--border-radius-xs); /* Common chat bubble styling */
+    background-color: rgba(0, 0, 0, 0.15);
+    color: var(--text-primary);
+    align-self: flex-start;
+    margin-right: auto;
 }
-
-[data-theme="dark"] .chat-message-llm {
-    background-color: #3a3f44; /* Darker grey for LLM in dark mode */
-    color: var(--text-color); /* Should be light text in dark mode */
-    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
-}
-
-/* Markdown content within LLM messages in chat */
-.chat-message-llm p,
-.chat-message-llm ul,
-.chat-message-llm ol,
-.chat-message-llm blockquote {
-    margin-top: var(--spacing-xs); /* Slightly reduced margins for chat */
-    margin-bottom: var(--spacing-xs);
-    white-space: pre-line;
-}
-
-.chat-message-llm ul,
-.chat-message-llm ol {
-    padding-left: 1.5rem; /* Indent lists properly */
-}
-
-.chat-message-llm li {
-    margin-bottom: 0.1rem;
-}
-
-.chat-message-llm pre {
-    background-color: rgba(0,0,0,0.04); /* Subtle background for code blocks */
-    padding: var(--spacing-sm);
-    border-radius: var(--border-radius-sm);
-    overflow-x: auto; /* Allow horizontal scrolling for long code lines */
-    font-size: 0.875em; /* Slightly smaller font for code */
-    margin: var(--spacing-xs) 0;
-    border: 1px solid rgba(0,0,0,0.06);
-}
-
-[data-theme="dark"] .chat-message-llm pre {
-    background-color: rgba(255,255,255,0.06);
-    border-color: rgba(255,255,255,0.1);
-}
-
-.chat-message-llm code { /* For inline code snippets */
-    background-color: rgba(0,0,0,0.04);
-    padding: 0.1em 0.3em;
-    border-radius: var(--border-radius-sm);
-    font-size: 0.9em;
-}
-
-[data-theme="dark"] .chat-message-llm code {
-    background-color: rgba(255,255,255,0.08);
+/* Ensure dark theme LLM bubbles are also subtle */
+html[data-theme="dark"] .chat-message-llm {
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 
+/* --- Chat Input Area --- */
 .chat-input-area {
     display: flex;
-    padding: var(--spacing-sm);
-    gap: var(--spacing-sm); /* Space between textarea and button */
-    background-color: var(--background-color); /* Match container or slightly different */
-    border-top: 1px solid #ddd; /* If chat-messages doesn't have border-bottom */
+    align-items: center; /* Better vertical alignment */
+    padding: var(--spacing-md);
+    gap: var(--spacing-md);
+    /* A slightly different background for subtle separation */
+    background-color: rgba(0, 0, 0, 0.1); 
+    border-top: 1px solid var(--glass-border);
+}
+html[data-theme="dark"] .chat-input-area {
+     background-color: rgba(0, 0, 0, 0.2);
 }
 
-[data-theme="dark"] .chat-input-area {
-    background-color: #2d2d2d; /* Match dark theme container */
-    border-top-color: #444;
-}
-
-.chat-input { /* Targets the textarea with class="chat-input" */
-    flex-grow: 1; /* Textarea takes available space */
-    padding: var(--spacing-sm); /* Good padding */
-    border: 1px solid #ccc;
-    border-radius: var(--border-radius-md);
-    resize: vertical; /* Allow vertical resize, disable horizontal by default */
-    min-height: 44px; /* Minimum height for the textarea, good for 1-2 lines */
-    max-height: 120px; /* Prevent it from getting too tall */
+/* --- Text Input Field --- */
+.chat-input {
+    flex-grow: 1;
+    padding: 0.75rem;
+    border: none; /* A cleaner, borderless look */
+    border-radius: var(--border-radius-pill); /* Pill-shaped input */
+    background-color: rgba(0,0,0,0.2);
+    color: var(--text-primary);
+    resize: none; /* Disabled resize for a cleaner look */
+    min-height: 44px;
     font-family: inherit;
     font-size: 0.9rem;
-    line-height: 1.4;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: box-shadow 0.2s ease;
+}
+html[data-theme="dark"] .chat-input {
+    background-color: rgba(0,0,0,0.3);
 }
 
 .chat-input:focus {
     outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+    /* A glowing effect on focus instead of a harsh border */
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.4); 
 }
 
-[data-theme="dark"] .chat-input {
-    background-color: #3a3f44; /* Darker input field */
-    color: var(--text-color);
-    border-color: #555;
-}
-[data-theme="dark"] .chat-input:focus {
-    border-color: var(--button-border); /* Use a dark theme focus color */
-    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.3); /* Adjust alpha for dark */
-}
-
-
+/* --- Send Button --- */
+/* An icon-only button for a modern, compact look. */
 .send-chat-btn {
-    padding: var(--spacing-xs) var(--spacing-md); /* Balanced padding */
-    background-color: var(--primary-color);
-    color: white;
+    flex-shrink: 0; /* Prevents the button from shrinking */
+    width: 44px;
+    height: 44px;
+    border-radius: 50%; /* Circular button */
     border: none;
-    border-radius: var(--border-radius-md);
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
     cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-    align-self: flex-end; /* Align with bottom of textarea if textarea grows */
-    height: 44px; /* Match min-height of textarea for alignment */
+    font-size: 1rem; /* Adjust icon size */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
 .send-chat-btn:hover:not(:disabled) {
+    transform: scale(1.1); /* Pop effect on hover */
     background-color: var(--secondary-color);
-    transform: translateY(-1px);
 }
 .send-chat-btn:disabled {
-    background-color: #cccccc;
-    color: #666666;
+    background-color: #555;
+    color: #888;
     cursor: not-allowed;
     transform: none;
-}
-[data-theme="dark"] .send-chat-btn:disabled {
-    background-color: #444;
-    color: #888;
 }
 
 /*
@@ -1137,13 +1200,4 @@ Opaque Background for Active Dropdowns
 .time-adjust-btn:hover {
     background-color: var(--primary-color);
     color: var(--text-on-primary);
-}
-
-/*
-Widen Settings Dropdown for Timer Controls
-*/
-
-/* This targets the dropdown menu specifically when it's a child of the "Settings" link by count (e.g., 0, 1, 2) */
-.nav-menu > li:nth-child(2) > .dropdown-menu {
-    min-width: 350px; /* Increase the minimum width of the container */
 }

@@ -61,14 +61,17 @@ function displayQuestions(questions) {
         `;
 
         htmlContent += `<div class="feedback" id="feedback-${question.number}"></div>`;
-        htmlContent += `<div class="llm-response" id="llm-response-${question.number}" style="display: none;">LLM Explanation will appear here...</div>`;
+        htmlContent += `<div class="llm-response" id="llm-response-${question.number}" style="display: none;">LLM Explanation will appears here...</div>`;
         htmlContent += `
             <div class="llm-chat-interface-container" id="llm-chat-interface-container-${question.number}" style="display: none;">
                 <div class="chat-messages" id="chat-messages-${question.number}"></div>
                 <div class="chat-input-area">
                     <textarea class="chat-input" id="chat-input-${question.number}" placeholder="Type your message..."></textarea>
-                    <button class="send-chat-btn" id="send-chat-btn-${question.number}" data-question-number="${question.number}">Send</button>
+
+                    <button class="send-chat-btn" id="send-chat-btn-${question.number}" data-question-number="${question.number}"><i class="fas fa-paper-plane"></i></button>
+
                 </div>
+
             </div>
         `;
         htmlContent += '</div>';
