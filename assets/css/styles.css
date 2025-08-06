@@ -1056,7 +1056,6 @@ Opaque Background for Active Dropdowns
 }
 
 /* --- User's Message Bubble --- */
-/* Using a distinct blue accent color for high contrast in BOTH light and dark modes. */
 .chat-message-user {
     background-color: var(--message-color);
     color: #ffffff; /* White text on the blue background */
@@ -1079,32 +1078,40 @@ html[data-theme="dark"] .chat-message-llm {
 
 
 /* --- Chat Input Area --- */
+/* A container for the input field and send button */
 .chat-input-area {
     display: flex;
-    align-items: center; /* Better vertical alignment */
-    padding: var(--spacing-md);
+    align-items: center;
     gap: var(--spacing-md);
-    /* A slightly different background for subtle separation */
-    background-color: rgba(0, 0, 0, 0.1); 
-    border-top: 1px solid var(--glass-border);
+    
+    /* Make the container wide but with some padding on the sides */
+    width: 90%; 
+    max-width: 800px; /* Set a max-width for very large screens */
+    margin: 0 auto;   /* This centers the container */
+    padding: var(--spacing-md) 0; /* Add padding only on the top/bottom */
+
+    /* Remove the old background and border for a cleaner look */
+    background-color: transparent; 
+    border-top: none;
 }
 html[data-theme="dark"] .chat-input-area {
-     background-color: rgba(0, 0, 0, 0.2);
+     background-color: transparent;
 }
 
+
 /* --- Text Input Field --- */
+/* Styling the textarea to be a rounded, modern input field */
 .chat-input {
-    flex-grow: 1;
-    padding: 0.75rem;
-    border: none; /* A cleaner, borderless look */
-    border-radius: var(--border-radius-pill); /* Pill-shaped input */
-    background-color: rgba(0,0,0,0.2);
+    flex-grow: 1; /* Allows the input to take up all available space */
+    padding: 0.75rem 1.25rem;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-pill); /* Pill-shaped */
+    background-color: var(--container-bg);
     color: var(--text-primary);
-    resize: none; /* Disabled resize for a cleaner look */
-    min-height: 44px;
+    resize: none;
     font-family: inherit;
-    font-size: 0.9rem;
-    transition: box-shadow 0.2s ease;
+    font-size: 1rem;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 html[data-theme="dark"] .chat-input {
     background-color: rgba(0,0,0,0.3);
@@ -1112,25 +1119,26 @@ html[data-theme="dark"] .chat-input {
 
 .chat-input:focus {
     outline: none;
-    /* A glowing effect on focus instead of a harsh border */
+    border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.4); 
 }
 
 /* --- Send Button --- */
-/* An icon-only button for a modern, compact look. */
 .send-chat-btn {
     flex-shrink: 0; /* Prevents the button from shrinking */
-    width: 44px;
+    width: 50px; /* A bit wider to fit the arrow */
     height: 44px;
-    border-radius: 50%; /* Circular button */
+    border-radius: var(--border-radius-pill); /* Pill-shaped button */
     border: none;
     background-color: var(--primary-color);
     color: var(--text-on-primary);
     cursor: pointer;
-    font-size: 1rem; /* Adjust icon size */
+    font-size: 1.5rem; /* Larger font size for the arrow symbol */
+    font-weight: bold;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding-bottom: 2px; /* Helps visually center the arrow */
     transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
@@ -1198,6 +1206,54 @@ html[data-theme="dark"] .chat-input {
 }
 
 .time-adjust-btn:hover {
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
+}
+
+/*
+==========================================================================
+OVERRIDE: Send Fix Button
+==========================================================================
+*/
+
+/* Target the button itself */
+.chat-input-area .send-chat-btn {
+    text-transform: none; /* Prevents text from becoming uppercase */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Target the SPAN inside the button */
+.chat-input-area .send-chat-btn span {
+    font-size: 1.5rem;  /* Make the arrow symbol large */
+    line-height: 1;     /* Improve vertical centering */
+    margin-top: -2px;   /* Fine-tune vertical position */
+}
+
+/*
+==========================================================================
+    Theme-Aware Send Button
+==========================================================================
+*/
+
+/*
+ * This block overrides the default send button appearance specifically for dark mode.
+ * It inverts the button's colors to have a dark background with a bright,
+ * high-contrast arrow, fitting the overall dark theme.
+*/
+html[data-theme="dark"] .send-chat-btn {
+    background-color: var(--container-bg); /* Use the theme's dark container background */
+    color: var(--primary-color);           /* Make the arrow icon use the bright accent color */
+    border: 1px solid var(--glass-border); /* Add a subtle border for definition */
+}
+
+/*
+ * This handles the hover effect for the send button in dark mode.
+ * On hover, the button fills with the bright accent color, and the arrow
+ * becomes dark, providing clear visual feedback.
+*/
+html[data-theme="dark"] .send-chat-btn:hover:not(:disabled) {
     background-color: var(--primary-color);
     color: var(--text-on-primary);
 }

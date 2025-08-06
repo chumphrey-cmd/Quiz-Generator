@@ -271,6 +271,21 @@ class ExamManager {
             console.error("CRITICAL: Could not find #quiz-content div to attach master listener.");
         }
 
+        if (quizContentElement) {
+            // Listen for 'input' events that happen inside the main quiz container.
+            quizContentElement.addEventListener('input', (event) => {
+                // Check if the event came from one of our chat input textareas.
+                if (event.target.matches('.chat-input')) {
+                    const textarea = event.target;
+                    // Temporarily reset the height to its minimum to correctly calculate the new height.
+                    textarea.style.height = 'auto';
+                    // Set the height to the scrollHeight, which is the full height of the content.
+                    textarea.style.height = `${textarea.scrollHeight}px`;
+                }
+            });
+            console.log("Auto-expanding textarea listener attached to #quiz-content.");
+        }
+
         // --- Listeners for Static Modal Buttons ---
         // This logic remains unchanged.
         console.log("Attempting to find and attach listeners to modal buttons...");
@@ -911,7 +926,7 @@ class ExamManager {
             if (chatInput) chatInput.disabled = false;
             if (button) {
                 button.disabled = false;
-                button.textContent = 'Send';
+                button.innerHTML = '<span>&#10148;</span>';
             }
             // Focus the chat input again for the next message
             if(chatInput) chatInput.focus();
@@ -1061,7 +1076,7 @@ class ExamManager {
              const actualButton = document.getElementById(sendChatButton.id); // Get the potentially new button from DOM
              if(actualButton){
                 actualButton.disabled = false;
-                actualButton.textContent = 'Send';
+                actualButton.innerHTML = '<span>&#10148;</span>';
                 console.log(`initiateChatInterface: Send chat button for question ${questionNumber} enabled and text reset.`);
              }
         }

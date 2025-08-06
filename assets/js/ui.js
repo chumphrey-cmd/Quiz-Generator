@@ -66,9 +66,9 @@ function displayQuestions(questions) {
             <div class="llm-chat-interface-container" id="llm-chat-interface-container-${question.number}" style="display: none;">
                 <div class="chat-messages" id="chat-messages-${question.number}"></div>
                 <div class="chat-input-area">
-                    <textarea class="chat-input" id="chat-input-${question.number}" placeholder="Type your message..."></textarea>
+                    <textarea class="chat-input" id="chat-input-${question.number}" placeholder="Type your message..." rows="1"></textarea>
 
-                    <button class="send-chat-btn" id="send-chat-btn-${question.number}" data-question-number="${question.number}"><i class="fas fa-paper-plane"></i></button>
+                    <button class="send-chat-btn" id="send-chat-btn-${question.number}" data-question-number="${question.number}"><span>&#10148;</span></button>
 
                 </div>
 
