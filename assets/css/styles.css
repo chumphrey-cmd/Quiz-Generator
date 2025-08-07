@@ -990,7 +990,7 @@ Opaque Background for Active Dropdowns
 
 /*
 ==========================================================================
-    MODERNIZED: LLM Chat Interface Styles
+LLM Chat Interface Styles
 ==========================================================================
 */
 
@@ -1103,7 +1103,7 @@ html[data-theme="dark"] .chat-input-area {
 /* Styling the textarea to be a rounded, modern input field */
 .chat-input {
     flex-grow: 1; /* Allows the input to take up all available space */
-    padding: 0.75rem 1.25rem;
+    padding: 1rem 1.5rem;
     border: 1px solid var(--glass-border);
     border-radius: var(--border-radius-pill); /* Pill-shaped */
     background-color: var(--container-bg);
@@ -1112,6 +1112,8 @@ html[data-theme="dark"] .chat-input-area {
     font-family: inherit;
     font-size: 1rem;
     transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    box-sizing: border-box; /* Ensures padding is included in height calculation to dynamically adjust message box */
+
 }
 html[data-theme="dark"] .chat-input {
     background-color: rgba(0,0,0,0.3);
@@ -1120,7 +1122,7 @@ html[data-theme="dark"] .chat-input {
 .chat-input:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.4); 
+    box-shadow: 0 0 0 0.5px rgba(var(--primary-color-rgb), 0.4); 
 }
 
 /* --- Send Button --- */
@@ -1151,6 +1153,33 @@ html[data-theme="dark"] .chat-input {
     color: #888;
     cursor: not-allowed;
     transform: none;
+}
+
+/*
+==========================================================================
+Theme-Aware Send Button
+==========================================================================
+*/
+
+/*
+ * This block overrides the default send button appearance specifically for dark mode.
+ * It inverts the button's colors to have a dark background with a bright,
+ * high-contrast arrow, fitting the overall dark theme.
+*/
+html[data-theme="dark"] .send-chat-btn {
+    background-color: var(--container-bg); /* Use the theme's dark container background */
+    color: var(--primary-color);           /* Make the arrow icon use the bright accent color */
+    border: 1px solid var(--glass-border); /* Add a subtle border for definition */
+}
+
+/*
+ * This handles the hover effect for the send button in dark mode.
+ * On hover, the button fills with the bright accent color, and the arrow
+ * becomes dark, providing clear visual feedback.
+*/
+html[data-theme="dark"] .send-chat-btn:hover:not(:disabled) {
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
 }
 
 /*
@@ -1233,27 +1262,40 @@ OVERRIDE: Send Fix Button
 
 /*
 ==========================================================================
-    Theme-Aware Send Button
+    Modern Reusable Scrollbar 
 ==========================================================================
+    - This creates a reusable class for modern scrollbars.
+    - Apply the `.modern-scrollbar` class to any container that needs
+      this style (e.g., .chat-messages, .chat-input).
 */
 
-/*
- * This block overrides the default send button appearance specifically for dark mode.
- * It inverts the button's colors to have a dark background with a bright,
- * high-contrast arrow, fitting the overall dark theme.
-*/
-html[data-theme="dark"] .send-chat-btn {
-    background-color: var(--container-bg); /* Use the theme's dark container background */
-    color: var(--primary-color);           /* Make the arrow icon use the bright accent color */
-    border: 1px solid var(--glass-border); /* Add a subtle border for definition */
+/* --- Firefox Scrollbar Styling --- */
+.modern-scrollbar {
+    scrollbar-color: var(--text-secondary) transparent;
+    scrollbar-width: thin;
 }
 
-/*
- * This handles the hover effect for the send button in dark mode.
- * On hover, the button fills with the bright accent color, and the arrow
- * becomes dark, providing clear visual feedback.
-*/
-html[data-theme="dark"] .send-chat-btn:hover:not(:disabled) {
+/* --- Webkit (Chrome, Safari, Edge) Scrollbar Styling --- */
+
+/* 1. The overall scrollbar element */
+.modern-scrollbar::-webkit-scrollbar {
+    width: 8px;
+}
+
+/* 2. The track (the background the scrollbar sits on) */
+.modern-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* 3. The thumb (the draggable part of the scrollbar) */
+.modern-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--text-secondary);
+    border-radius: 20px;
+    border: 12px solid transparent; /* Creates padding around the thumb */
+    background-clip: content-box;
+}
+
+/* 4. The thumb on hover for better user feedback */
+.modern-scrollbar::-webkit-scrollbar-thumb:hover {
     background-color: var(--primary-color);
-    color: var(--text-on-primary);
 }
