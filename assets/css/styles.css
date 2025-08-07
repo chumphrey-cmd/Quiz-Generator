@@ -1047,12 +1047,12 @@ LLM Chat Interface Styles
 
 /* --- General Message Bubble Style --- */
 .chat-message {
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 1rem;
     border-radius: var(--border-radius-card);
     max-width: 85%;
     word-wrap: break-word;
     line-height: 1.5;
-    box-shadow: none; /* Removed shadow for a flatter, more modern look */
+    box-shadow: none;
 }
 
 /* --- User's Message Bubble --- */
@@ -1098,31 +1098,48 @@ html[data-theme="dark"] .chat-input-area {
      background-color: transparent;
 }
 
+.chat-input-wrapper {
+    flex-grow: 1;
+    position: relative;
+    max-height: 140px; /* The maximum height before scrolling starts */
+    overflow-y: auto;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--container-bg);
+    display: flex;
+    box-sizing: border-box; 
+}
+
+/* This adds the focus effect to the wrapper */
+.chat-input-wrapper:focus-within {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 1px rgba(var(--primary-color-rgb), 0.4); 
+}
 
 /* --- Text Input Field --- */
-/* Styling the textarea to be a rounded, modern input field */
-.chat-input {
-    flex-grow: 1; /* Allows the input to take up all available space */
-    padding: 1rem 1.5rem;
-    border: 1px solid var(--glass-border);
-    border-radius: var(--border-radius-pill); /* Pill-shaped */
-    background-color: var(--container-bg);
-    color: var(--text-primary);
+
+/*
+Using .chat-input-wrapper textarea.chat-input, to create a highly specific rule that will override any other generic textarea styles.
+*/
+
+.chat-input-wrapper textarea.chat-input {
+    width: 100%;
+    flex-grow: 1;
+    padding: 1rem 2rem 1rem 1.25rem;
+    background-color: transparent;
+    border: none;
     resize: none;
+    overflow-y: hidden !important; 
+    color: var(--text-primary);
     font-family: inherit;
     font-size: 1rem;
-    transition: box-shadow 0.2s ease, border-color 0.2s ease;
-    box-sizing: border-box; /* Ensures padding is included in height calculation to dynamically adjust message box */
-
-}
-html[data-theme="dark"] .chat-input {
-    background-color: rgba(0,0,0,0.3);
+    box-sizing: border-box; 
 }
 
 .chat-input:focus {
     outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.5px rgba(var(--primary-color-rgb), 0.4); 
+    box-shadow: none;
 }
 
 /* --- Send Button --- */
@@ -1140,7 +1157,7 @@ html[data-theme="dark"] .chat-input {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding-bottom: 2px; /* Helps visually center the arrow */
+    /* padding-bottom: 4px; Helps visually center the arrow */
     transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
@@ -1153,6 +1170,38 @@ html[data-theme="dark"] .chat-input {
     color: #888;
     cursor: not-allowed;
     transform: none;
+}
+
+/* --- Loading Indicator for Send Button --- */
+
+/* This targets the dots inside the button when it's disabled */
+.send-chat-btn:disabled .loading-dot {
+    /* Sets up the animation */
+    animation: loading-pulse 1.4s infinite;
+    animation-fill-mode: both;
+    display: inline-block; /* Required for animation to work correctly */
+}
+
+/* This adds a small delay to each subsequent dot, creating the wave effect */
+.send-chat-btn:disabled .loading-dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.send-chat-btn:disabled .loading-dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+/* This is the actual animation definition */
+@keyframes loading-pulse {
+    0% {
+        opacity: 0.2;
+    }
+    20% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.2;
+    }
 }
 
 /*
@@ -1241,7 +1290,7 @@ html[data-theme="dark"] .send-chat-btn:hover:not(:disabled) {
 
 /*
 ==========================================================================
-OVERRIDE: Send Fix Button
+Send Button
 ==========================================================================
 */
 
@@ -1257,7 +1306,8 @@ OVERRIDE: Send Fix Button
 .chat-input-area .send-chat-btn span {
     font-size: 1.5rem;  /* Make the arrow symbol large */
     line-height: 1;     /* Improve vertical centering */
-    margin-top: -2px;   /* Fine-tune vertical position */
+    margin-top: 0;   /* Fine-tune vertical position, to move arrow down use positive value, to move arrow up, use negative value */
+    margin-left: 2px; /* To move arrow RIGHT, use a positive value, to move arrow LEFT, use a negative value */
 }
 
 /*

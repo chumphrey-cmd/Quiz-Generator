@@ -879,11 +879,10 @@ class ExamManager {
         chatInput.value = ''; // Clear input
         chatInput.disabled = true;
         button.disabled = true;
-        button.textContent = 'Sending...';
+        button.innerHTML = '<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span>';
         console.log(`handleSendChatMessage: Displayed user message for question ${questionNumber}. Input/button disabled.`);
 
         try {
-            // --- NEW: Update Chat History & Call LLM with Full History ---
 
             // 1. Ensure chat history is initialized for this question (defensive check)
             if (!this.chatHistories[questionNumber]) {

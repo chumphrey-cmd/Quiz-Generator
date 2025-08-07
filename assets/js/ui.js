@@ -71,8 +71,10 @@ function displayQuestions(questions) {
                 </div>
 
                 <div class="chat-input-area">
-                    <textarea class="chat-input modern-scrollbar" id="chat-input-${question.number}" placeholder="Type your message..." rows="1"></textarea>
 
+                    <div class="chat-input-wrapper modern-scrollbar">
+                      <textarea class="chat-input" id="chat-input-${question.number}" placeholder="Type your message..." rows="1"></textarea>
+                    </div>
                     <button class="send-chat-btn" id="send-chat-btn-${question.number}" data-question-number="${question.number}"><span>&#10148;</span></button>
 
                 </div>
