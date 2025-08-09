@@ -316,6 +316,9 @@ class ExamManager {
             });
             console.log("Event listener attached to 'Import New' button.");
         }
+
+        // Hide the provider settings container on initial load
+        document.getElementById('provider-settings-container-wrapper')?.classList.add('element-hidden');
     }
 
     /**
@@ -356,19 +359,31 @@ class ExamManager {
         const selectedProvider = event.target.value;
         console.log(`Provider changed to: ${selectedProvider}`);
 
-        // First, hide all provider-specific settings containers.
-        const allSettings = document.querySelectorAll('.provider-settings');
+        // --- Get the container for the settings and the separator line ---
+        const settingsContainer = document.getElementById('provider-settings-container-wrapper');
+
+        // First, hide all provider-specific settings panels within the container.
+        const allSettings = settingsContainer.querySelectorAll('.provider-settings');
         allSettings.forEach(setting => {
             setting.style.display = 'none';
         });
 
-        // If a provider is selected (i.e., not 'none'), show its corresponding settings panel.
+        // If a provider is selected (i.e., not 'none'), show its settings and the separator.
         if (selectedProvider !== 'none') {
+            // Show the separator line
+            if (settingsContainer) {
+                settingsContainer.classList.remove('element-hidden');
+            }
+
             const settingsToShow = document.getElementById(`${selectedProvider}-settings`);
             if (settingsToShow) {
-                // We use 'flex' because the child elements are laid out with flexbox.
                 settingsToShow.style.display = 'flex';
                 console.log(`Displaying settings for: #${settingsToShow.id}`);
+            }
+        } else {
+            // If "Select Provider" is chosen, hide the separator line
+            if (settingsContainer) {
+                settingsContainer.classList.add('element-hidden');
             }
         }
     }

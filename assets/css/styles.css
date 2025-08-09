@@ -178,13 +178,26 @@ body {
     transform: translateY(10px);
 }
 
-/*
-Widen Settings Dropdown for Timer Controls
-*/
+/* 
+==========================================================
+Widen Settings Dropdown Headers
+==========================================================
+*/ 
+
+/* This new rule sets a narrow width specifically for the "File" dropdown */
+.nav-menu > li:nth-child(1) > .dropdown-menu {
+    min-width: 90px; /* A much narrower width for the Import button */
+}
+
 
 /* This targets the dropdown menu width specifically when it's a child of the "Settings" link by count (e.g., 0, 1, 2) */
 .nav-menu > li:nth-child(2) > .dropdown-menu {
     min-width: 350px; /* Increase the minimum width of the container */
+}
+
+/* This new rule sets a specific, narrower width for the "API" dropdown menu */
+.nav-menu > li:nth-child(3) > .dropdown-menu {
+    min-width: 250px;
 }
 
 .nav-menu > li:hover .dropdown-menu {
@@ -206,7 +219,7 @@ Widen Settings Dropdown for Timer Controls
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
-    padding: 0.5rem;
+    padding: 0.25rem 0.5rem;
 }
 
 .dropdown-item-complex label {
@@ -217,7 +230,7 @@ Widen Settings Dropdown for Timer Controls
 
 .file-label-nav {
     display: block;
-    padding: 0.75rem 1rem;
+    padding: 0.25rem 0.25rem;
     background-color: var(--primary-color);
     color: var(--text-on-primary);
     border-radius: var(--border-radius-pill);
@@ -1348,4 +1361,15 @@ Send Button
 /* 4. The thumb on hover for better user feedback */
 .modern-scrollbar::-webkit-scrollbar-thumb:hover {
     background-color: var(--primary-color);
+}
+
+/*
+==========================================================================
+Misc. Utilities 
+==========================================================================
+*/
+
+/* Utility class to hide an element */
+.element-hidden {
+    display: none !important;
 }

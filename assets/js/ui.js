@@ -360,7 +360,7 @@ function createCustomSelect(originalSelect) {
             <span>${originalSelect.options[originalSelect.selectedIndex]?.textContent || 'Select...'}</span>
             <div class="arrow"></div>
         </div>
-        <div class="custom-options"></div>
+        <div class="custom-options modern-scrollbar"></div>
     `;
 
     // Add the newly created custom dropdown (`wrapper`) to the page.
