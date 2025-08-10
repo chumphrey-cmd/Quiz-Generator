@@ -1,6 +1,6 @@
 # Simple Quiz Generator
 
-A local and super simple web-based exam/quiz application that allows users to import questions from text files and take interactive quizzes with real-time feedback. 
+A local and super simple web-based exam/quiz application that allows users to import questions from text files and take interactive quizzes with real-time feedback.
 
 Personally I just wanted a way to quickly take exams on the content that I was reading.
 
@@ -14,7 +14,7 @@ Personally I just wanted a way to quickly take exams on the content that I was r
 
 Questions **MUST** be formatted as follows:
 
-```
+```text
 1. Question text here?
 A. First answer
 B. Second answer
@@ -23,6 +23,7 @@ D. Fourth answer
 
 2. Next question...
 ```
+
 - One blank line between questions
 - Correct answer marked with asterisk (*)
 

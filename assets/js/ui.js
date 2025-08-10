@@ -8,6 +8,12 @@ function displayQuestions(questions) {
     console.log("Displaying questions:", questions);
     let htmlContent = "";
 
+    const totalQuestions = questions.length;
+    if (totalQuestions > 0) {
+        const counterText = `Reviewing ${totalQuestions} Question(s)`;
+        htmlContent += `<div class="question-counter">${counterText}</div>`;
+    }
+
     questions.forEach(question => {
         const isMultipleChoice = question.correct.length > 1;
         const inputType = isMultipleChoice ? 'checkbox' : 'radio';
@@ -104,7 +110,7 @@ function displaySingleQuestion(question, totalQuestions, isReviewingSet = false,
     console.log(`displaySingleQuestion: Generating HTML for Question #${question.number}`);
 
     let htmlContent = '';
-    let counterText = `Question ${question.number} of ${totalQuestions}`;
+    let counterText = `${question.number} of ${totalQuestions}`;
 
     if (isReviewingSet) {
         let filterDescription = "Flagged Questions";

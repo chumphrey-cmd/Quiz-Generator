@@ -6,6 +6,9 @@
     <title>QA Generator</title>
     <link rel="stylesheet" href="assets/css/styles.css"> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -17,16 +20,16 @@
             </div>
             <ul class="nav-menu">
                 <li>
-                    <a href="#">File</a>
+                    <a href="#" title="File"><i class="fas fa-paperclip nav-icon"></i></a>
                     <ul class="dropdown-menu">
                         <li>
                             <input type="file" id="questionFile" accept=".txt" class="file-input" multiple>
-                            <label for="questionFile" class="file-label-nav">Import Questions</label>
+                            <label for="questionFile" class="file-label-nav">Import</label>
                         </li>
                     </ul>
                 </li>
                 <li>
-                    <a href="#">Settings</a>
+                    <a href="#" title="Settings"><i class="fa-solid fa-gears nav-icon"></i></a>
                     <ul class="dropdown-menu">
                         <li class="dropdown-item-complex">
                             <label for="modeSelector">Mode</label>
@@ -54,7 +57,7 @@
                     </ul>
                 </li>
                 <li>
-                    <a href="#">API</a>
+                    <a href="#" title="LLM Selection"><i class="fas fa-bolt nav-icon"></i></a>
                     <ul class="dropdown-menu">
                         <li class="dropdown-item-complex">
                         <label for="apiProviderSelect">Provider</label>
@@ -177,17 +180,20 @@
                 </li>
             </ul>
         </div>
-        <div class="nav-right">
+
+        <div class="nav-center">
             <div id="timer-display" class="nav-timer">00:00:00</div>
             <div class="nav-progress-container">
                 <div class="nav-progress-bar">
                     <div id="progress-fill"></div>
                 </div>
-                 <div id="progress-text">0/0</div>
+                <div id="progress-text">0/0</div>
             </div>
+        </div>
 
+        <div class="nav-right">
             <div class="theme-toggle-container">
-            <span id="theme-toggle-text" class="theme-toggle-text">Dark Mode</span>
+            <div id="theme-toggle-switch" class="theme-toggle-switch" title="Toggle theme">
 
             <div id="theme-toggle-switch" class="theme-toggle-switch" title="Toggle theme">
                 <i class="fas fa-moon"></i>

@@ -127,6 +127,12 @@ body {
     gap: 1.5rem;
 }
 
+.nav-center {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem; /* Controls the space between timer and progress bar */
+}
+
 .nav-logo a {
     font-weight: 700;
     font-size: 1.25rem;
@@ -137,7 +143,7 @@ body {
 .nav-menu {
     list-style: none;
     display: flex;
-    gap: 1rem;
+    gap: 0.5rem;
     margin: 0;
     padding: 0;
 }
@@ -158,6 +164,12 @@ body {
 .nav-menu > li:hover > a, .nav-menu > li > a.active {
     background-color: var(--primary-color);
     color: var(--text-on-primary);
+}
+
+/* Change icon color on hover */
+.nav-menu > li > a:hover .nav-icon {
+    stroke: var(--text-on-primary);
+    transform: scale(1.1);
 }
 
 .dropdown-menu {
@@ -274,12 +286,17 @@ Widen Settings Dropdown Headers
 }
 
 .nav-right { gap: 1rem; }
+
 .nav-timer {
     font-weight: 500;
-    font-size: 1.1rem;
-    color: var(--text-secondary);
-    min-width: 80px;
+    font-size: 1.2rem; /* Slightly larger for better readability */
+    color: var(--primary-color); /* Make the timer text use the accent color */
+    min-width: 100px; /* Adjust width to fit new size */
     text-align: right;
+    /* Use the new "digital clock" font */
+    font-family: 'Roboto Mono', monospace; 
+    /* Add a subtle glow effect */
+    text-shadow: 0 0 8px rgba(var(--primary-color-rgb), 0.5);
 }
 
 
@@ -352,20 +369,25 @@ html[data-theme="dark"] .toggle-thumb {
 }
 .nav-progress-bar {
     width: 100%;
-    height: 8px;
-    background: rgba(0, 0, 0, 0.3);
+    /* Make the bar thinner */
+    height: 6px; 
+    background: rgba(0, 0, 0, 0.5); /* Darker, more transparent track */
     border-radius: var(--border-radius-pill);
     overflow: hidden;
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
+    border: 1px solid rgba(255, 255, 255, 0.05); /* Add a subtle edge highlight */
 }
 #progress-fill {
     height: 100%;
     width: 0;
-    background: var(--primary-color);
+    /* Add a subtle gradient for depth */
+    background-image: linear-gradient(to bottom, var(--primary-color), var(--secondary-color));
     border-radius: var(--border-radius-pill);
     transition: width 0.3s ease;
+    /* Add an inner glow effect */
+    box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.3);
 }
 #progress-text {
     position: absolute;
@@ -375,8 +397,11 @@ html[data-theme="dark"] .toggle-thumb {
     color: var(--text-primary);
     font-size: 0.75rem;
     font-weight: 600;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    /* Sharpen the text against the bar */
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+    display: none;
 }
+
 .theme-btn-nav {
     background: rgba(255, 255, 255, 0.1);
     border: none;
