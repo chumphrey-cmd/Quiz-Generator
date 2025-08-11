@@ -61,6 +61,10 @@ class ExamManager {
         this.isTimerRunning = false;   // Tracks if countdown is active (running or paused)
         this.isTimerPaused = false;    // Tracks if countdown is specifically paused
 
+        // --- Question # Selection ---
+        this.questionCountSelection = 15; // The number from the input field
+        this.isSelectAllActive = true;    // Tracks if the "All" button is active
+
         // --- Chat History Storage ---
         // This object will store chat histories for each question.
         // The keys will be question numbers, and the values will be arrays of message objects.
@@ -88,7 +92,60 @@ class ExamManager {
         // --- Set initial button states for timer ---
         this._updateTimerControlEventsUI();
 
+        // --- Set Question Selection Controls ---
+        this.updateQuestionControlsUI();
+
         console.log("ExamManager constructor finished.");
+    }
+
+    /**
+     * A centralized handler for any setting that requires a quiz restart.
+     * @param {function} updateStateFn - A function that updates the specific state (e.g., sets this.examMode).
+     */
+    handleSettingChange(updateStateFn) {
+        // Apply the state change immediately so we can act on it.
+        updateStateFn(); 
+
+        // Only ask for confirmation if a quiz is currently active.
+        if (this.questions.length > 0) {
+            const userConfirmed = confirm('Changing this setting will restart your current quiz. Are you sure?');
+            if (userConfirmed) {
+                // If the user agrees, restart the quiz with the new setting.
+                this.startNewQuiz(this.originalQuestions);
+            } else {
+                // If they cancel, we need to revert the state change. This is a simple
+                // way to toggle the boolean back to its previous state.
+                this.isSelectAllActive = !this.isSelectAllActive; 
+            }
+        }
+        // Finally, always update the UI to reflect the correct, final state.
+        this.updateQuestionControlsUI();
+    }
+    
+    /**
+     * Updates the Question Selection UI (buttons and input) based on the current state.
+     * This is the single source of truth for how these controls should look.
+     */
+    updateQuestionControlsUI() {
+        const allBtn = document.getElementById('all-questions-btn');
+        const countInput = document.getElementById('question-count-input');
+        const incBtn = document.getElementById('increment-questions');
+        const decBtn = document.getElementById('decrement-questions');
+
+        if (!allBtn || !countInput || !incBtn || !decBtn) return;
+
+        // Logic to enable/disable controls based on whether "All" is active.
+        if (this.isSelectAllActive) {
+            allBtn.classList.add('active');
+            countInput.disabled = true;
+            incBtn.disabled = true;
+            decBtn.disabled = true;
+        } else {
+            allBtn.classList.remove('active');
+            countInput.disabled = false;
+            incBtn.disabled = false;
+            decBtn.disabled = false;
+        }
     }
 
     /**
@@ -163,7 +220,7 @@ class ExamManager {
                 } else if (currentValue > maxTime) {
                     timerInput.value = maxTime;
                 }
-                // CRUCIAL: Notify the rest of the application that the time has changed.
+                // Notify the rest of the application that the time has changed.
                 timerInput.dispatchEvent(new Event('change'));
             };
 
@@ -197,6 +254,59 @@ class ExamManager {
         } else {
             console.error("Timer control elements not found!");
         }
+
+    // --- Listeners for Modern Question Count Controls ---
+        const allQuestionsBtn = document.getElementById('all-questions-btn');
+        const questionCountInput = document.getElementById('question-count-input');
+
+        // When the "All" button is clicked...
+        allQuestionsBtn?.addEventListener('click', () => {
+            // ...call our new handler and pass it a function that updates the state.
+            this.handleSettingChange(() => {
+                this.isSelectAllActive = !this.isSelectAllActive;
+            });
+        });
+
+        // A local helper for handling number changes.
+        const handleNumberSelection = () => {
+             this.handleSettingChange(() => {
+                this.isSelectAllActive = false;
+                let numValue = parseInt(questionCountInput.value, 10);
+                // Validate the number: if it's not a number or less than 1, reset to 1.
+                if (isNaN(numValue) || numValue < 1) {
+                    numValue = 1;
+                }
+                // Update the state
+                this.questionCountSelection = numValue;
+                // CRITICAL: Also update the input field itself to show the validated number.
+                questionCountInput.value = numValue; 
+            });
+        };
+        
+        // Attach the same handler to all number-related controls.
+        document.getElementById('increment-questions')?.addEventListener('click', () => {
+            let currentValue = parseInt(questionCountInput.value, 10);
+            // Default to 0 if input is not a number, so incrementing goes to 1.
+            if (isNaN(currentValue)) currentValue = 0;
+            questionCountInput.value = currentValue + 1;
+            handleNumberSelection(); // Trigger state update
+        });
+
+        document.getElementById('decrement-questions')?.addEventListener('click', () => {
+            let currentValue = parseInt(questionCountInput.value, 10);
+             // Default to a safe number if input is not a number.
+            if (isNaN(currentValue)) currentValue = 1;
+            // Only decrement if the result will be 1 or more.
+            if (currentValue > 1) {
+                questionCountInput.value = currentValue - 1;
+                handleNumberSelection(); // Trigger state update
+            }
+        });
+
+        // Use the 'input' event for instant feedback as the user types.
+        questionCountInput?.addEventListener('input', handleNumberSelection);
+        // Also use 'blur' to catch when the user clicks away.
+        questionCountInput?.addEventListener('blur', handleNumberSelection);
 
         const modeSelector = document.getElementById('modeSelector');
         if (modeSelector) {
@@ -502,36 +612,64 @@ class ExamManager {
      * @param {Array} questionsToStart - The array of question objects to begin the quiz with.
      */
     startNewQuiz(questionsToStart) {
-        console.log(`Starting a new quiz with ${questionsToStart.length} questions.`);
+        console.log(`Starting a new quiz. Initial question count: ${questionsToStart.length}.`);
 
         // Reset review state for a true retake
         this.reviewSet = [];
         this.reviewSetIndex = 0;
         
-        // 1. Ensure the modal is hidden and the main header is visible.
+        // 1. Ensure the modal is hidden.
         const modalContainer = document.getElementById('end-of-quiz-modal-container');
         if (modalContainer) modalContainer.classList.remove('show');
-        const headerControls = document.querySelector('.header-controls');
-        if (headerControls) headerControls.style.display = 'flex';
 
-        // 2. Set up the quiz state with the provided questions.
-        this.questions = this.shuffleArray(questionsToStart);
+        // Shuffle the entire pool of questions that were passed into the function.
+        // This ensures a random order every time a new quiz starts.
+        const shuffledQuestions = this.shuffleArray(questionsToStart);
+
+        // A temporary variable to hold the final set of questions for this quiz session.
+        let finalQuestions; 
+
+        // Check the 'isSelectAllActive' flag, which we control with our new UI elements.
+        if (!this.isSelectAllActive) {
+            // --- This block runs if the user wants a SPECIFIC NUMBER of questions. ---
+
+            // We use Math.min() as a safeguard. It chooses the smaller of two numbers:
+            // the number the user selected, or the total number of questions available.
+            // This prevents errors if the user, for example, asks for 20 questions when only 10 exist.
+            const count = Math.min(this.questionCountSelection, shuffledQuestions.length);
+            console.log(`Slicing the quiz to ${count} questions.`);
+
+            // The .slice() method creates a new, smaller array from the shuffled one.
+            // It starts at the beginning (index 0) and takes 'count' number of items.
+            finalQuestions = shuffledQuestions.slice(0, count);
+
+        } else {
+            // --- This block runs if the "All" button is active. ---
+
+            console.log("Using all available questions.");
+            // We simply use the entire shuffled array without slicing it.
+            finalQuestions = shuffledQuestions;
+        }
+
+        // Assign our carefully selected 'finalQuestions' array (which is either the full set or a smaller slice) to the main 'this.questions' state property.
+        this.questions = finalQuestions;
+
+        // This crucial step renumbers all questions in the final array sequentially (1, 2, 3...).
+        // This is important because slicing and shuffling messes up the original numbering.
         this.renumberQuestions();
 
         // 3. Initialize tracking properties for this new quiz session.
         this.questions.forEach(question => {
             question.wasAnsweredIncorrectly = false;
             question.isFlaggedForReview = false;
-            // This array will store the user's answer(s) (e.g., ['A'] or ['B', 'D'])
-            // for later grading in Exam Mode.
             question.userSelected = [];
         });
 
         // 4. Reset scores and progress trackers.
-        this.totalQuestions = this.questions.length;
+        this.totalQuestions = this.questions.length; // The total is now based on the sliced/full array.
         this.answeredQuestions = 0;
         this.currentScore = 0;
-        this.currentQuestionIndex = 0; // Every time a new quiz starts, we must reset the current question index
+        this.currentQuestionIndex = 0;
         
         // 5. Reset and display all UI elements (progress bar, timer, etc.).
         resetDisplays(this.totalQuestions);
