@@ -99,28 +99,21 @@ class ExamManager {
     }
 
     /**
-     * A centralized handler for any setting that requires a quiz restart.
-     * @param {function} updateStateFn - A function that updates the specific state (e.g., sets this.examMode).
+     * Applies the currently selected question settings and restarts the quiz.
+     * This is triggered by the '✔' button.
      */
-    handleSettingChange(updateStateFn) {
-        // Apply the state change immediately so we can act on it.
-        updateStateFn(); 
-
-        // Only ask for confirmation if a quiz is currently active.
+    applyQuestionSettings() {
+        // Only restart if a quiz is currently active.
         if (this.questions.length > 0) {
-            const userConfirmed = confirm('Changing this setting will restart your current quiz. Are you sure?');
-            if (userConfirmed) {
-                // If the user agrees, restart the quiz with the new setting.
-                this.startNewQuiz(this.originalQuestions);
-            } else {
-                // If they cancel, we need to revert the state change. This is a simple
-                // way to toggle the boolean back to its previous state.
-                this.isSelectAllActive = !this.isSelectAllActive; 
-            }
+            console.log("Applying new question settings and restarting quiz.");
+            this.startNewQuiz(this.originalQuestions);
+        } else {
+            // If no quiz is loaded, do nothing or provide feedback
+            console.log("Apply settings clicked, but no quiz is loaded.");
+            alert("Please import a quiz before applying settings.");
         }
-        // Finally, always update the UI to reflect the correct, final state.
-        this.updateQuestionControlsUI();
     }
+
     
     /**
      * Updates the Question Selection UI (buttons and input) based on the current state.
@@ -255,58 +248,57 @@ class ExamManager {
             console.error("Timer control elements not found!");
         }
 
-    // --- Listeners for Modern Question Count Controls ---
+        // --- Listeners for Modern Question Count Controls ---
         const allQuestionsBtn = document.getElementById('all-questions-btn');
         const questionCountInput = document.getElementById('question-count-input');
+        const applySettingsBtn = document.getElementById('apply-question-settings-btn');
 
-        // When the "All" button is clicked...
-        allQuestionsBtn?.addEventListener('click', () => {
-            // ...call our new handler and pass it a function that updates the state.
-            this.handleSettingChange(() => {
+        // A new, simpler handler that ONLY updates the state and UI.
+        const updateSelectionUI = (isAllClick) => {
+            if (isAllClick) {
+                // Toggle the 'All' state when the 'All' button is clicked.
                 this.isSelectAllActive = !this.isSelectAllActive;
-            });
-        });
-
-        // A local helper for handling number changes.
-        const handleNumberSelection = () => {
-             this.handleSettingChange(() => {
+            } else {
+                // If a number control was used, 'All' mode is always deactivated.
                 this.isSelectAllActive = false;
                 let numValue = parseInt(questionCountInput.value, 10);
-                // Validate the number: if it's not a number or less than 1, reset to 1.
                 if (isNaN(numValue) || numValue < 1) {
                     numValue = 1;
                 }
-                // Update the state
                 this.questionCountSelection = numValue;
-                // CRITICAL: Also update the input field itself to show the validated number.
-                questionCountInput.value = numValue; 
-            });
+                questionCountInput.value = numValue;
+            }
+            // Update the visual state of the buttons immediately.
+            this.updateQuestionControlsUI();
         };
-        
-        // Attach the same handler to all number-related controls.
+
+        allQuestionsBtn?.addEventListener('click', () => updateSelectionUI(true));
+
         document.getElementById('increment-questions')?.addEventListener('click', () => {
             let currentValue = parseInt(questionCountInput.value, 10);
-            // Default to 0 if input is not a number, so incrementing goes to 1.
             if (isNaN(currentValue)) currentValue = 0;
             questionCountInput.value = currentValue + 1;
-            handleNumberSelection(); // Trigger state update
+            updateSelectionUI(false);
         });
 
         document.getElementById('decrement-questions')?.addEventListener('click', () => {
             let currentValue = parseInt(questionCountInput.value, 10);
-             // Default to a safe number if input is not a number.
             if (isNaN(currentValue)) currentValue = 1;
-            // Only decrement if the result will be 1 or more.
             if (currentValue > 1) {
                 questionCountInput.value = currentValue - 1;
-                handleNumberSelection(); // Trigger state update
+                updateSelectionUI(false);
             }
         });
 
-        // Use the 'input' event for instant feedback as the user types.
-        questionCountInput?.addEventListener('input', handleNumberSelection);
-        // Also use 'blur' to catch when the user clicks away.
-        questionCountInput?.addEventListener('blur', handleNumberSelection);
+        questionCountInput?.addEventListener('input', () => updateSelectionUI(false));
+        questionCountInput?.addEventListener('blur', () => updateSelectionUI(false));
+
+        // Connect our new 'Apply' button to the function we created in the last step.
+        if(applySettingsBtn) {
+            applySettingsBtn.addEventListener('click', this.applyQuestionSettings.bind(this));
+        }
+
+        // --- Exam Mode Selection Section ---
 
         const modeSelector = document.getElementById('modeSelector');
         if (modeSelector) {
