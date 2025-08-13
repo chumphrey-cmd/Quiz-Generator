@@ -1312,12 +1312,13 @@ Modern Timer Input Controls
     background-color: rgba(255, 255, 255, 0.1);
     color: var(--text-secondary);
     font-size: 1.2rem;
-    font-weight: 600;
+    font-weight: 400;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding-bottom: 2px; /* Optical alignment for symbols */
+    padding-top: 4px;
+    /*padding-bottom: -4px; /* Optical alignment for symbols */
     transition: background-color 0.2s ease, color 0.2s ease;
 }
 
@@ -1427,4 +1428,31 @@ Question Selection Controls
     background-color: var(--primary-color);
     color: var(--text-on-primary);
     border-color: var(--primary-color);
+}
+
+/* --- Specific Styling for Apply Button --- */
+/* This gives the new checkmark button a 'success' look and feel. */
+#apply-question-settings-btn {
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+}
+
+#apply-question-settings-btn:hover:not(:disabled) {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* --- Disabled state for nav buttons --- */
+/* This general style will apply to the 'All', 'Apply', and timer buttons when they are disabled. */
+.nav-btn-text:disabled,
+.nav-btn-icon:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Overwrite hover effect for disabled icon buttons */
+.nav-btn-icon:disabled:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
 }
