@@ -2,8 +2,6 @@
 
 > A local and customizable web-based application for interactive learning and exam preparation. It lets you import your own multiple-choice questions from a text file and take interactive quizzes in a clean, modern interface. It was built for anyone who wants a straightforward way to practice and learn their material.
 
------
-
 ## ✨ Features
 
 * **✌️ Dual Quiz Modes**:
@@ -12,8 +10,6 @@
   * **Exam Mode**: Simulate a real test with a final grade revealed only at the end.
 
 * **🤖 AI-Powered Explanations**: Get detailed explanations for any question by connecting to LLM provider (Ollama, OpenAI, Gemini, Perplexity).
-
------
 
 ## 🚀 Getting Started
 
@@ -36,8 +32,6 @@
 
 4. **Import & Go**
     Use the navigation bar to import your `.txt` question file and start your quiz!
-
------
 
 ## 📝 Question File Format
 
