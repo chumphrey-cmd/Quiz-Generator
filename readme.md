@@ -1,40 +1,66 @@
-# Simple Quiz Generator
+# QA Gen
 
-A local and super simple web-based exam/quiz application that allows users to import questions from text files and take interactive quizzes with real-time feedback.
+> A local and customizable web-based application for interactive learning and exam preparation. It lets you import your own multiple-choice questions from a text file and take interactive quizzes in a clean, modern interface. It was built for anyone who wants a straightforward way to practice and learn their material.
 
-Personally I just wanted a way to quickly take exams on the content that I was reading.
+-----
 
-## Generate Questions to be Ingested
+## ✨ Features
 
-1. If using PDFs, use my [PDF-Extractor](https://github.com/chumphrey-cmd/Password-Protected-PDF-Extractor) tool get the text from courses that you're working on.
+* **✌️ Dual Quiz Modes**:
 
-2. Use something like Google's [NotebookLM](https://notebooklm.google/) as a RAG layer to query and generate multiple choice questions matching the **Question File Format** below.
+  * **Study Mode**: Get immediate, color-coded feedback after each answer.
+  * **Exam Mode**: Simulate a real test with a final grade revealed only at the end.
 
-## Question File Format
+* **🤖 AI-Powered Explanations**: Get detailed explanations for any question by connecting to LLM provider (Ollama, OpenAI, Gemini, Perplexity).
 
-Questions **MUST** be formatted as follows:
+-----
+
+## 🚀 Getting Started
+
+1. **Clone the Repository**
+
+    ```bash
+    git clone https://github.com/chumphrey-cmd/QA-Generator.git
+    ```
+
+2. **Generate Questions to be Ingested**
+
+    > Need to create questions from your existing study materials like PDFs or course notes?
+
+    * If your content is in PDFs, you can extract the text using a tool like my [PDF-Extractor](https://github.com/chumphrey-cmd/Password-Protected-PDF-Extractor).
+
+    * Use a modern AI tool like Google's [NotebookLM](https://notebooklm.google/) to analyze your extracted text and generate multiple-choice questions that match the **Questions File Format** below.
+
+3. **Launch the App**
+    Open the `quiz.html` file in any modern web browser (like Chrome, Firefox, or Edge).
+
+4. **Import & Go**
+    Use the navigation bar to import your `.txt` question file and start your quiz!
+
+-----
+
+## 📝 Question File Format
+
+Your questions **must** follow this simple format. Ensure there is one blank line between each question block, and mark the correct answer with a trailing asterisk (**`*`**). You also have the ability to select multiple correct answers.
 
 ```text
-1. Question text here?
-A. First answer
-B. Second answer
-C. Third answer*
-D. Fourth answer
+1. What is the capital of France?
+A. Berlin
+B. Madrid
+C. Paris*
+D. Rome
 
-2. Next question...
+2. Which planet is known as the Red Planet?
+A. Earth
+B. Mars*
+C. Jupiter
+D. Saturn
+
+3. Select all of the following that are numbers.
+A. 1*
+B. 2*
+C. 3*
+D. $
+E. 5*
+F. ^
 ```
-
-- One blank line between questions
-- Correct answer marked with asterisk (*)
-
-## Setup
-
-1. Clone the repository
-
-```bash
-git clone https://github.com/chumphrey-cmd/QA-Generator.git
-```
-
-2. Open `quiz.html` in a modern web browser
-3. Import a properly formatted `.txt` file
-4. Start taking the quiz
