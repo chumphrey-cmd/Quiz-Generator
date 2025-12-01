@@ -55,3 +55,7 @@ D. $
 E. 5*
 F. ^
 ```
+
+## To-do
+
+* Update API syntax for Gemini, OpenAI, and Perplexity.
