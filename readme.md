@@ -18,11 +18,12 @@
 
 2. **Generate Questions to be Ingested**
 
-    > Need to create questions from your existing study materials like PDFs or course notes?
-
-    * If your content is in PDFs, you can extract the text using a tool like my [PDF-Extractor](https://github.com/chumphrey-cmd/Password-Protected-PDF-Extractor).
-
-    * Use Google's [NotebookLM](https://notebooklm.google/) to analyze your extracted text and generate multiple-choice questions that match the **Questions File Format** below.
+> [!TIP]
+> Need to create questions from your existing study materials like PDFs or course notes?
+> 
+> * If your content is in PDFs, you can extract the text using a tool like my [PDF-Extractor](https://github.com/chumphrey-cmd/Password-Protected-PDF-Extractor).
+> 
+> * Use Google's [NotebookLM](https://notebooklm.google/) to analyze your extracted text and generate multiple-choice questions that match the **Questions File Format** below.
 
 3. **Launch the App**
     Open the `quiz.html` file in any modern web browser (like Chrome, Firefox, or Edge).
